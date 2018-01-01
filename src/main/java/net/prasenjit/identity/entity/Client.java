@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
@@ -23,6 +24,14 @@ public class Client implements UserDetails {
     private LocalDateTime creationDate;
 
     private LocalDateTime expiryDate;
+
+    private String supportedGrant;
+
+    private String approvedScopes;
+
+    private Duration accessTokenValidity;
+
+    private Duration refreshTokenValidity;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -62,5 +71,9 @@ public class Client implements UserDetails {
     @Override
     public boolean isEnabled() {
         return status == Status.ACTIVE;
+    }
+
+    public boolean supportsGrant(String grant) {
+        return supportedGrant.contains(grant);
     }
 }

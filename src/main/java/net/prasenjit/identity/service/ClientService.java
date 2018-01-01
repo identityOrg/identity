@@ -1,8 +1,8 @@
 package net.prasenjit.identity.service;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.User;
-import net.prasenjit.identity.repository.UserRepository;
+import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.repository.ClientRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -12,17 +12,17 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements UserDetailsService {
+public class ClientService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final ClientRepository clientRepository;
 
     @Override
     public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
-        Optional<User> user = userRepository.findById(s);
-        if (user.isPresent()) {
-            return user.get();
+        Optional<Client> client = clientRepository.findById(s);
+        if (client.isPresent()) {
+            return client.get();
         } else {
-            throw new UsernameNotFoundException("user not found");
+            throw new UsernameNotFoundException("client not found");
         }
     }
 }

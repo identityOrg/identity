@@ -57,7 +57,7 @@ public class CodeFactory {
         return accessToken;
     }
 
-    public RefreshToken createRefreshToken(String clientId, String userName, String scope, Duration duration){
+    public RefreshToken createRefreshToken(String clientId, String userName, String scope, Duration duration) {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setClientId(clientId);
         LocalDateTime creationDate = LocalDateTime.now();

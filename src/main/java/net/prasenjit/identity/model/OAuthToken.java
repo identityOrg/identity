@@ -1,13 +1,13 @@
 package net.prasenjit.identity.model;
 
+import lombok.Builder;
 import lombok.Data;
 
-import java.util.Date;
-
 @Data
+@Builder
 public class OAuthToken {
     private String accessToken;
     private String tokenType;
     private String refreshToken;
-    private int expiresIn;
+    private long expiresIn;
 }
