@@ -10,4 +10,5 @@ public class OAuthToken {
     private String tokenType;
     private String refreshToken;
     private long expiresIn;
+    private String scope;
 }

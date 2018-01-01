@@ -19,13 +19,22 @@ public class OAuthController {
 
     @PostMapping(value = "token", params = "grant_type=password")
     @ResponseBody
-    public OAuthToken oAuthToken(@RequestParam(value = "grant_type") String grantType,
-                                 @RequestParam(value = "username") String username,
-                                 @RequestParam(value = "password") String password,
-                                 @RequestParam(value = "scope", defaultValue = "") String scope,
-                                 Authentication clientAuth) {
-        log.info("Processing grant {}", grantType);
+    public OAuthToken passwordGrantToken(
+            @RequestParam(value = "username") String username,
+            @RequestParam(value = "password") String password,
+            @RequestParam(value = "scope", defaultValue = "") String scope,
+            Authentication clientAuth) {
+        log.info("Processing password grant");
         return oAuth2Service.processPasswordGrant((Client) clientAuth.getPrincipal(), username, password, scope);
+    }
+
+    @PostMapping(value = "token", params = "grant_type=client_credentials")
+    @ResponseBody
+    public OAuthToken clientCredentialGrantToken(
+            @RequestParam(value = "scope", defaultValue = "") String scope,
+            Authentication clientAuth) {
+        log.info("Processing password grant");
+        return oAuth2Service.processClientCredentialsGrant((Client) clientAuth.getPrincipal(), scope);
     }
 
     @GetMapping("authorize")

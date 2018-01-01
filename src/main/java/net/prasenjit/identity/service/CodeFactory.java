@@ -7,11 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.RefreshToken;
-import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.RefreshTokenRepository;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -43,7 +43,7 @@ public class CodeFactory {
         return authorizationCode;
     }
 
-    public AccessToken createAccessToken(User user, String clientId, Duration duration, String scope) {
+    public AccessToken createAccessToken(UserDetails user, String clientId, Duration duration, String scope) {
         AccessToken accessToken = new AccessToken();
         accessToken.setAssessToken(RandomStringUtils.randomAlphanumeric(24));
         accessToken.setUserName(user.getUsername());
@@ -71,7 +71,7 @@ public class CodeFactory {
         return refreshToken;
     }
 
-    private String serialize(User user) {
+    private String serialize(UserDetails user) {
         try {
             return objectMapper.writeValueAsString(user);
         } catch (JsonProcessingException e) {

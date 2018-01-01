@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.RefreshToken;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.model.OAuthToken;
@@ -17,7 +18,8 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -28,7 +30,7 @@ public class OAuth2Service {
 
     private final CodeFactory codeFactory;
 
-    public OAuthToken processPasswordGrant(Client client, String username, String password, String scope) {
+    public OAuthToken processPasswordGrant(Client client, String username, String password, String requestedScope) {
         if (!client.supportsGrant("password")) {
             throw new OAuthException("Unsupported grant");
         }
@@ -38,22 +40,51 @@ public class OAuth2Service {
         } catch (BadCredentialsException e) {
             throw new OAuthException("user authentication failed");
         }
-        if (authentication.isAuthenticated() && validateScope(scope, client.getApprovedScopes())) {
-            AccessToken accessToken = codeFactory.createAccessToken((User) authentication.getPrincipal(),
-                    client.getClientId(), client.getAccessTokenValidity(), scope);
-            OAuthToken bearer = OAuthToken.builder().accessToken(accessToken.getAssessToken())
-                    .tokenType("bearer")
-                    .expiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()))
-                    .build();
-            return bearer;
-        } else {
-            throw new OAuthException("invalid scope");
+        String filteredScopes = filterScope(client.getApprovedScopes(), requestedScope);
+        AccessToken accessToken = codeFactory.createAccessToken((User) authentication.getPrincipal(),
+                client.getClientId(), client.getAccessTokenValidity(), filteredScopes);
+        OAuthToken.OAuthTokenBuilder tokenBuilder = OAuthToken.builder().accessToken(accessToken.getAssessToken())
+                .tokenType("bearer")
+                .expiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()))
+                .scope(filteredScopes);
+        if (!client.supportsGrant("refresh_token")) {
+            RefreshToken refreshToken = codeFactory.createRefreshToken(client.getClientId(), username, filteredScopes,
+                    client.getRefreshTokenValidity());
+            tokenBuilder.refreshToken(refreshToken.getRefreshToken());
         }
+        return tokenBuilder.build();
     }
 
-    private boolean validateScope(String scope, String approvedScopes) {
-        String[] requiredScopes = StringUtils.commaDelimitedListToStringArray(scope);
-        final String[] availableScopes = StringUtils.commaDelimitedListToStringArray(approvedScopes);
-        return Arrays.stream(requiredScopes).allMatch(r -> ArrayUtils.contains(availableScopes, r));
+    public OAuthToken processClientCredentialsGrant(Client client, String scope) {
+        if (!client.supportsGrant("client_credentials")) {
+            throw new OAuthException("Unsupported grant");
+        }
+        String filteredScope = filterScope(client.getApprovedScopes(), scope);
+        AccessToken accessToken = codeFactory.createAccessToken(client,
+                client.getClientId(), client.getAccessTokenValidity(), filteredScope);
+        OAuthToken bearer = OAuthToken.builder().accessToken(accessToken.getAssessToken())
+                .tokenType("bearer")
+                .expiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()))
+                .scope(filteredScope)
+                .build();
+        return bearer;
+    }
+
+    private String filterScope(String approvedScopes, String requestedScope) {
+        String[] approved = StringUtils.delimitedListToStringArray(approvedScopes, " ");
+        String[] requested = StringUtils.delimitedListToStringArray(requestedScope, " ");
+        if (approved == null || approved.length == 0) {
+            return null;
+        }
+        if (requested == null || requested.length == 0) {
+            return approvedScopes;
+        }
+        List<String> filtered = new ArrayList<>();
+        for (String r : requested) {
+            if (ArrayUtils.contains(approved, r)) {
+                filtered.add(r);
+            }
+        }
+        return StringUtils.collectionToDelimitedString(filtered, " ");
     }
 }

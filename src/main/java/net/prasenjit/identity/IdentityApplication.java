@@ -44,7 +44,7 @@ public class IdentityApplication implements ApplicationRunner{
         client.setClientSecret(clientId);
         client.setCreationDate(LocalDateTime.now());
         client.setStatus(Status.ACTIVE);
-        client.setSupportedGrant("password");
+        client.setSupportedGrant("password,client_credentials");
         client.setApprovedScopes("openid");
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
