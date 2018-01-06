@@ -7,7 +7,9 @@ import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.RefreshToken;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.exception.OAuthException;
+import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.repository.ClientRepository;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,8 +20,9 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -27,8 +30,8 @@ import java.util.List;
 public class OAuth2Service {
 
     private final AuthenticationManager authenticationManager;
-
     private final CodeFactory codeFactory;
+    private final ClientRepository clientRepository;
 
     public OAuthToken processPasswordGrant(Client client, String username, String password, String requestedScope) {
         if (!client.supportsGrant("password")) {
@@ -68,6 +71,89 @@ public class OAuth2Service {
                 .scope(filteredScope)
                 .build();
         return bearer;
+    }
+
+//    public MultiValueMap<String, String> processAuthorizationCodeGrant(String clientId, User user) {
+//        MultiValueMap<String, String> result = new LinkedMultiValueMap<>();
+//        Optional<Client> optionalClient = clientRepository.findById(clientId);
+//        if (!optionalClient.isPresent()) {
+//            result.add("error", "invalid_client");
+//            return result;
+//        }
+//        Client client = optionalClient.get();
+//        if (!client.supportsGrant("password")) {
+//            result.add("error", "unsupported_grant");
+//            return result;
+//        }
+//    }
+
+    public AuthorizationModel validateAuthorizationGrant(String responseType, User principal, String clientId,
+                                                         String scope, String state, String redirectUri) {
+        Optional<Client> client = clientRepository.findById(clientId);
+        if (!client.isPresent()) {
+            AuthorizationModel authorizationModel = new AuthorizationModel();
+            authorizationModel.setValid(false);
+            authorizationModel.setCode(OAuthError.INVALID_REQUEST);
+            authorizationModel.setState(state);
+            return authorizationModel;
+        }
+        if (redirectUri != null && !client.get().getRedirectUri().equals(redirectUri)) {
+            AuthorizationModel authorizationModel = new AuthorizationModel();
+            authorizationModel.setValid(false);
+            authorizationModel.setCode(OAuthError.INVALID_REQUEST);
+            authorizationModel.setState(state);
+            return authorizationModel;
+        }
+        if ("code".equals(responseType)) {
+            if (!client.get().supportsGrant("authorization_code")) {
+                AuthorizationModel authorizationModel = new AuthorizationModel();
+                authorizationModel.setValid(false);
+                authorizationModel.setCode(OAuthError.ACCESS_DENIED);
+                authorizationModel.setState(state);
+                return authorizationModel;
+            }
+            Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(), scope);
+
+            AuthorizationModel authorizationModel = new AuthorizationModel();
+            authorizationModel.setClient(client.get());
+            authorizationModel.setUser(principal);
+            authorizationModel.setRedirectUri(client.get().getRedirectUri());
+            authorizationModel.setFilteredScopes(scopeToApprove);
+            authorizationModel.setValid(true);
+            authorizationModel.setCode(OAuthError.INVALID_REQUEST);
+            authorizationModel.setState(state);
+            return authorizationModel;
+        } else if ("token".equals(responseType)) {
+            AuthorizationModel authorizationModel = new AuthorizationModel();
+            authorizationModel.setValid(false);
+            authorizationModel.setCode(OAuthError.TEMPORARILY_UNAVAILABLE);
+            authorizationModel.setState(state);
+            return authorizationModel;
+        } else {
+            AuthorizationModel authorizationModel = new AuthorizationModel();
+            authorizationModel.setValid(false);
+            authorizationModel.setCode(OAuthError.INVALID_REQUEST);
+            authorizationModel.setState(state);
+            return authorizationModel;
+        }
+    }
+
+    private Map<String, Boolean> filterScopeToMap(String approvedScopes, String requestedScope) {
+        String[] approved = StringUtils.delimitedListToStringArray(approvedScopes, " ");
+        String[] requested = StringUtils.delimitedListToStringArray(requestedScope, " ");
+        if (approved == null || approved.length == 0) {
+            return new HashMap<>();
+        }
+        if (requested == null || requested.length == 0) {
+            return Stream.of(approved).collect(Collectors.toMap(o -> o, o -> Boolean.TRUE));
+        }
+        Map<String, Boolean> filteredMap = new HashMap<>();
+        for (String r : requested) {
+            if (ArrayUtils.contains(approved, r)) {
+                filteredMap.put(r, Boolean.TRUE);
+            }
+        }
+        return filteredMap;
     }
 
     private String filterScope(String approvedScopes, String requestedScope) {

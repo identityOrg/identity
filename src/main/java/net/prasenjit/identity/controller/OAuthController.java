@@ -3,10 +3,13 @@ package net.prasenjit.identity.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.service.OAuth2Service;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -38,7 +41,25 @@ public class OAuthController {
     }
 
     @GetMapping("authorize")
-    public String oAuthAuthorize() {
+    public String oAuthAuthorize(@RequestParam("response_type") String responseType,
+                                 @RequestParam("client_id") String clientId,
+                                 @RequestParam(value = "redirect_uri", required = false) String redirectUri,
+                                 @RequestParam(value = "scope", defaultValue = "") String scope,
+                                 @RequestParam(value = "state", required = false) String state,
+                                 Authentication authentication, Model model) {
+        AuthorizationModel authorizationModel = oAuth2Service.validateAuthorizationGrant(responseType,
+                (User) authentication.getPrincipal(), clientId, scope, state, redirectUri);
+        if (authorizationModel.isValid()) {
+            model.addAttribute("model", authorizationModel);
+            return "authorize";
+        } else {
+            return "redirect:/error";
+        }
+    }
+
+    @PostMapping("authorize")
+    public String submitAuthorize(@ModelAttribute AuthorizationModel model){
+        System.out.println(model);
         return "authorize";
     }
 }

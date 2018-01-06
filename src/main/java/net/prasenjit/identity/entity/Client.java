@@ -17,6 +17,8 @@ public class Client implements UserDetails {
     @Id
     private String clientId;
 
+    private String clientName;
+
     private String clientSecret;
 
     private Status status;
@@ -28,6 +30,8 @@ public class Client implements UserDetails {
     private String supportedGrant;
 
     private String approvedScopes;
+
+    private String redirectUri;
 
     private Duration accessTokenValidity;
 

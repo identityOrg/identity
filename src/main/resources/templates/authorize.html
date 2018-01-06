@@ -1,10 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Authorize Access</title>
 </head>
 <body>
-<h1>Please Authorize</h1>
+<h1>Client <b th:text="${model.client.clientName}"></b> is trying to access your resource</h1>
+<h2>If you recognise the activity please approve</h2>
+<spna th:text="${model.client.clientName}"></spna> will get access to.</h3>
+<form th:action="@{/oauth/authorize}" th:object="${model}" method="post">
+    <div th:each="s : *{filteredScopes}">
+        <span th:text="${s.key}"></span>
+        <input type="checkbox" th:field="*{filteredScopes[__${s.key}__]}">
+    </div>
+    <div>
+        <button type="submit" name="valid" value="true">Approve</button>
+        <button type="submit" name="valid" value="false">Disapprove</button>
+    </div>
+    <input type="hidden" th:field="*{redirectUri}">
+    <input type="hidden" th:field="*{state}">
+    <input type="hidden" th:field="*{client.clientId}">
+</form>
 </body>
 </html>

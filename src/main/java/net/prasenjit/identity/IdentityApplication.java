@@ -15,20 +15,19 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 @SpringBootApplication
-public class IdentityApplication implements ApplicationRunner{
+public class IdentityApplication implements ApplicationRunner {
 
-	public static void main(String[] args) {
-		SpringApplication.run(IdentityApplication.class, args);
-	}
-
-	@Autowired
+    @Autowired
     private UserRepository userRepository;
-
-	@Autowired
+    @Autowired
     private ClientRepository clientRepository;
 
-	@Override
-	public void run(ApplicationArguments args) throws Exception {
+    public static void main(String[] args) {
+        SpringApplication.run(IdentityApplication.class, args);
+    }
+
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
 
         User admin = createAdmin("admin");
         userRepository.saveAndFlush(admin);
@@ -36,7 +35,7 @@ public class IdentityApplication implements ApplicationRunner{
         Client client = createClient("client");
         clientRepository.saveAndFlush(client);
 
-	}
+    }
 
     private Client createClient(String clientId) {
         Client client = new Client();
@@ -44,8 +43,10 @@ public class IdentityApplication implements ApplicationRunner{
         client.setClientSecret(clientId);
         client.setCreationDate(LocalDateTime.now());
         client.setStatus(Status.ACTIVE);
-        client.setSupportedGrant("password,client_credentials");
+        client.setClientName("Test Client");
+        client.setSupportedGrant("password,client_credentials,authorization_code");
         client.setApprovedScopes("openid");
+        client.setRedirectUri("http://localhost:8080/oauth/redirect");
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
         return client;
