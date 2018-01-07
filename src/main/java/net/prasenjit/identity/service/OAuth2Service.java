@@ -2,10 +2,7 @@ package net.prasenjit.identity.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.prasenjit.identity.entity.AccessToken;
-import net.prasenjit.identity.entity.Client;
-import net.prasenjit.identity.entity.RefreshToken;
-import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.entity.*;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
@@ -18,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -89,53 +87,81 @@ public class OAuth2Service {
 
     public AuthorizationModel validateAuthorizationGrant(String responseType, User principal, String clientId,
                                                          String scope, String state, String redirectUri) {
-        Optional<Client> client = clientRepository.findById(clientId);
-        if (!client.isPresent()) {
-            AuthorizationModel authorizationModel = new AuthorizationModel();
-            authorizationModel.setValid(false);
-            authorizationModel.setCode(OAuthError.INVALID_REQUEST);
-            authorizationModel.setState(state);
-            return authorizationModel;
-        }
-        if (redirectUri != null && !client.get().getRedirectUri().equals(redirectUri)) {
-            AuthorizationModel authorizationModel = new AuthorizationModel();
-            authorizationModel.setValid(false);
-            authorizationModel.setCode(OAuthError.INVALID_REQUEST);
-            authorizationModel.setState(state);
-            return authorizationModel;
-        }
-        if ("code".equals(responseType)) {
-            if (!client.get().supportsGrant("authorization_code")) {
-                AuthorizationModel authorizationModel = new AuthorizationModel();
-                authorizationModel.setValid(false);
-                authorizationModel.setCode(OAuthError.ACCESS_DENIED);
-                authorizationModel.setState(state);
-                return authorizationModel;
-            }
-            Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(), scope);
+        AuthorizationModel authorizationModel = new AuthorizationModel();
+        authorizationModel.setState(state);
+        authorizationModel.setUser(principal);
+        authorizationModel.setValid(false);
 
-            AuthorizationModel authorizationModel = new AuthorizationModel();
-            authorizationModel.setClient(client.get());
-            authorizationModel.setUser(principal);
-            authorizationModel.setRedirectUri(client.get().getRedirectUri());
-            authorizationModel.setFilteredScopes(scopeToApprove);
-            authorizationModel.setValid(true);
-            authorizationModel.setCode(OAuthError.INVALID_REQUEST);
-            authorizationModel.setState(state);
-            return authorizationModel;
-        } else if ("token".equals(responseType)) {
-            AuthorizationModel authorizationModel = new AuthorizationModel();
-            authorizationModel.setValid(false);
-            authorizationModel.setCode(OAuthError.TEMPORARILY_UNAVAILABLE);
-            authorizationModel.setState(state);
+        Optional<Client> client = clientRepository.findById(clientId);
+
+        if (!client.isPresent()) {
+            authorizationModel.setRedirectUri(redirectUri);
+            authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+            authorizationModel.setErrorDescription("Provided clientId is invalid");
             return authorizationModel;
         } else {
-            AuthorizationModel authorizationModel = new AuthorizationModel();
-            authorizationModel.setValid(false);
-            authorizationModel.setCode(OAuthError.INVALID_REQUEST);
-            authorizationModel.setState(state);
-            return authorizationModel;
+            authorizationModel.setClient(client.get());
+            authorizationModel.setRedirectUri(client.get().getRedirectUri());
+
+            if (redirectUri != null && !client.get().getRedirectUri().equals(redirectUri)) {
+                authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+                authorizationModel.setErrorDescription("Redirect URL doesn't match");
+                return authorizationModel;
+            } else {
+                if ("code".equals(responseType)) {
+                    if (!client.get().supportsGrant("authorization_code")) {
+                        authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
+                        authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
+                        return authorizationModel;
+                    }
+                    Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(), scope);
+
+                    authorizationModel.setClient(client.get());
+                    authorizationModel.setUser(principal);
+                    authorizationModel.setFilteredScopes(scopeToApprove);
+                    authorizationModel.setValid(true);
+                    return authorizationModel;
+                } else if ("token".equals(responseType)) {
+                    authorizationModel.setErrorCode(OAuthError.TEMPORARILY_UNAVAILABLE);
+                    authorizationModel.setErrorDescription("Response type temporarily not supported");
+                    return authorizationModel;
+                } else {
+                    authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+                    authorizationModel.setErrorDescription("Unsupported response type ");
+                    return authorizationModel;
+                }
+            }
         }
+    }
+
+    public AuthorizationModel processAuthorizationGrant(AuthorizationModel authorizationModel) {
+        if (authorizationModel.isValid()) {
+            Optional<Client> client = clientRepository.findById(authorizationModel.getClient().getClientId());
+
+            if (!client.isPresent()) {
+                authorizationModel.setValid(false);
+                authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+                authorizationModel.setErrorDescription("Provided clientId is invalid");
+                return authorizationModel;
+            } else {
+                authorizationModel.setClient(client.get());
+                List<String> approvedScope = authorizationModel.getFilteredScopes().entrySet()
+                        .stream().filter(e -> e.getValue()).map(e -> e.getKey())
+                        .collect(Collectors.toList());
+                AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(client.get().getClientId(),
+                        authorizationModel.getRedirectUri(),
+                        StringUtils.collectionToDelimitedString(approvedScope, " "),
+                        authorizationModel.getUser().getUsername(), authorizationModel.getState(),
+                        Duration.ofMinutes(10));
+                authorizationModel.setAuthorizationCode(authorizationCode.getAuthorizationCode());
+                authorizationModel.setScope(authorizationCode.getScope());
+                return authorizationModel;
+            }
+        }
+        authorizationModel.setErrorCode(OAuthError.UNAUTHORIZED_REQUEST);
+        authorizationModel.setErrorDescription("User has denied the access");
+        authorizationModel.setValid(false);
+        return authorizationModel;
     }
 
     private Map<String, Boolean> filterScopeToMap(String approvedScopes, String requestedScope) {

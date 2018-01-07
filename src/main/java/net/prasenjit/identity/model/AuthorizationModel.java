@@ -15,7 +15,10 @@ public class AuthorizationModel {
     private Client client;
     private User user;
     private String state;
-    private String code;
+    private String errorCode;
+    private String authorizationCode;
+    private String errorDescription;
     private String redirectUri;
+    private String scope;
     private Map<String, Boolean> filteredScopes;
 }
