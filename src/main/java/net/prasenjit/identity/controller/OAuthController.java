@@ -2,12 +2,14 @@ package net.prasenjit.identity.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.service.OAuth2Service;
+import net.prasenjit.identity.service.OAuthError;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,6 +40,15 @@ public class OAuthController {
     @ResponseBody
     public OAuthToken clientCredentialGrantToken(
             @RequestParam(value = "scope", defaultValue = "") String scope,
+            Authentication clientAuth) {
+        log.info("Processing password grant");
+        return oAuth2Service.processClientCredentialsGrant((Client) clientAuth.getPrincipal(), scope);
+    }
+
+    @PostMapping(value = "token", params = "grant_type=authorization_code")
+    @ResponseBody
+    public OAuthToken authorizationCodeGrantToken(
+            @RequestParam(value = "scope", required = false) String scope,
             Authentication clientAuth) {
         log.info("Processing password grant");
         return oAuth2Service.processClientCredentialsGrant((Client) clientAuth.getPrincipal(), scope);
@@ -74,13 +85,27 @@ public class OAuthController {
     @PostMapping("authorize")
     public String submitAuthorize(@ModelAttribute AuthorizationModel authorizationModel, Authentication authentication) {
         authorizationModel.setUser((User) authentication.getPrincipal());
-        authorizationModel = oAuth2Service.processAuthorizationGrant(authorizationModel);
+        authorizationModel = oAuth2Service.processAuthorizationOrImplicitGrant(authorizationModel);
         if (authorizationModel.isValid()) {
-            UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
-                    .queryParam("code", authorizationModel.getAuthorizationCode())
-                    .queryParam("state", authorizationModel.getState())
-                    .queryParam("scope", authorizationModel.getScope()).build();
-            return "redirect:" + uri;
+            AuthorizationCode authorizationCode = authorizationModel.getAuthorizationCode();
+            if (authorizationCode != null) {
+                UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
+                        .queryParam("code", authorizationCode)
+                        .queryParam("state", authorizationCode.getState())
+                        .queryParam("scope", authorizationCode.getScope())
+                        .build();
+                return "redirect:" + uri;
+            } else if (authorizationModel.getAccessToken() != null) {
+                String tokenFragment = oAuth2Service.createTokenResponseFragment(authorizationModel.getAccessToken(), authorizationCode.getState());
+                UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
+                        .fragment(tokenFragment)
+                        .build();
+                return "redirect:" + uri;
+            } else {
+                authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+                authorizationModel.setErrorDescription("response_type is invalid");
+                return buildErrorUrl(authorizationModel);
+            }
         } else {
             return buildErrorUrl(authorizationModel);
         }

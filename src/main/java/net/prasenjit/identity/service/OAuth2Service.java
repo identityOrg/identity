@@ -91,6 +91,7 @@ public class OAuth2Service {
         authorizationModel.setState(state);
         authorizationModel.setUser(principal);
         authorizationModel.setValid(false);
+        authorizationModel.setResponseType(responseType);
 
         Optional<Client> client = clientRepository.findById(clientId);
 
@@ -122,8 +123,17 @@ public class OAuth2Service {
                     authorizationModel.setValid(true);
                     return authorizationModel;
                 } else if ("token".equals(responseType)) {
-                    authorizationModel.setErrorCode(OAuthError.TEMPORARILY_UNAVAILABLE);
-                    authorizationModel.setErrorDescription("Response type temporarily not supported");
+                    if (!client.get().supportsGrant("implicit")) {
+                        authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
+                        authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
+                        return authorizationModel;
+                    }
+                    Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(), scope);
+
+                    authorizationModel.setClient(client.get());
+                    authorizationModel.setUser(principal);
+                    authorizationModel.setFilteredScopes(scopeToApprove);
+                    authorizationModel.setValid(true);
                     return authorizationModel;
                 } else {
                     authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
@@ -134,7 +144,7 @@ public class OAuth2Service {
         }
     }
 
-    public AuthorizationModel processAuthorizationGrant(AuthorizationModel authorizationModel) {
+    public AuthorizationModel processAuthorizationOrImplicitGrant(AuthorizationModel authorizationModel) {
         if (authorizationModel.isValid()) {
             Optional<Client> client = clientRepository.findById(authorizationModel.getClient().getClientId());
 
@@ -148,20 +158,39 @@ public class OAuth2Service {
                 List<String> approvedScope = authorizationModel.getFilteredScopes().entrySet()
                         .stream().filter(e -> e.getValue()).map(e -> e.getKey())
                         .collect(Collectors.toList());
-                AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(client.get().getClientId(),
-                        authorizationModel.getRedirectUri(),
-                        StringUtils.collectionToDelimitedString(approvedScope, " "),
-                        authorizationModel.getUser().getUsername(), authorizationModel.getState(),
-                        Duration.ofMinutes(10));
-                authorizationModel.setAuthorizationCode(authorizationCode.getAuthorizationCode());
-                authorizationModel.setScope(authorizationCode.getScope());
-                return authorizationModel;
+                if ("code".equals(authorizationModel.getResponseType())) {
+                    AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(client.get().getClientId(),
+                            authorizationModel.getRedirectUri(),
+                            StringUtils.collectionToDelimitedString(approvedScope, " "),
+                            authorizationModel.getUser().getUsername(), authorizationModel.getState(),
+                            Duration.ofMinutes(10));
+                    authorizationModel.setAuthorizationCode(authorizationCode);
+                    return authorizationModel;
+                } else if ("token".equals(authorizationModel.getResponseType())) {
+                    AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getUser(), client.get().getClientId(),
+                            client.get().getAccessTokenValidity(),
+                            StringUtils.collectionToDelimitedString(approvedScope, " "));
+                    authorizationModel.setAccessToken(accessToken);
+                    return authorizationModel;
+                }
             }
         }
         authorizationModel.setErrorCode(OAuthError.UNAUTHORIZED_REQUEST);
         authorizationModel.setErrorDescription("User has denied the access");
         authorizationModel.setValid(false);
         return authorizationModel;
+    }
+
+
+    public String createTokenResponseFragment(AccessToken accessToken, String state) {
+        StringBuilder builder = new StringBuilder();
+        long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+        builder.append("access_token").append('=').append(accessToken.getAssessToken())
+                .append("token_type").append('=').append("Bearer")
+                .append("expires_in").append('=').append(expIn)
+                .append("scope").append('=').append(accessToken.getScope())
+                .append("state").append('=').append(state);
+        return builder.toString();
     }
 
     private Map<String, Boolean> filterScopeToMap(String approvedScopes, String requestedScope) {
