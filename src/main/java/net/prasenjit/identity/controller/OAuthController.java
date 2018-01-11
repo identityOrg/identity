@@ -48,10 +48,12 @@ public class OAuthController {
     @PostMapping(value = "token", params = "grant_type=authorization_code")
     @ResponseBody
     public OAuthToken authorizationCodeGrantToken(
-            @RequestParam(value = "scope", required = false) String scope,
-            Authentication clientAuth) {
+            @RequestParam(value = "code", required = false) String code,
+            @RequestParam(value = "redirect_uri", required = false) String redirectUri,
+            @RequestParam(value = "client_id", required = false) String clientId,
+            Authentication authentication) {
         log.info("Processing password grant");
-        return oAuth2Service.processClientCredentialsGrant((Client) clientAuth.getPrincipal(), scope);
+        return oAuth2Service.processAuthorizationCodeGrantToken((Client) authentication.getPrincipal(), code, redirectUri, clientId);
     }
 
     @GetMapping("authorize")
@@ -96,7 +98,7 @@ public class OAuthController {
                         .build();
                 return "redirect:" + uri;
             } else if (authorizationModel.getAccessToken() != null) {
-                String tokenFragment = oAuth2Service.createTokenResponseFragment(authorizationModel.getAccessToken(), authorizationCode.getState());
+                String tokenFragment = oAuth2Service.createTokenResponseFragment(authorizationModel.getAccessToken(), authorizationModel.getState());
                 UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
                         .fragment(tokenFragment)
                         .build();

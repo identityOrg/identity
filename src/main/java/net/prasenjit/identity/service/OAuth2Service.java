@@ -44,16 +44,17 @@ public class OAuth2Service {
         String filteredScopes = filterScope(client.getApprovedScopes(), requestedScope);
         AccessToken accessToken = codeFactory.createAccessToken((User) authentication.getPrincipal(),
                 client.getClientId(), client.getAccessTokenValidity(), filteredScopes);
-        OAuthToken.OAuthTokenBuilder tokenBuilder = OAuthToken.builder().accessToken(accessToken.getAssessToken())
-                .tokenType("bearer")
-                .expiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()))
-                .scope(filteredScopes);
+        OAuthToken token = new OAuthToken();
+        token.setAccessToken(accessToken.getAssessToken());
+        token.setTokenType("bearer");
+        token.setExpiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()));
+        token.setScope(filteredScopes);
         if (!client.supportsGrant("refresh_token")) {
             RefreshToken refreshToken = codeFactory.createRefreshToken(client.getClientId(), username, filteredScopes,
                     client.getRefreshTokenValidity());
-            tokenBuilder.refreshToken(refreshToken.getRefreshToken());
+            token.setRefreshToken(refreshToken.getRefreshToken());
         }
-        return tokenBuilder.build();
+        return token;
     }
 
     public OAuthToken processClientCredentialsGrant(Client client, String scope) {
@@ -63,12 +64,12 @@ public class OAuth2Service {
         String filteredScope = filterScope(client.getApprovedScopes(), scope);
         AccessToken accessToken = codeFactory.createAccessToken(client,
                 client.getClientId(), client.getAccessTokenValidity(), filteredScope);
-        OAuthToken bearer = OAuthToken.builder().accessToken(accessToken.getAssessToken())
-                .tokenType("bearer")
-                .expiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()))
-                .scope(filteredScope)
-                .build();
-        return bearer;
+        OAuthToken token = new OAuthToken();
+        token.setAccessToken(accessToken.getAssessToken());
+        token.setTokenType("bearer");
+        token.setExpiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()));
+        token.setScope(filteredScope);
+        return token;
     }
 
 //    public MultiValueMap<String, String> processAuthorizationCodeGrant(String clientId, User user) {
@@ -179,6 +180,10 @@ public class OAuth2Service {
         authorizationModel.setErrorDescription("User has denied the access");
         authorizationModel.setValid(false);
         return authorizationModel;
+    }
+
+    public OAuthToken processAuthorizationCodeGrantToken(Client principal, String code, String redirectUri, String clientId) {
+        return null;
     }
 
 

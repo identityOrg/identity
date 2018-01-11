@@ -1,14 +1,19 @@
 package net.prasenjit.identity.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
 @Data
-@Builder
 public class OAuthToken {
+    @JsonProperty("access_token")
     private String accessToken;
+    @JsonProperty("token_type")
     private String tokenType;
+    @JsonProperty("refresh_token")
     private String refreshToken;
+    @JsonProperty("expires_in")
     private long expiresIn;
+    @JsonProperty("scope")
     private String scope;
 }
