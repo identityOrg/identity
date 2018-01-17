@@ -5,9 +5,12 @@
     <title>Authorize Access</title>
 </head>
 <body>
-<h1>Client <b th:text="${model.client.clientName}"></b> is trying to access your resource</h1>
+<!--/*@thymesVar id="model" type="net.prasenjit.identity.model.AuthorizationModel"*/-->
+<h1>Client
+    <b th:text="${model.client.clientName}"></b> is trying to access your resource</h1>
 <h2>If you recognise the activity please approve</h2>
-<spna th:text="${model.client.clientName}"></spna> will get access to.</h3>
+<spna th:text="${model.client.clientName}"></spna>
+will get access to.</h3>
 <form th:action="@{/oauth/authorize}" th:object="${model}" method="post" name="auth">
     <div th:each="s : *{filteredScopes}">
         <span th:text="${s.key}"></span>
