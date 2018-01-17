@@ -6,6 +6,7 @@ import net.prasenjit.identity.entity.*;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.oauth.GrantType;
 import net.prasenjit.identity.repository.ClientRepository;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -32,7 +33,7 @@ public class OAuth2Service {
     private final ClientRepository clientRepository;
 
     public OAuthToken processPasswordGrant(Client client, String username, String password, String requestedScope) {
-        if (!client.supportsGrant("password")) {
+        if (!client.supportsGrant(GrantType.PASSWORD)) {
             throw new OAuthException("Unsupported grant");
         }
         Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
@@ -49,7 +50,7 @@ public class OAuth2Service {
         token.setTokenType("bearer");
         token.setExpiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()));
         token.setScope(filteredScopes);
-        if (!client.supportsGrant("refresh_token")) {
+        if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
             RefreshToken refreshToken = codeFactory.createRefreshToken(client.getClientId(), username, filteredScopes,
                     client.getRefreshTokenValidity());
             token.setRefreshToken(refreshToken.getRefreshToken());
@@ -58,7 +59,7 @@ public class OAuth2Service {
     }
 
     public OAuthToken processClientCredentialsGrant(Client client, String scope) {
-        if (!client.supportsGrant("client_credentials")) {
+        if (!client.supportsGrant(GrantType.CLIENT_CREDENTIALS)) {
             throw new OAuthException("Unsupported grant");
         }
         String filteredScope = filterScope(client.getApprovedScopes(), scope);
@@ -111,7 +112,7 @@ public class OAuth2Service {
                 return authorizationModel;
             } else {
                 if ("code".equals(responseType)) {
-                    if (!client.get().supportsGrant("authorization_code")) {
+                    if (!client.get().supportsGrant(GrantType.AUTHORIZATION_CODE)) {
                         authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
                         authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
                         return authorizationModel;
@@ -124,7 +125,7 @@ public class OAuth2Service {
                     authorizationModel.setValid(true);
                     return authorizationModel;
                 } else if ("token".equals(responseType)) {
-                    if (!client.get().supportsGrant("implicit")) {
+                    if (!client.get().supportsGrant(GrantType.IMPLICIT)) {
                         authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
                         authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
                         return authorizationModel;

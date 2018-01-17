@@ -32,8 +32,12 @@ public class OAuthController {
             @RequestParam(value = "password") String password,
             @RequestParam(value = "scope", defaultValue = "") String scope,
             Authentication clientAuth) {
-        log.info("Processing password grant");
-        return oAuth2Service.processPasswordGrant((Client) clientAuth.getPrincipal(), username, password, scope);
+        if (clientAuth.isAuthenticated()) {
+            log.info("Processing password grant");
+            return oAuth2Service.processPasswordGrant((Client) clientAuth.getPrincipal(), username, password, scope);
+        } else {
+            throw new OAuthException("client not authenticated");
+        }
     }
 
     @PostMapping(value = "token", params = "grant_type=client_credentials")
@@ -41,8 +45,12 @@ public class OAuthController {
     public OAuthToken clientCredentialGrantToken(
             @RequestParam(value = "scope", defaultValue = "") String scope,
             Authentication clientAuth) {
-        log.info("Processing password grant");
-        return oAuth2Service.processClientCredentialsGrant((Client) clientAuth.getPrincipal(), scope);
+        if (clientAuth.isAuthenticated()) {
+            log.info("Processing password grant");
+            return oAuth2Service.processClientCredentialsGrant((Client) clientAuth.getPrincipal(), scope);
+        } else {
+            throw new OAuthException("client not authenticated");
+        }
     }
 
     @PostMapping(value = "token", params = "grant_type=authorization_code")

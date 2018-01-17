@@ -32,19 +32,22 @@ public class IdentityApplication implements ApplicationRunner {
         User admin = createAdmin("admin");
         userRepository.saveAndFlush(admin);
 
-        Client client = createClient("client");
+        Client client = createClient("client", true);
+        clientRepository.saveAndFlush(client);
+
+        client = createClient("insecure", false);
         clientRepository.saveAndFlush(client);
 
     }
 
-    private Client createClient(String clientId) {
+    private Client createClient(String clientId, boolean secure) {
         Client client = new Client();
         client.setClientId(clientId);
-        client.setClientSecret(clientId);
+        if (secure)
+            client.setClientSecret(clientId);
         client.setCreationDate(LocalDateTime.now());
         client.setStatus(Status.ACTIVE);
         client.setClientName("Test Client");
-        client.setSupportedGrant("password,client_credentials,authorization_code");
         client.setApprovedScopes("openid");
         client.setRedirectUri("http://localhost:8080/oauth/redirect");
         client.setAccessTokenValidity(Duration.ofMinutes(30));

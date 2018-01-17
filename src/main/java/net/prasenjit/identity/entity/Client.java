@@ -1,6 +1,7 @@
 package net.prasenjit.identity.entity;
 
 import lombok.Data;
+import net.prasenjit.identity.oauth.GrantType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,8 +27,6 @@ public class Client implements UserDetails {
     private LocalDateTime creationDate;
 
     private LocalDateTime expiryDate;
-
-    private String supportedGrant;
 
     private String approvedScopes;
 
@@ -77,7 +76,22 @@ public class Client implements UserDetails {
         return status == Status.ACTIVE;
     }
 
-    public boolean supportsGrant(String grant) {
-        return supportedGrant.contains(grant);
+    public boolean supportsGrant(GrantType grant) {
+        switch (grant) {
+            case IMPLICIT:
+                return !isSecureClient();
+            case PASSWORD:
+            case REFRESH_TOKEN:
+            case CLIENT_CREDENTIALS:
+                return isSecureClient();
+            case AUTHORIZATION_CODE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public boolean isSecureClient() {
+        return null != clientSecret;
     }
 }
