@@ -49,7 +49,7 @@ public class IdentityApplication implements ApplicationRunner {
         client.setStatus(Status.ACTIVE);
         client.setClientName("Test Client");
         client.setApprovedScopes("openid");
-        client.setRedirectUri("http://localhost:8080/oauth/redirect");
+        client.setRedirectUri("http://localhost/oauth/redirect");
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
         return client;

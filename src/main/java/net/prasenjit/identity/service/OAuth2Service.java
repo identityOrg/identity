@@ -95,6 +95,13 @@ public class OAuth2Service {
         authorizationModel.setValid(false);
         authorizationModel.setResponseType(responseType);
 
+        if (clientId == null){
+            authorizationModel.setRedirectUri(redirectUri);
+            authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+            authorizationModel.setErrorDescription("Client id not specified");
+            return authorizationModel;
+        }
+
         Optional<Client> client = clientRepository.findById(clientId);
 
         if (!client.isPresent()) {
@@ -173,6 +180,11 @@ public class OAuth2Service {
                             client.get().getAccessTokenValidity(),
                             StringUtils.collectionToDelimitedString(approvedScope, " "));
                     authorizationModel.setAccessToken(accessToken);
+                    return authorizationModel;
+                } else {
+                    authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+                    authorizationModel.setErrorDescription("Invalid response type");
+                    authorizationModel.setValid(false);
                     return authorizationModel;
                 }
             }

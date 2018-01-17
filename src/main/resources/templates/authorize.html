@@ -8,7 +8,7 @@
 <h1>Client <b th:text="${model.client.clientName}"></b> is trying to access your resource</h1>
 <h2>If you recognise the activity please approve</h2>
 <spna th:text="${model.client.clientName}"></spna> will get access to.</h3>
-<form th:action="@{/oauth/authorize}" th:object="${model}" method="post">
+<form th:action="@{/oauth/authorize}" th:object="${model}" method="post" name="auth">
     <div th:each="s : *{filteredScopes}">
         <span th:text="${s.key}"></span>
         <input type="checkbox" th:field="*{filteredScopes[__${s.key}__]}">
@@ -20,6 +20,7 @@
     <input type="hidden" th:field="*{redirectUri}">
     <input type="hidden" th:field="*{state}">
     <input type="hidden" th:field="*{client.clientId}">
+    <input type="hidden" th:field="*{responseType}">
 </form>
 </body>
 </html>

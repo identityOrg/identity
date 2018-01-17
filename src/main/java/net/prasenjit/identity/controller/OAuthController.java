@@ -100,7 +100,7 @@ public class OAuthController {
             AuthorizationCode authorizationCode = authorizationModel.getAuthorizationCode();
             if (authorizationCode != null) {
                 UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
-                        .queryParam("code", authorizationCode)
+                        .queryParam("code", authorizationCode.getAuthorizationCode())
                         .queryParam("state", authorizationCode.getState())
                         .queryParam("scope", authorizationCode.getScope())
                         .build();
