@@ -61,7 +61,11 @@ public class OAuthController {
             @RequestParam(value = "client_id", required = false) String clientId,
             Authentication authentication) {
         log.info("Processing password grant");
-        return oAuth2Service.processAuthorizationCodeGrantToken((Client) authentication.getPrincipal(), code, redirectUri, clientId);
+        Client client = null;
+        if (authentication.isAuthenticated()) {
+            client = (Client) authentication.getPrincipal();
+        }
+        return oAuth2Service.processAuthorizationCodeGrantToken(client, code, redirectUri, clientId);
     }
 
     @GetMapping("authorize")

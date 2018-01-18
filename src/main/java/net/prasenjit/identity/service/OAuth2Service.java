@@ -7,7 +7,9 @@ import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.oauth.GrantType;
+import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.repository.UserRepository;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -31,6 +33,8 @@ public class OAuth2Service {
     private final AuthenticationManager authenticationManager;
     private final CodeFactory codeFactory;
     private final ClientRepository clientRepository;
+    private final AuthorizationCodeRepository codeRepository;
+    private final UserRepository userRepository;
 
     public OAuthToken processPasswordGrant(Client client, String username, String password, String requestedScope) {
         if (!client.supportsGrant(GrantType.PASSWORD)) {
@@ -73,20 +77,6 @@ public class OAuth2Service {
         return token;
     }
 
-//    public MultiValueMap<String, String> processAuthorizationCodeGrant(String clientId, User user) {
-//        MultiValueMap<String, String> result = new LinkedMultiValueMap<>();
-//        Optional<Client> optionalClient = clientRepository.findById(clientId);
-//        if (!optionalClient.isPresent()) {
-//            result.add("error", "invalid_client");
-//            return result;
-//        }
-//        Client client = optionalClient.get();
-//        if (!client.supportsGrant("password")) {
-//            result.add("error", "unsupported_grant");
-//            return result;
-//        }
-//    }
-
     public AuthorizationModel validateAuthorizationGrant(String responseType, User principal, String clientId,
                                                          String scope, String state, String redirectUri) {
         AuthorizationModel authorizationModel = new AuthorizationModel();
@@ -95,7 +85,7 @@ public class OAuth2Service {
         authorizationModel.setValid(false);
         authorizationModel.setResponseType(responseType);
 
-        if (clientId == null){
+        if (clientId == null) {
             authorizationModel.setRedirectUri(redirectUri);
             authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
             authorizationModel.setErrorDescription("Client id not specified");
@@ -195,8 +185,59 @@ public class OAuth2Service {
         return authorizationModel;
     }
 
-    public OAuthToken processAuthorizationCodeGrantToken(Client principal, String code, String redirectUri, String clientId) {
-        return null;
+    public OAuthToken processAuthorizationCodeGrantToken(Client client, String code, String redirectUri, String clientId) {
+        if (client == null) {
+            if (clientId == null) {
+                throw new OAuthException("non secure must specify client_id parameter");
+            }
+            Optional<Client> optionalClient = clientRepository.findById(clientId);
+            if (optionalClient.isPresent()) {
+                if (optionalClient.get().isSecureClient()) {
+                    throw new OAuthException("Secure client must be authenticated");
+                } else {
+                    client = optionalClient.get();
+                }
+            } else {
+                throw new OAuthException("Client not found for client_id " + clientId);
+            }
+        }
+        if (null == code) {
+            throw new OAuthException("authorization code must be provided");
+        } else {
+            Optional<AuthorizationCode> authorizationCode = codeRepository.findByAuthorizationCode(code);
+            if (authorizationCode.isPresent()) {
+                if (!authorizationCode.get().isUsed()) {
+                    if (authorizationCode.get().getClientId().equals(client.getClientId())) {
+                        if (authorizationCode.get().getReturnUrl() == null ||
+                                authorizationCode.get().getReturnUrl().equals(redirectUri)) {
+                            if (authorizationCode.get().isValid()) {
+                                authorizationCode.get().setUsed(true);
+                                Optional<User> associatedUser = userRepository.findById(authorizationCode.get().getUserName());
+                                if (associatedUser.isPresent()) {
+                                    AccessToken accessToken = codeFactory.createAccessToken(associatedUser.get(),
+                                            client.getClientId(), client.getAccessTokenValidity(),
+                                            authorizationCode.get().getScope());
+                                    OAuthToken oAuthToken = new OAuthToken();
+                                    oAuthToken.setScope(accessToken.getScope());
+                                    long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+                                    oAuthToken.setExpiresIn(expIn);
+                                    oAuthToken.setTokenType("Bearer");
+                                    oAuthToken.setAccessToken(accessToken.getAssessToken());
+                                    if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {
+                                        RefreshToken refreshToken = codeFactory.createRefreshToken(client.getClientId(),
+                                                associatedUser.get().getUsername(), accessToken.getScope(),
+                                                client.getRefreshTokenValidity());
+                                        oAuthToken.setRefreshToken(refreshToken.getRefreshToken());
+                                    }
+                                    return oAuthToken;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            throw new OAuthException("Authorization code invalid");
+        }
     }
 
 

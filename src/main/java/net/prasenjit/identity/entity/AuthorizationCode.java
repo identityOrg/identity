@@ -31,4 +31,8 @@ public class AuthorizationCode {
     private LocalDateTime creationDate;
 
     private LocalDateTime expiryDate;
+
+    public boolean isValid() {
+        return LocalDateTime.now().isBefore(expiryDate);
+    }
 }
