@@ -101,7 +101,7 @@ public class OAuth2Service {
             return authorizationModel;
         } else {
             authorizationModel.setClient(client.get());
-            authorizationModel.setRedirectUri(client.get().getRedirectUri());
+            // authorizationModel.setRedirectUri(client.get().getRedirectUri());
 
             if (redirectUri != null && !client.get().getRedirectUri().equals(redirectUri)) {
                 authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
@@ -164,6 +164,9 @@ public class OAuth2Service {
                             authorizationModel.getUser().getUsername(), authorizationModel.getState(),
                             Duration.ofMinutes(10));
                     authorizationModel.setAuthorizationCode(authorizationCode);
+                    if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
+                        authorizationModel.setRedirectUri(client.get().getRedirectUri());
+                    }
                     return authorizationModel;
                 } else if ("token".equals(authorizationModel.getResponseType())) {
                     AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getUser(), client.get().getClientId(),
@@ -208,7 +211,7 @@ public class OAuth2Service {
             if (authorizationCode.isPresent()) {
                 if (!authorizationCode.get().isUsed()) {
                     if (authorizationCode.get().getClientId().equals(client.getClientId())) {
-                        if (authorizationCode.get().getReturnUrl() == null ||
+                        if (!StringUtils.hasText(authorizationCode.get().getReturnUrl()) ||
                                 authorizationCode.get().getReturnUrl().equals(redirectUri)) {
                             if (authorizationCode.get().isValid()) {
                                 authorizationCode.get().setUsed(true);
