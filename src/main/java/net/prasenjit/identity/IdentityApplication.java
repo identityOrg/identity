@@ -10,6 +10,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -21,6 +22,8 @@ public class IdentityApplication implements ApplicationRunner {
     private UserRepository userRepository;
     @Autowired
     private ClientRepository clientRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public static void main(String[] args) {
         SpringApplication.run(IdentityApplication.class, args);
@@ -60,7 +63,7 @@ public class IdentityApplication implements ApplicationRunner {
         user.setAdmin(true);
         user.setCreationDate(LocalDateTime.now());
         user.setUsername(username);
-        user.setPassword(username);
+        user.setPassword(passwordEncoder.encode(username));
         user.setStatus(Status.ACTIVE);
         user.setPasswordExpiryDate(LocalDateTime.now().plusDays(2));
         return user;
