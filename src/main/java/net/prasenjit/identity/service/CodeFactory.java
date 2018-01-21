@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.RefreshToken;
+import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.RefreshTokenRepository;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Slf4j
 @Component
@@ -78,5 +80,16 @@ public class CodeFactory {
             log.error("Failed to serialize user", e);
             throw new RuntimeException(e);
         }
+    }
+
+    public OAuthToken createOAuthToken(AccessToken accessToken, RefreshToken refreshToken1) {
+        OAuthToken oAuthToken = new OAuthToken();
+        oAuthToken.setAccessToken(accessToken.getAssessToken());
+        oAuthToken.setRefreshToken(refreshToken1.getRefreshToken());
+        oAuthToken.setTokenType("Bearer");
+        oAuthToken.setScope(accessToken.getScope());
+        long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+        oAuthToken.setExpiresIn(expIn);
+        return oAuthToken;
     }
 }

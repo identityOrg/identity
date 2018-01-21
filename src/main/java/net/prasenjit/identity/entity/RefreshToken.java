@@ -24,4 +24,8 @@ public class RefreshToken {
     private LocalDateTime expiryDate;
 
     private int usageCount;
+
+    public boolean isValid() {
+        return LocalDateTime.now().isBefore(expiryDate);
+    }
 }

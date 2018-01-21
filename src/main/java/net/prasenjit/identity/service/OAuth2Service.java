@@ -9,6 +9,7 @@ import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.oauth.GrantType;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.repository.RefreshTokenRepository;
 import net.prasenjit.identity.repository.UserRepository;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +36,7 @@ public class OAuth2Service {
     private final ClientRepository clientRepository;
     private final AuthorizationCodeRepository codeRepository;
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     public OAuthToken processPasswordGrant(Client client, String username, String password, String requestedScope) {
         if (!client.supportsGrant(GrantType.PASSWORD)) {
@@ -241,6 +243,35 @@ public class OAuth2Service {
             }
             throw new OAuthException("Authorization code invalid");
         }
+    }
+
+    public OAuthToken processRefreshTokenGrantToken(Client client, String refreshToken) {
+        if (client == null) {
+            throw new OAuthException("Client is not authenticated");
+        }
+        Optional<RefreshToken> tokenOptional = refreshTokenRepository.findById(refreshToken);
+        if (tokenOptional.isPresent()) {
+            if (tokenOptional.get().isValid()) {
+                Optional<User> userOptional = userRepository.findById(tokenOptional.get().getUserName());
+                if (userOptional.isPresent()) {
+                    if (userOptional.get().isValid()) {
+                        AccessToken accessToken = codeFactory.createAccessToken(userOptional.get(),
+                                client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope());
+                        RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),
+                                userOptional.get().getUsername(), tokenOptional.get().getScope(),
+                                client.getRefreshTokenValidity());
+                        return codeFactory.createOAuthToken(accessToken, refreshToken1);
+                    } else {
+                        throw new OAuthException("Invalid user");
+                    }
+                } else {
+                    throw new OAuthException("Associated user not found");
+                }
+            } else {
+                throw new OAuthException("Expired refresh token");
+            }
+        }
+        throw new OAuthException("Invalid refresh token");
     }
 
 

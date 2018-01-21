@@ -68,6 +68,19 @@ public class OAuthController {
         return oAuth2Service.processAuthorizationCodeGrantToken(client, code, redirectUri, clientId);
     }
 
+    @PostMapping(value = "token", params = "grant_type=refresh_token")
+    @ResponseBody
+    public OAuthToken refreshTokenGrantToken(
+            @RequestParam(value = "refresh_token", required = false) String refreshToken,
+            Authentication authentication) {
+        log.info("Processing refresh token grant");
+        Client client = null;
+        if (authentication.isAuthenticated()) {
+            client = (Client) authentication.getPrincipal();
+        }
+        return oAuth2Service.processRefreshTokenGrantToken(client, refreshToken);
+    }
+
     @GetMapping("authorize")
     public String oAuthAuthorize(@RequestParam(value = "response_type", required = false) String responseType,
                                  @RequestParam(value = "client_id", required = false) String clientId,

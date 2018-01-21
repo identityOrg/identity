@@ -60,4 +60,8 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return status == Status.ACTIVE;
     }
+
+    public boolean isValid() {
+        return isAccountNonExpired() && isAccountNonLocked() && isEnabled();
+    }
 }
