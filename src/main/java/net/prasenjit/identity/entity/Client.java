@@ -6,34 +6,45 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
 @Data
 @Entity
+@Table(name = "T_CLIENT")
 public class Client implements UserDetails {
     @Id
+    @Column(name = "CLIENT_ID", length = 50, nullable = false, unique = true)
     private String clientId;
 
+    @Column(name = "CLIENT_NAME", length = 500, nullable = false)
     private String clientName;
 
+    @Column(name = "CLIENT_SECRET", length = 50)
     private String clientSecret;
 
+    @Column(name = "STATUS", nullable = false)
+    @Enumerated(EnumType.STRING)
     private Status status;
 
+    @Column(name = "CREATION_DATE", nullable = false)
     private LocalDateTime creationDate;
 
+    @Column(name = "EXPIRY_DATE")
     private LocalDateTime expiryDate;
 
+    @Column(name = "APPROVED_SCOPE", length = 500, nullable = false)
     private String approvedScopes;
 
+    @Column(name = "REDIRECT_URI", length = 500, nullable = false)
     private String redirectUri;
 
+    @Column(name = "ACCESS_TOKEN_VALIDITY", nullable = false)
     private Duration accessTokenValidity;
 
+    @Column(name = "REFRESH_TOKEN_VALIDITY", nullable = false)
     private Duration refreshTokenValidity;
 
     @Override

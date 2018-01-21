@@ -217,7 +217,7 @@ public class OAuth2Service {
                                 authorizationCode.get().getReturnUrl().equals(redirectUri)) {
                             if (authorizationCode.get().isValid()) {
                                 authorizationCode.get().setUsed(true);
-                                Optional<User> associatedUser = userRepository.findById(authorizationCode.get().getUserName());
+                                Optional<User> associatedUser = userRepository.findById(authorizationCode.get().getUsername());
                                 if (associatedUser.isPresent()) {
                                     AccessToken accessToken = codeFactory.createAccessToken(associatedUser.get(),
                                             client.getClientId(), client.getAccessTokenValidity(),
@@ -252,9 +252,10 @@ public class OAuth2Service {
         Optional<RefreshToken> tokenOptional = refreshTokenRepository.findById(refreshToken);
         if (tokenOptional.isPresent()) {
             if (tokenOptional.get().isValid()) {
-                Optional<User> userOptional = userRepository.findById(tokenOptional.get().getUserName());
+                Optional<User> userOptional = userRepository.findById(tokenOptional.get().getUsername());
                 if (userOptional.isPresent()) {
                     if (userOptional.get().isValid()) {
+                        tokenOptional.get().setUsed(true);
                         AccessToken accessToken = codeFactory.createAccessToken(userOptional.get(),
                                 client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope());
                         RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),

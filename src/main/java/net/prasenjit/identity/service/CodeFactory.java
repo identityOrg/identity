@@ -37,7 +37,7 @@ public class CodeFactory {
         authorizationCode.setExpiryDate(creationDate.plus(validity));
         authorizationCode.setReturnUrl(returnUrl);
         authorizationCode.setScope(scope);
-        authorizationCode.setUserName(userName);
+        authorizationCode.setUsername(userName);
         authorizationCode.setUsed(false);
         authorizationCode.setState(state);
         authorizationCode.setAuthorizationCode(RandomStringUtils.randomAlphanumeric(8));
@@ -48,7 +48,7 @@ public class CodeFactory {
     public AccessToken createAccessToken(UserDetails user, String clientId, Duration duration, String scope) {
         AccessToken accessToken = new AccessToken();
         accessToken.setAssessToken(RandomStringUtils.randomAlphanumeric(24));
-        accessToken.setUserName(user.getUsername());
+        accessToken.setUsername(user.getUsername());
         LocalDateTime creationDate = LocalDateTime.now();
         accessToken.setCreationDate(creationDate);
         accessToken.setExpiryDate(creationDate.plus(duration));
@@ -66,9 +66,9 @@ public class CodeFactory {
         refreshToken.setCreationDate(creationDate);
         refreshToken.setExpiryDate(creationDate.plus(duration));
         refreshToken.setScope(scope);
-        refreshToken.setUserName(userName);
+        refreshToken.setUsername(userName);
         refreshToken.setRefreshToken(RandomStringUtils.randomAlphanumeric(24));
-        refreshToken.setUsageCount(0);
+        refreshToken.setUsed(false);
         refreshTokenRepository.saveAndFlush(refreshToken);
         return refreshToken;
     }
