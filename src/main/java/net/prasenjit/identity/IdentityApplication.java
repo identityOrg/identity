@@ -1,5 +1,7 @@
 package net.prasenjit.identity;
 
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.User;
@@ -10,12 +12,15 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.session.hazelcast.config.annotation.web.http.EnableHazelcastHttpSession;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 
 @SpringBootApplication
+@EnableHazelcastHttpSession
 public class IdentityApplication implements ApplicationRunner {
 
     @Autowired
