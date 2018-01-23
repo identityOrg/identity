@@ -23,6 +23,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
         <spring-cloud.version>Finchley.M5</spring-cloud.version>
+        <springfox-version>2.6.1</springfox-version>
     </properties>
 
     <dependencies>
@@ -82,7 +83,6 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.7</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -92,6 +92,18 @@
             <groupId>net.prasenjit</groupId>
             <artifactId>crypto</artifactId>
             <version>1.1</version>
+        </dependency>
+        
+        <!-- Swagger fox dependencies -->
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+            <version>${springfox-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>${springfox-version}</version>
         </dependency>
 
         <dependency>
@@ -133,7 +145,6 @@
         <dependency>
             <groupId>net.sourceforge.htmlunit</groupId>
             <artifactId>htmlunit</artifactId>
-            <version>2.29</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

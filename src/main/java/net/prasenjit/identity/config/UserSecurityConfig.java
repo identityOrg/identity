@@ -26,7 +26,7 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .mvcMatchers("/oauth/authorize")
                 .authenticated()
-                .mvcMatchers("/e2e")
+                .mvcMatchers("/api/e2e")
                 .permitAll()
                 .and()
                 .formLogin();

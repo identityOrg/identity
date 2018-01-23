@@ -1,30 +1,55 @@
 package net.prasenjit.identity.controller;
 
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.doc.SwaggerDocumented;
 import net.prasenjit.identity.model.AsymmetricE2EResponse;
 import net.prasenjit.identity.service.e2e.E2EService;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(value = "e2e")
+@SwaggerDocumented
+@RequestMapping(value = "api/e2e")
 @RequiredArgsConstructor
-public class E2EController {
+public class E2EController implements E2EApi {
 
-    private final E2EService e2EService;
+	private final E2EService e2EService;
 
-    @GetMapping
-    public AsymmetricE2EResponse asymmetricE2E() {
-        return e2EService.getAsymmetricKey();
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see net.prasenjit.identity.controller.E2EApi#asymmetricE2E()
+	 */
+	@Override
+	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+	public AsymmetricE2EResponse asymmetricE2E() {
+		return e2EService.getAsymmetricKey();
+	}
 
-    @PostMapping(value = "encrypt", consumes = MediaType.TEXT_PLAIN_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
-    public String encrypt(@RequestBody String data) {
-        return e2EService.encrypt(data);
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see net.prasenjit.identity.controller.E2EApi#encrypt(java.lang.String)
+	 */
+	@Override
+	@PostMapping(value = "encrypt", consumes = MediaType.TEXT_PLAIN_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
+	public String encrypt(@RequestBody String data) {
+		return e2EService.encrypt(data);
+	}
 
-    @PostMapping(value = "decrypt", consumes = MediaType.TEXT_PLAIN_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
-    public String decrypt(@RequestBody String data) {
-        return e2EService.decrypt(data);
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see net.prasenjit.identity.controller.E2EApi#decrypt(java.lang.String)
+	 */
+	@Override
+	@PostMapping(value = "decrypt", consumes = MediaType.TEXT_PLAIN_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
+	public String decrypt(@RequestBody String data) {
+		return e2EService.decrypt(data);
+	}
 }
