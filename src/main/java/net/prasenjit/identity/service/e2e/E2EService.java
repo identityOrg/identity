@@ -16,8 +16,9 @@ import java.security.interfaces.RSAPublicKey;
 @Service
 @SessionScope
 public class E2EService implements Serializable {
+	private static final long serialVersionUID = -5325012556475091825L;
 
-    private KeyPair keyPair;
+	private KeyPair keyPair;
 
     private E2eStatus status = E2eStatus.NONE;
 

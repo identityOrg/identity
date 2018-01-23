@@ -1,7 +1,9 @@
 package net.prasenjit.identity.exception;
 
 public class OAuthException extends RuntimeException {
-    public OAuthException(String message) {
+	private static final long serialVersionUID = -1629950979868729249L;
+
+	public OAuthException(String message) {
         super(message);
     }
 

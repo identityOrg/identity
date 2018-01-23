@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 
+@SuppressWarnings("deprecation")
 @Configuration
 @Order(99)
 public class ClientSecurityConfig extends WebSecurityConfigurerAdapter {
@@ -16,7 +17,7 @@ public class ClientSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private ClientService clientService;
 
-    @Override
+	@Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(clientService)
                 .passwordEncoder(NoOpPasswordEncoder.getInstance());

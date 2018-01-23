@@ -18,14 +18,14 @@ public interface E2EApi {
 			)
 	AsymmetricE2EResponse asymmetricE2E();
 
-	@ApiOperation(value = "Encrypt", notes="Encrypt text data using RSA Public Key")
+	@ApiOperation(value = "Encrypt Text", notes="Encrypt text data using RSA Public Key")
 	@ApiResponses(
 			@ApiResponse(code = 200, message = "Success", 
 			responseHeaders = @ResponseHeader(name = "X-Session-Id", description = "Current session id associated with response", response = String.class))
 			)
 	String encrypt(String data);
 
-	@ApiOperation(value = "Decrypt", notes="Decrypt text data using RSA Private Key")
+	@ApiOperation(value = "Decrypt Text", notes="Decrypt text data using RSA Private Key")
 	@ApiResponses(
 			@ApiResponse(code = 200, message = "Success", 
 			responseHeaders = @ResponseHeader(name = "X-Session-Id", description = "Current session id associated with response", response = String.class))

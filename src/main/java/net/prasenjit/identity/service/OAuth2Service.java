@@ -1,16 +1,16 @@
 package net.prasenjit.identity.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.prasenjit.identity.entity.*;
-import net.prasenjit.identity.exception.OAuthException;
-import net.prasenjit.identity.model.AuthorizationModel;
-import net.prasenjit.identity.model.OAuthToken;
-import net.prasenjit.identity.oauth.GrantType;
-import net.prasenjit.identity.repository.AuthorizationCodeRepository;
-import net.prasenjit.identity.repository.ClientRepository;
-import net.prasenjit.identity.repository.RefreshTokenRepository;
-import net.prasenjit.identity.repository.UserRepository;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,14 +19,22 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.entity.AccessToken;
+import net.prasenjit.identity.entity.AuthorizationCode;
+import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.RefreshToken;
+import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.exception.OAuthException;
+import net.prasenjit.identity.model.AuthorizationModel;
+import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.oauth.GrantType;
+import net.prasenjit.identity.repository.AuthorizationCodeRepository;
+import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.repository.RefreshTokenRepository;
+import net.prasenjit.identity.repository.UserRepository;
 
-@Slf4j
+//@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OAuth2Service {

@@ -15,7 +15,9 @@ import java.util.Collection;
 @Entity
 @Table(name = "T_CLIENT")
 public class Client implements UserDetails {
-    @Id
+	private static final long serialVersionUID = 4183078040533025925L;
+
+	@Id
     @Column(name = "CLIENT_ID", length = 50, nullable = false, unique = true)
     private String clientId;
 
