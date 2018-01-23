@@ -20,12 +20,11 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable()
+        http.requestMatchers().antMatchers("/oauth/authorize", "/login")
+        		.and().csrf().disable()
                 .authorizeRequests()
                 .mvcMatchers("/oauth/authorize")
                 .authenticated()
-                .mvcMatchers("/api/e2e")
-                .permitAll()
                 .and()
                 .formLogin();
     }
