@@ -32,4 +32,8 @@ public class AccessToken {
 
     @Column(name = "EXPIRY_DATE", nullable = false)
     private LocalDateTime expiryDate;
+
+    public boolean isValid() {
+        return LocalDateTime.now().isBefore(expiryDate);
+    }
 }
