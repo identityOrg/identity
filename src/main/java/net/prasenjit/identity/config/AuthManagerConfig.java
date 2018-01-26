@@ -30,6 +30,7 @@ public class AuthManagerConfig {
         List<AuthenticationProvider> providers = new ArrayList<>();
         providers.add(userAuthProvider());
         providers.add(bearerAuthProvider());
+        providers.add(clientAuthProvider());
         ProviderManager providerManager = new ProviderManager(providers);
         providerManager.setEraseCredentialsAfterAuthentication(true);
         return providerManager;
