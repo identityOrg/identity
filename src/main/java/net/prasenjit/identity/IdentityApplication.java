@@ -1,32 +1,30 @@
 package net.prasenjit.identity;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.session.hazelcast.config.annotation.web.http.EnableHazelcastHttpSession;
-
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @SpringBootApplication
-@EnableHazelcastHttpSession
 public class IdentityApplication implements ApplicationRunner {
 
     @Autowired
     private UserRepository userRepository;
     @Autowired
     private ClientRepository clientRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+
+    private PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     public static void main(String[] args) {
         SpringApplication.run(IdentityApplication.class, args);

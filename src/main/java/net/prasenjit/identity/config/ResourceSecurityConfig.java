@@ -11,7 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 @Configuration
-@Order(98)
+@Order(90)
 public class ResourceSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired

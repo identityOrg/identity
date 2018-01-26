@@ -11,7 +11,7 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 
 @SuppressWarnings("deprecation")
 @Configuration
-@Order(99)
+@Order(80)
 public class ClientSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired

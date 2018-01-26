@@ -52,7 +52,7 @@ public class CodeFactory {
         LocalDateTime creationDate = LocalDateTime.now();
         accessToken.setCreationDate(creationDate);
         accessToken.setExpiryDate(creationDate.plus(duration));
-        accessToken.setUserProfile(serialize(user));
+        accessToken.setUserProfile(user);
         accessToken.setClientId(clientId);
         accessToken.setScope(scope);
         accessTokenRepository.saveAndFlush(accessToken);
@@ -71,15 +71,6 @@ public class CodeFactory {
         refreshToken.setUsed(false);
         refreshTokenRepository.saveAndFlush(refreshToken);
         return refreshToken;
-    }
-
-    private String serialize(UserDetails user) {
-        try {
-            return objectMapper.writeValueAsString(user);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize user", e);
-            throw new RuntimeException(e);
-        }
     }
 
     public OAuthToken createOAuthToken(AccessToken accessToken, RefreshToken refreshToken1) {

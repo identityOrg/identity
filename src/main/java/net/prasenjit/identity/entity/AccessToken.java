@@ -1,6 +1,7 @@
 package net.prasenjit.identity.entity;
 
 import lombok.Data;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -19,7 +20,8 @@ public class AccessToken {
 
     @Lob
     @Column(name = "USER_PROFILE", nullable = false)
-    private String userProfile;
+    @Convert(converter = UserDetailConverter.class)
+    private UserDetails userProfile;
 
     @Column(name = "CLIENT_ID", length = 50, nullable = false)
     private String clientId;
