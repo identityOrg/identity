@@ -1,6 +1,7 @@
 package net.prasenjit.identity.config;
 
 import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.oauth.BasicAuthenticationProvider;
 import net.prasenjit.identity.oauth.BearerAuthenticationProvider;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.service.ClientService;
@@ -44,14 +45,11 @@ public class AuthManagerConfig {
     }
 
     private AuthenticationProvider clientAuthProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
-        provider.setUserDetailsService(clientService);
-        return provider;
+        return new BasicAuthenticationProvider(NoOpPasswordEncoder.getInstance(),
+                clientService);
     }
 
     private AuthenticationProvider bearerAuthProvider() {
-        BearerAuthenticationProvider provider = new BearerAuthenticationProvider(accessTokenRepository);
-        return provider;
+        return new BearerAuthenticationProvider(accessTokenRepository);
     }
 }
