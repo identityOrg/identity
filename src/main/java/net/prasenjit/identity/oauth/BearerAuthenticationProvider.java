@@ -37,10 +37,6 @@ public class BearerAuthenticationProvider implements AuthenticationProvider {
     }
 
     private Authentication createSuccessAuthentication(Object principal, Authentication authentication, UserDetails user) {
-        // Ensure we return the original credentials the user supplied,
-        // so subsequent attempts are successful even with encoded passwords.
-        // Also ensure we return the original getDetails(), so that future
-        // authentication events after cache expiry contain the details
         BearerAuthenticationToken result = new BearerAuthenticationToken(principal, authentication.getCredentials(),
                 user.getAuthorities());
         result.setDetails(authentication.getDetails());

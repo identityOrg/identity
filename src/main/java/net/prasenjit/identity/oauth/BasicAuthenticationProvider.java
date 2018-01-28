@@ -16,85 +16,61 @@
 
 package net.prasenjit.identity.oauth;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.context.support.MessageSourceAccessor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.SpringSecurityMessageSource;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.authority.mapping.NullAuthoritiesMapper;
-import org.springframework.security.core.userdetails.*;
+import org.springframework.security.core.userdetails.UserCache;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.userdetails.cache.NullUserCache;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.Assert;
 
-/**
- * An {@link AuthenticationProvider} implementation that retrieves user details from a
- * {@link UserDetailsService}.
- *
- * @author Ben Alex
- * @author Rob Winch
- */
-public class BasicAuthenticationProvider implements AuthenticationProvider {
-    private static final String USER_NOT_FOUND_PASSWORD = "userNotFoundPassword";
-    protected final Log logger = LogFactory.getLog(getClass());
-    private MessageSourceAccessor messages = SpringSecurityMessageSource.getAccessor();
-    private boolean hideUserNotFoundExceptions = true;
-    private PasswordEncoder passwordEncoder;
-    private String userNotFoundEncodedPassword;
-    private UserDetailsService userDetailsService;
+@Slf4j
+@RequiredArgsConstructor
+public class BasicAuthenticationProvider implements AuthenticationProvider, InitializingBean {
+    private final PasswordEncoder passwordEncoder;
+    private final UserDetailsService userDetailsService;
     private UserCache userCache = new NullUserCache();
-    private boolean forcePrincipalAsString = false;
-    private UserDetailsChecker preAuthenticationChecks = new DefaultPreAuthenticationChecks();
-    private UserDetailsChecker postAuthenticationChecks = new DefaultPostAuthenticationChecks();
     private GrantedAuthoritiesMapper authoritiesMapper = new NullAuthoritiesMapper();
 
-    public BasicAuthenticationProvider() {
-        setPasswordEncoder(PasswordEncoderFactories.createDelegatingPasswordEncoder());
-    }
-
-    protected void additionalAuthenticationChecks(UserDetails userDetails,
-                                                  UsernamePasswordAuthenticationToken authentication)
+    private void additionalAuthenticationChecks(UserDetails userDetails,
+                                                BasicAuthenticationToken authentication)
             throws AuthenticationException {
         if (authentication.getCredentials() == null) {
-            logger.debug("Authentication failed: no credentials provided");
+            log.debug("Authentication failed: no credentials provided");
 
-            throw new BadCredentialsException(messages.getMessage(
-                    "AbstractUserDetailsAuthenticationProvider.badCredentials",
-                    "Bad credentials"));
+            throw new BadCredentialsException("Bad credentials");
         }
 
         String presentedPassword = authentication.getCredentials().toString();
 
         if (!passwordEncoder.matches(presentedPassword, userDetails.getPassword())) {
-            logger.debug("Authentication failed: password does not match stored value");
+            log.debug("Authentication failed: password does not match stored value");
 
-            throw new BadCredentialsException(messages.getMessage(
-                    "AbstractUserDetailsAuthenticationProvider.badCredentials",
-                    "Bad credentials"));
+            throw new BadCredentialsException("Bad credentials");
         }
     }
 
+    @Override
     public void afterPropertiesSet() throws Exception {
         Assert.notNull(this.userCache, "A user cache must be set");
-        Assert.notNull(this.messages, "A message source must be set");
         Assert.notNull(this.userDetailsService, "A UserDetailsService must be set");
-        this.userNotFoundEncodedPassword = this.passwordEncoder.encode(USER_NOT_FOUND_PASSWORD);
     }
 
     public Authentication authenticate(Authentication authentication)
             throws AuthenticationException {
-        Assert.isInstanceOf(UsernamePasswordAuthenticationToken.class, authentication,
-                messages.getMessage(
-                        "AbstractUserDetailsAuthenticationProvider.onlySupports",
-                        "Only UsernamePasswordAuthenticationToken is supported"));
+        Assert.isInstanceOf(BasicAuthenticationToken.class, authentication,
+                "Only BasicAuthenticationToken is supported");
 
         // Determine username
-        String username = (authentication.getPrincipal() == null) ? "NONE_PROVIDED"
-                : authentication.getName();
+        String username = (authentication.getPrincipal() == null) ? "NONE_PROVIDED" : authentication.getName();
 
         boolean cacheWasUsed = true;
         UserDetails user = this.userCache.getUserFromCache(username);
@@ -103,54 +79,36 @@ public class BasicAuthenticationProvider implements AuthenticationProvider {
             cacheWasUsed = false;
 
             try {
-                user = retrieveUser(username,
-                        (UsernamePasswordAuthenticationToken) authentication);
+                user = retrieveUser(username, (BasicAuthenticationToken) authentication);
             } catch (UsernameNotFoundException notFound) {
-                logger.debug("User '" + username + "' not found");
-
-                if (hideUserNotFoundExceptions) {
-                    throw new BadCredentialsException(messages.getMessage(
-                            "AbstractUserDetailsAuthenticationProvider.badCredentials",
-                            "Bad credentials"));
-                } else {
-                    throw notFound;
-                }
+                log.debug("User '{}' not found", username);
+                throw new BadCredentialsException("Bad credentials");
             }
 
-            Assert.notNull(user,
-                    "retrieveUser returned null - a violation of the interface contract");
+            Assert.notNull(user, "retrieveUser returned null - a violation of the interface contract");
         }
 
         try {
-            preAuthenticationChecks.check(user);
-            additionalAuthenticationChecks(user,
-                    (UsernamePasswordAuthenticationToken) authentication);
+            this.preAuthenticationCheck(user);
+            additionalAuthenticationChecks(user, (BasicAuthenticationToken) authentication);
         } catch (AuthenticationException exception) {
             if (cacheWasUsed) {
-                // There was a problem, so try again after checking
-                // we're using latest data (i.e. not from the cache)
                 cacheWasUsed = false;
-                user = retrieveUser(username,
-                        (UsernamePasswordAuthenticationToken) authentication);
-                preAuthenticationChecks.check(user);
-                additionalAuthenticationChecks(user,
-                        (UsernamePasswordAuthenticationToken) authentication);
+                user = retrieveUser(username, (BasicAuthenticationToken) authentication);
+                this.preAuthenticationCheck(user);
+                additionalAuthenticationChecks(user, (BasicAuthenticationToken) authentication);
             } else {
                 throw exception;
             }
         }
 
-        postAuthenticationChecks.check(user);
+        this.postAuthenticationCheck(user);
 
         if (!cacheWasUsed) {
             this.userCache.putUserInCache(user);
         }
 
         Object principalToReturn = user;
-
-        if (forcePrincipalAsString) {
-            principalToReturn = user.getUsername();
-        }
 
         return createSuccessAuthentication(principalToReturn, authentication, user);
     }
@@ -160,35 +118,23 @@ public class BasicAuthenticationProvider implements AuthenticationProvider {
                 .isAssignableFrom(authentication));
     }
 
-    protected Authentication createSuccessAuthentication(Object principal,
-                                                         Authentication authentication, UserDetails user) {
-        // Ensure we return the original credentials the user supplied,
-        // so subsequent attempts are successful even with encoded passwords.
-        // Also ensure we return the original getDetails(), so that future
-        // authentication events after cache expiry contain the details
-        UsernamePasswordAuthenticationToken result = new UsernamePasswordAuthenticationToken(
-                principal, authentication.getCredentials(),
+    private Authentication createSuccessAuthentication(Object principal,
+                                                       Authentication authentication, UserDetails user) {
+        BasicAuthenticationToken result = new BasicAuthenticationToken(principal, authentication.getCredentials(),
                 authoritiesMapper.mapAuthorities(user.getAuthorities()));
-        result.setDetails(authentication.getDetails());
 
+        result.setDetails(authentication.getDetails());
         return result;
     }
 
-    protected final UserDetails retrieveUser(String username, UsernamePasswordAuthenticationToken authentication)
+    private UserDetails retrieveUser(String username, BasicAuthenticationToken authentication)
             throws AuthenticationException {
         UserDetails loadedUser;
 
         try {
-            loadedUser = this.getUserDetailsService().loadUserByUsername(username);
-        } catch (UsernameNotFoundException notFound) {
-            if (authentication.getCredentials() != null) {
-                String presentedPassword = authentication.getCredentials().toString();
-                passwordEncoder.matches(presentedPassword, userNotFoundEncodedPassword);
-            }
-            throw notFound;
+            loadedUser = this.userDetailsService.loadUserByUsername(username);
         } catch (Exception repositoryProblem) {
-            throw new InternalAuthenticationServiceException(
-                    repositoryProblem.getMessage(), repositoryProblem);
+            throw new InternalAuthenticationServiceException(repositoryProblem.getMessage(), repositoryProblem);
         }
 
         if (loadedUser == null) {
@@ -198,69 +144,30 @@ public class BasicAuthenticationProvider implements AuthenticationProvider {
         return loadedUser;
     }
 
-    /**
-     * Sets the PasswordEncoder instance to be used to encode and validate passwords. If
-     * not set, the password will be compared as plain text.
-     * <p>
-     * For systems which are already using salted password which are encoded with a
-     * previous release, the encoder should be of type
-     * {@code org.springframework.security.authentication.encoding.PasswordEncoder}.
-     * Otherwise, the recommended approach is to use
-     * {@code org.springframework.security.crypto.password.PasswordEncoder}.
-     *
-     * @param passwordEncoder must be an instance of one of the {@code PasswordEncoder}
-     *                        types.
-     */
-    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
-        Assert.notNull(passwordEncoder, "passwordEncoder cannot be null");
-        this.passwordEncoder = passwordEncoder;
-    }
 
-    protected UserDetailsService getUserDetailsService() {
-        return userDetailsService;
-    }
+    private void preAuthenticationCheck(UserDetails user) {
+        if (!user.isAccountNonLocked()) {
+            log.debug("User account is locked");
+            throw new LockedException("User account is locked");
+        }
 
-    public void setUserDetailsService(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
-    }
+        if (!user.isEnabled()) {
+            log.debug("User account is disabled");
+            throw new DisabledException("User is disabled");
+        }
 
-    private class DefaultPreAuthenticationChecks implements UserDetailsChecker {
-        public void check(UserDetails user) {
-            if (!user.isAccountNonLocked()) {
-                logger.debug("User account is locked");
-
-                throw new LockedException(messages.getMessage(
-                        "AbstractUserDetailsAuthenticationProvider.locked",
-                        "User account is locked"));
-            }
-
-            if (!user.isEnabled()) {
-                logger.debug("User account is disabled");
-
-                throw new DisabledException(messages.getMessage(
-                        "AbstractUserDetailsAuthenticationProvider.disabled",
-                        "User is disabled"));
-            }
-
-            if (!user.isAccountNonExpired()) {
-                logger.debug("User account is expired");
-
-                throw new AccountExpiredException(messages.getMessage(
-                        "AbstractUserDetailsAuthenticationProvider.expired",
-                        "User account has expired"));
-            }
+        if (!user.isAccountNonExpired()) {
+            log.debug("User account is expired");
+            throw new AccountExpiredException("User account has expired");
         }
     }
 
-    private class DefaultPostAuthenticationChecks implements UserDetailsChecker {
-        public void check(UserDetails user) {
-            if (!user.isCredentialsNonExpired()) {
-                logger.debug("User account credentials have expired");
+    private void postAuthenticationCheck(UserDetails user) {
+        if (!user.isCredentialsNonExpired()) {
+            log.debug("User account credentials have expired");
 
-                throw new CredentialsExpiredException(messages.getMessage(
-                        "AbstractUserDetailsAuthenticationProvider.credentialsExpired",
-                        "User credentials have expired"));
-            }
+            throw new CredentialsExpiredException("User credentials have expired");
         }
     }
+
 }
