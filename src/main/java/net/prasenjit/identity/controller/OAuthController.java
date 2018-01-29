@@ -100,7 +100,8 @@ public class OAuthController {
 
     private String buildErrorUrl(AuthorizationModel authorizationModel) {
         if (authorizationModel.getRedirectUri() == null) {
-            throw new OAuthException("redirect_uri not specified");
+            throw new OAuthException("redirect_uri not specified with error " + authorizationModel.getErrorCode()
+                    + " description " + authorizationModel.getErrorDescription());
         }
         UriComponents redirect = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
                 .queryParam("error", authorizationModel.getErrorCode())
