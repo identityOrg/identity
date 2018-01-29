@@ -6,35 +6,56 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+
+import net.prasenjit.identity.entity.AccessToken;
+import net.prasenjit.identity.service.ClientService;
+import net.prasenjit.identity.service.CodeFactory;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.Duration;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class E2eTest {
 
-    @Autowired
-    private WebApplicationContext context;
+	@Autowired
+	private WebApplicationContext context;
 
-    private MockMvc mockMvc;
+	@Autowired
+	private CodeFactory codeFactory;
 
-    @Before
-    public void setup() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-    }
+	@Autowired
+	private ClientService clientService;
 
-    @Test
-    public void testEncryptionDecryption() throws Exception {
-        mockMvc.perform(get("/api/e2e")).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.publicExponent", notNullValue()))
-                .andExpect(jsonPath("$.modulus", notNullValue())).andReturn();
-    }
+	private MockMvc mockMvc;
+
+	private AccessToken createAccessToken;
+
+	@Before
+	public void setup() {
+		mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+
+		UserDetails client = clientService.loadUserByUsername("client");
+		createAccessToken = codeFactory.createAccessToken(client, "client", Duration.ofMinutes(1), "openid");
+	}
+
+	@Test
+	public void testEncryptionDecryption() throws Exception {
+		String token = createAccessToken.getAssessToken();
+		mockMvc.perform(get("/api/e2e").header("Authorization", "Bearer " + token)).andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+				.andExpect(jsonPath("$.publicExponent", notNullValue()))
+				.andExpect(jsonPath("$.modulus", notNullValue())).andReturn();
+	}
 }
