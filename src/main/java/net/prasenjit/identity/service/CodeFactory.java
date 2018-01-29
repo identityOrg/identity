@@ -1,9 +1,14 @@
 package net.prasenjit.identity.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.RefreshToken;
@@ -11,15 +16,8 @@ import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.RefreshTokenRepository;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-
-@Slf4j
+//@Slf4j
 @Component
 @RequiredArgsConstructor
 public class CodeFactory {
@@ -27,7 +25,6 @@ public class CodeFactory {
     private final AuthorizationCodeRepository authorizationCodeRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final AccessTokenRepository accessTokenRepository;
-    private final ObjectMapper objectMapper;
 
     public AuthorizationCode createAuthorizationCode(String clientId, String returnUrl, String scope, String userName, String state, Duration validity) {
         AuthorizationCode authorizationCode = new AuthorizationCode();
