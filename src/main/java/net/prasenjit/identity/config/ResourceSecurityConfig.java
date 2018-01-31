@@ -7,6 +7,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 @Configuration
@@ -18,14 +19,16 @@ public class ResourceSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.antMatcher("/api/**").csrf().disable().addFilterBefore(createBearerFilter(),
-                BasicAuthenticationFilter.class)
+        http.antMatcher("/api/**")
+                .csrf().disable()
+                .addFilterBefore(createBearerFilter(), BasicAuthenticationFilter.class)
                 .authorizeRequests()
-                .anyRequest().authenticated();
+                .anyRequest().authenticated()
+                .and()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
     }
 
     private BearerAuthenticationFilter createBearerFilter() throws Exception {
-        BearerAuthenticationFilter filter = new BearerAuthenticationFilter(authenticationManager);
-        return filter;
+        return new BearerAuthenticationFilter(authenticationManager);
     }
 }

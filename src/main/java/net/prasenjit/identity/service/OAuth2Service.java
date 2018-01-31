@@ -1,30 +1,7 @@
 package net.prasenjit.identity.service;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.apache.commons.lang3.ArrayUtils;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.AccessToken;
-import net.prasenjit.identity.entity.AuthorizationCode;
-import net.prasenjit.identity.entity.Client;
-import net.prasenjit.identity.entity.RefreshToken;
-import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.entity.*;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
@@ -33,6 +10,20 @@ import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.RefreshTokenRepository;
 import net.prasenjit.identity.repository.UserRepository;
+import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 //@Slf4j
 @Service
@@ -48,13 +39,13 @@ public class OAuth2Service {
 
     public OAuthToken processPasswordGrant(Client client, String username, String password, String requestedScope) {
         if (!client.supportsGrant(GrantType.PASSWORD)) {
-            throw new OAuthException("Unsupported grant");
+            throw new OAuthException("invalid_grant", "Unsupported grant");
         }
         Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
         try {
             authentication = authenticationManager.authenticate(authentication);
         } catch (BadCredentialsException e) {
-            throw new OAuthException("user authentication failed");
+            throw new OAuthException("access_denied", "user authentication failed");
         }
         String filteredScopes = filterScope(client.getApprovedScopes(), requestedScope);
         AccessToken accessToken = codeFactory.createAccessToken((User) authentication.getPrincipal(),
@@ -74,7 +65,7 @@ public class OAuth2Service {
 
     public OAuthToken processClientCredentialsGrant(Client client, String scope) {
         if (!client.supportsGrant(GrantType.CLIENT_CREDENTIALS)) {
-            throw new OAuthException("Unsupported grant");
+            throw new OAuthException("invalid_grant", "Unsupported grant");
         }
         String filteredScope = filterScope(client.getApprovedScopes(), scope);
         AccessToken accessToken = codeFactory.createAccessToken(client,
@@ -146,7 +137,7 @@ public class OAuth2Service {
                     return authorizationModel;
                 } else {
                     authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-                    authorizationModel.setErrorDescription("Unsupported response type ");
+                    authorizationModel.setErrorDescription("Unsupported response type");
                     return authorizationModel;
                 }
             }
@@ -165,7 +156,7 @@ public class OAuth2Service {
             } else {
                 authorizationModel.setClient(client.get());
                 List<String> approvedScope = authorizationModel.getFilteredScopes().entrySet()
-                        .stream().filter(e -> e.getValue()).map(e -> e.getKey())
+                        .stream().filter(Map.Entry::getValue).map(Map.Entry::getKey)
                         .collect(Collectors.toList());
                 if ("code".equals(authorizationModel.getResponseType())) {
                     AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(client.get().getClientId(),
@@ -201,21 +192,21 @@ public class OAuth2Service {
     public OAuthToken processAuthorizationCodeGrantToken(Client client, String code, String redirectUri, String clientId) {
         if (client == null) {
             if (clientId == null) {
-                throw new OAuthException("non secure must specify client_id parameter");
+                throw new OAuthException("invalid_request", "non secure client must specify client_id parameter");
             }
             Optional<Client> optionalClient = clientRepository.findById(clientId);
             if (optionalClient.isPresent()) {
                 if (optionalClient.get().isSecureClient()) {
-                    throw new OAuthException("Secure client must be authenticated");
+                    throw new OAuthException("unauthorized_client", "Secure client must be authenticated");
                 } else {
                     client = optionalClient.get();
                 }
             } else {
-                throw new OAuthException("Client not found for client_id " + clientId);
+                throw new OAuthException("invalid_request", "Client not found for client_id " + clientId);
             }
         }
         if (null == code) {
-            throw new OAuthException("authorization code must be provided");
+            throw new OAuthException("invalid_request", "authorization code must be provided");
         } else {
             Optional<AuthorizationCode> authorizationCode = codeRepository.findByAuthorizationCode(code);
             if (authorizationCode.isPresent()) {
@@ -249,13 +240,13 @@ public class OAuth2Service {
                     }
                 }
             }
-            throw new OAuthException("Authorization code invalid");
+            throw new OAuthException("invalid_request", "Authorization code invalid");
         }
     }
 
     public OAuthToken processRefreshTokenGrantToken(Client client, String refreshToken) {
         if (client == null) {
-            throw new OAuthException("Client is not authenticated");
+            throw new OAuthException("unauthorized_client", "Client is not authenticated");
         }
         Optional<RefreshToken> tokenOptional = refreshTokenRepository.findById(refreshToken);
         if (tokenOptional.isPresent()) {
@@ -271,16 +262,16 @@ public class OAuth2Service {
                                 client.getRefreshTokenValidity());
                         return codeFactory.createOAuthToken(accessToken, refreshToken1);
                     } else {
-                        throw new OAuthException("Invalid user");
+                        throw new OAuthException("access_denied", "Invalid user");
                     }
                 } else {
-                    throw new OAuthException("Associated user not found");
+                    throw new OAuthException("access_denied", "Associated user not found");
                 }
             } else {
-                throw new OAuthException("Expired refresh token");
+                throw new OAuthException("access_denied", "Expired refresh token");
             }
         }
-        throw new OAuthException("Invalid refresh token");
+        throw new OAuthException("access_denied", "Invalid refresh token");
     }
 
 
@@ -298,10 +289,10 @@ public class OAuth2Service {
     private Map<String, Boolean> filterScopeToMap(String approvedScopes, String requestedScope) {
         String[] approved = StringUtils.delimitedListToStringArray(approvedScopes, " ");
         String[] requested = StringUtils.delimitedListToStringArray(requestedScope, " ");
-        if (approved == null || approved.length == 0) {
+        if (approved.length == 0) {
             return new HashMap<>();
         }
-        if (requested == null || requested.length == 0) {
+        if (requested.length == 0) {
             return Stream.of(approved).collect(Collectors.toMap(o -> o, o -> Boolean.TRUE));
         }
         Map<String, Boolean> filteredMap = new HashMap<>();
@@ -316,10 +307,10 @@ public class OAuth2Service {
     private String filterScope(String approvedScopes, String requestedScope) {
         String[] approved = StringUtils.delimitedListToStringArray(approvedScopes, " ");
         String[] requested = StringUtils.delimitedListToStringArray(requestedScope, " ");
-        if (approved == null || approved.length == 0) {
+        if (approved.length == 0) {
             return null;
         }
-        if (requested == null || requested.length == 0) {
+        if (requested.length == 0) {
             return approvedScopes;
         }
         List<String> filtered = new ArrayList<>();

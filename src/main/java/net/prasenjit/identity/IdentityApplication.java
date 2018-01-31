@@ -21,57 +21,56 @@ import java.time.LocalDateTime;
 @SpringBootApplication
 public class IdentityApplication implements ApplicationRunner {
 
-	@Autowired
-	private UserRepository userRepository;
-	@Autowired
-	private ClientRepository clientRepository;
-	@Autowired
-	@Qualifier("client-password")
-	public TextEncryptor textEncryptor;
+    @Autowired
+    @Qualifier("client-password")
+    public TextEncryptor textEncryptor;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private ClientRepository clientRepository;
+    private PasswordEncoder userPasswordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
-	private PasswordEncoder userPasswordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    public static void main(String[] args) {
+        SpringApplication.run(IdentityApplication.class, args);
+    }
 
-	public static void main(String[] args) {
-		SpringApplication.run(IdentityApplication.class, args);
-	}
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
 
-	@Override
-	public void run(ApplicationArguments args) throws Exception {
+        User admin = createAdmin("admin");
+        userRepository.saveAndFlush(admin);
 
-		User admin = createAdmin("admin");
-		userRepository.saveAndFlush(admin);
+        Client client = createClient("client", true);
+        clientRepository.saveAndFlush(client);
 
-		Client client = createClient("client", true);
-		clientRepository.saveAndFlush(client);
+        client = createClient("insecure", false);
+        clientRepository.saveAndFlush(client);
 
-		client = createClient("insecure", false);
-		clientRepository.saveAndFlush(client);
+    }
 
-	}
+    private Client createClient(String clientId, boolean secure) {
+        Client client = new Client();
+        client.setClientId(clientId);
+        if (secure)
+            client.setClientSecret(textEncryptor.encrypt(clientId));
+        client.setCreationDate(LocalDateTime.now());
+        client.setStatus(Status.ACTIVE);
+        client.setClientName("Test Client");
+        client.setApprovedScopes("openid");
+        client.setRedirectUri("http://localhost/oauth/redirect");
+        client.setAccessTokenValidity(Duration.ofMinutes(30));
+        client.setRefreshTokenValidity(Duration.ofHours(2));
+        return client;
+    }
 
-	private Client createClient(String clientId, boolean secure) {
-		Client client = new Client();
-		client.setClientId(clientId);
-		if (secure)
-			client.setClientSecret(textEncryptor.encrypt(clientId));
-		client.setCreationDate(LocalDateTime.now());
-		client.setStatus(Status.ACTIVE);
-		client.setClientName("Test Client");
-		client.setApprovedScopes("openid");
-		client.setRedirectUri("http://localhost/oauth/redirect");
-		client.setAccessTokenValidity(Duration.ofMinutes(30));
-		client.setRefreshTokenValidity(Duration.ofHours(2));
-		return client;
-	}
-
-	private User createAdmin(String username) {
-		User user = new User();
-		user.setAdmin(true);
-		user.setCreationDate(LocalDateTime.now());
-		user.setUsername(username);
-		user.setPassword(userPasswordEncoder.encode(username));
-		user.setStatus(Status.ACTIVE);
-		user.setPasswordExpiryDate(LocalDateTime.now().plusDays(2));
-		return user;
-	}
+    private User createAdmin(String username) {
+        User user = new User();
+        user.setAdmin(true);
+        user.setCreationDate(LocalDateTime.now());
+        user.setUsername(username);
+        user.setPassword(userPasswordEncoder.encode(username));
+        user.setStatus(Status.ACTIVE);
+        user.setPasswordExpiryDate(LocalDateTime.now().plusDays(2));
+        return user;
+    }
 }
