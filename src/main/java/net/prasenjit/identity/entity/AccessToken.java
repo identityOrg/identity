@@ -14,13 +14,12 @@ public class AccessToken {
     @Column(name = "ACCESS_TOKEN", length = 50)
     private String assessToken;
 
-
     @Column(name = "USERNAME", length = 50, nullable = false)
     private String username;
 
     @Lob
     @Column(name = "USER_PROFILE", nullable = false)
-    @Convert(converter = UserDetailConverter.class)
+    @Convert(converter = UserDetailConverter.class, disableConversion=true)
     private UserDetails userProfile;
 
     @Column(name = "CLIENT_ID", length = 50, nullable = false)

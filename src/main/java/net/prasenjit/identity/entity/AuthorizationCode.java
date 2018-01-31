@@ -10,11 +10,7 @@ import java.time.LocalDateTime;
 @Table(name = "T_AUTHORIZATION_CODE")
 public class AuthorizationCode {
     @Id
-    @GeneratedValue
-    @Column(name = "ID", scale = 10)
-    private Long id;
-
-    @Column(name = "AUTHORIZATION_TOKEN", length = 50, nullable = false, unique = true)
+    @Column(name = "AUTHORIZATION_CODE", length = 50, nullable = false, unique = true)
     private String authorizationCode;
 
     @Column(name = "RETURN_URL", length = 500)

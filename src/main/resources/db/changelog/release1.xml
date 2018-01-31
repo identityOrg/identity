@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+	<changeSet author="prasenjit-net" id="1517437401075-1">
+		<createTable tableName="T_ACCESS_TOKEN">
+			<column name="ACCESS_TOKEN" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CLIENT_ID" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="SCOPE" type="VARCHAR(500)">
+				<constraints nullable="false" />
+			</column>
+			<column name="USER_PROFILE" type="BLOB">
+				<constraints nullable="false" />
+			</column>
+			<column name="USERNAME" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-2">
+		<createTable tableName="T_AUTHORIZATION_CODE">
+			<column name="AUTHORIZATION_CODE" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CLIENT_ID" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="RETURN_URL" type="VARCHAR(500)" />
+			<column name="SCOPE" type="VARCHAR(500)">
+				<constraints nullable="false" />
+			</column>
+			<column name="STATE" type="VARCHAR(50)" />
+			<column name="USED" type="BOOLEAN">
+				<constraints nullable="false" />
+			</column>
+			<column name="USERNAME" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-3">
+		<createTable tableName="T_CLIENT">
+			<column name="CLIENT_ID" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="ACCESS_TOKEN_VALIDITY" type="BIGINT(19)">
+				<constraints nullable="false" />
+			</column>
+			<column name="APPROVED_SCOPE" type="VARCHAR(500)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CLIENT_NAME" type="VARCHAR(500)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CLIENT_SECRET" type="VARCHAR(50)" />
+			<column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)" />
+			<column name="REDIRECT_URI" type="VARCHAR(500)">
+				<constraints nullable="false" />
+			</column>
+			<column name="REFRESH_TOKEN_VALIDITY" type="BIGINT(19)">
+				<constraints nullable="false" />
+			</column>
+			<column name="STATUS" type="VARCHAR(255)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-4">
+		<createTable tableName="T_REFRESH_TOKEN">
+			<column name="REFRESH_TOKEN" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CLIENT_ID" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="SCOPE" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="USED" type="BOOLEAN">
+				<constraints nullable="false" />
+			</column>
+			<column name="USERNAME" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-5">
+		<createTable tableName="T_SCOPE">
+			<column name="SCOPE_ID" type="VARCHAR(10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="SCOPE_NAME" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-6">
+		<createTable tableName="T_USER">
+			<column name="USERNAME" type="VARCHAR(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="ADMIN" type="BOOLEAN" />
+			<column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)" />
+			<column name="PASSWORD" type="VARCHAR(200)">
+				<constraints nullable="false" />
+			</column>
+			<column name="PASSWORD_EXPIRY_DATE" type="TIMESTAMP(23, 10)">
+				<constraints nullable="false" />
+			</column>
+			<column name="STATUS" type="VARCHAR(255)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-7">
+		<addPrimaryKey columnNames="ACCESS_TOKEN"
+			constraintName="T_ACCESS_TOKENPK" tableName="T_ACCESS_TOKEN" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-8">
+		<addPrimaryKey columnNames="AUTHORIZATION_CODE"
+			constraintName="T_AUTHORIZATION_CODEPK" tableName="T_AUTHORIZATION_CODE" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-9">
+		<addPrimaryKey columnNames="CLIENT_ID" constraintName="T_CLIENTPK"
+			tableName="T_CLIENT" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-10">
+		<addPrimaryKey columnNames="REFRESH_TOKEN"
+			constraintName="T_REFRESH_TOKENPK" tableName="T_REFRESH_TOKEN" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-11">
+		<addPrimaryKey columnNames="SCOPE_ID" constraintName="T_SCOPEPK"
+			tableName="T_SCOPE" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-12">
+		<addPrimaryKey columnNames="USERNAME" constraintName="T_USERPK"
+			tableName="T_USER" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-13">
+		<addUniqueConstraint columnNames="AUTHORIZATION_CODE"
+			constraintName="UC_T_AUTHORIZATION_CODEAUTHORIZATION_CODE_COL"
+			tableName="T_AUTHORIZATION_CODE" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-14">
+		<addUniqueConstraint columnNames="CLIENT_ID"
+			constraintName="UC_T_CLIENTCLIENT_ID_COL" tableName="T_CLIENT" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-15">
+		<addUniqueConstraint columnNames="REFRESH_TOKEN"
+			constraintName="UC_T_REFRESH_TOKENREFRESH_TOKEN_COL" tableName="T_REFRESH_TOKEN" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-16">
+		<addUniqueConstraint columnNames="SCOPE_ID"
+			constraintName="UC_T_SCOPESCOPE_ID_COL" tableName="T_SCOPE" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-17">
+		<addUniqueConstraint columnNames="SCOPE_NAME"
+			constraintName="UC_T_SCOPESCOPE_NAME_COL" tableName="T_SCOPE" />
+	</changeSet>
+	<changeSet author="prasenjit-net" id="1517437401075-18">
+		<addUniqueConstraint columnNames="USERNAME"
+			constraintName="UC_T_USERUSERNAME_COL" tableName="T_USER" />
+	</changeSet>
+</databaseChangeLog>
