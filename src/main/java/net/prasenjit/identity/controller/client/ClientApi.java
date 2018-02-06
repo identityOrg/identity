@@ -18,9 +18,9 @@ public interface ClientApi {
     @ApiOperation(value = "Find Client", notes = "Find a client with clientId")
     Client findClient(@PathVariable(value = "clientId") String clientId);
 
-    @ApiOperation(value = "Update Client", notes = "Update a client")
+    @ApiOperation(value = "Update Client", notes = "Update a client attributes")
     Client update(@RequestBody Client client);
 
-    @ApiOperation(value = "Create Client", notes = "Create a client")
+    @ApiOperation(value = "Create Client", notes = "Create a client, client is created is disabled state.")
     Client create(@RequestBody Client client);
 }

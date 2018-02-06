@@ -7,6 +7,7 @@ import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.repository.ClientRepository;
 import org.springframework.data.domain.Example;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,6 +52,7 @@ public class ClientController implements ClientApi {
     }
 
     @Override
+    @ResponseStatus(code = HttpStatus.CREATED)
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public Client create(@RequestBody Client client) {
         Optional<Client> clientOptional = clientRepository.findById(client.getClientId());

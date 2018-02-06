@@ -20,9 +20,9 @@ public interface UserApi {
     @ApiOperation(value = "Find User", notes = "Find a client with username")
     User findClient(@PathVariable(value = "username") String clientId);
 
-    @ApiOperation(value = "Update User", notes = "Update a user")
+    @ApiOperation(value = "Update User", notes = "Update a user attributes")
     User update(@RequestBody User client);
 
-    @ApiOperation(value = "Create User", notes = "Create a user")
+    @ApiOperation(value = "Create User", notes = "Create a user, user is created is disabled state.")
     User create(@RequestBody User client);
 }

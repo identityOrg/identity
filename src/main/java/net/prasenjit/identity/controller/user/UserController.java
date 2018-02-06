@@ -7,6 +7,7 @@ import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.repository.UserRepository;
 import org.springframework.data.domain.Example;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,6 +52,7 @@ public class UserController implements UserApi {
     }
 
     @Override
+    @ResponseStatus(code = HttpStatus.CREATED)
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public User create(@RequestBody User user) {
         Optional<User> userOptional = userRepository.findById(user.getUsername());
