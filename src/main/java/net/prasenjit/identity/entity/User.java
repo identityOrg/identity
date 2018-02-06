@@ -1,5 +1,6 @@
 package net.prasenjit.identity.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -19,6 +20,7 @@ public class User implements UserDetails {
     @Column(name = "USERNAME", length = 50, nullable = false, unique = true)
     private String username;
 
+    @JsonIgnore
     @Column(name = "PASSWORD", length = 200, nullable = false)
     private String password;
 
@@ -39,11 +41,13 @@ public class User implements UserDetails {
     private boolean admin;
 
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return admin ? AuthorityUtils.createAuthorityList("USER", "ADMIN") : AuthorityUtils.createAuthorityList("USER");
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonExpired() {
         LocalDateTime now = LocalDateTime.now();
         if (expiryDate != null) {
@@ -54,11 +58,13 @@ public class User implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonLocked() {
         return status != Status.LOCKED;
     }
 
     @Override
+    @JsonIgnore
     public boolean isCredentialsNonExpired() {
         if (passwordExpiryDate != null) {
             return passwordExpiryDate.isAfter(LocalDateTime.now());
@@ -67,10 +73,12 @@ public class User implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public boolean isEnabled() {
         return status == Status.ACTIVE;
     }
 
+    @JsonIgnore
     public boolean isValid() {
         return isAccountNonExpired() && isAccountNonLocked() && isEnabled();
     }

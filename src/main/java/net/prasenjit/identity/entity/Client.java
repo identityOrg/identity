@@ -1,5 +1,6 @@
 package net.prasenjit.identity.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import net.prasenjit.identity.oauth.GrantType;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,6 +25,7 @@ public class Client implements UserDetails {
     @Column(name = "CLIENT_NAME", length = 500, nullable = false)
     private String clientName;
 
+    @JsonIgnore
     @Column(name = "CLIENT_SECRET", length = 50)
     private String clientSecret;
 
@@ -65,6 +67,7 @@ public class Client implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonExpired() {
         LocalDateTime now = LocalDateTime.now();
         if (expiryDate != null) {
@@ -75,16 +78,19 @@ public class Client implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonLocked() {
         return status != Status.LOCKED;
     }
 
     @Override
+    @JsonIgnore
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore
     public boolean isEnabled() {
         return status == Status.ACTIVE;
     }
@@ -104,6 +110,7 @@ public class Client implements UserDetails {
         }
     }
 
+    @JsonIgnore
     public boolean isSecureClient() {
         return null != clientSecret;
     }
