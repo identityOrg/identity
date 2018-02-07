@@ -1,15 +1,14 @@
 package net.prasenjit.identity.controller.user;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import net.prasenjit.identity.entity.User;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
-import java.util.List;
 
 @Api(value = "User", tags = "user", description = "API's for user related operations")
 public interface UserApi {

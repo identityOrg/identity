@@ -133,7 +133,8 @@ public class OAuthController {
         return "redirect:" + redirect;
     }
 
-    private <T> T extractPrincipal(Authentication authentication, Class<T> userClass) {
+    @SuppressWarnings("unchecked")
+	private <T> T extractPrincipal(Authentication authentication, Class<T> userClass) {
         if (authentication != null && authentication.isAuthenticated()) {
             Object principal = authentication.getPrincipal();
             if (principal != null && userClass.isInstance(principal)) {

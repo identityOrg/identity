@@ -56,8 +56,8 @@ public class IdentityApplication implements ApplicationRunner {
         client.setCreationDate(LocalDateTime.now());
         client.setStatus(Status.ACTIVE);
         client.setClientName("Test Client");
-        client.setApprovedScopes("openid");
-        client.setRedirectUri("http://localhost/oauth/redirect");
+        client.setApprovedScopes("scope1");
+        client.setRedirectUri("http://localhost:9090/login/oauth2/code/identity");
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
         return client;
