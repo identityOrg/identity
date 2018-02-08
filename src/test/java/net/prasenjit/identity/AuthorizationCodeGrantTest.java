@@ -73,7 +73,7 @@ public class AuthorizationCodeGrantTest {
         HtmlForm loginForm = loginPage.getFormByName("login");
         loginForm.getInputByName("username").setValueAttribute("admin");
         loginForm.getInputByName("password").setValueAttribute("admin");
-        Page authorizePage = loginForm.getInputByName("submit").click();
+        Page authorizePage = loginForm.getButtonByName("submit").click();
         assertTrue(authorizePage.isHtmlPage());
         HtmlPage authHtml = (HtmlPage) authorizePage;
         List<HtmlButton> validButtons = authHtml.getFormByName("auth").getButtonsByName("valid");
@@ -119,7 +119,7 @@ public class AuthorizationCodeGrantTest {
         HtmlForm loginForm = loginPage.getFormByName("login");
         loginForm.getInputByName("username").setValueAttribute("admin");
         loginForm.getInputByName("password").setValueAttribute("admin");
-        Page authorizePage = loginForm.getInputByName("submit").click();
+        Page authorizePage = loginForm.getButtonByName("submit").click();
         assertTrue(authorizePage.isHtmlPage());
         HtmlPage authHtml = (HtmlPage) authorizePage;
         List<HtmlButton> validButtons = authHtml.getFormByName("auth").getButtonsByName("valid");
@@ -170,7 +170,7 @@ public class AuthorizationCodeGrantTest {
         HtmlForm loginForm = loginPage.getFormByName("login");
         loginForm.getInputByName("username").setValueAttribute("admin");
         loginForm.getInputByName("password").setValueAttribute("admin");
-        Page authorizePage = loginForm.getInputByName("submit").click();
+        Page authorizePage = loginForm.getButtonByName("submit").click();
         assertTrue(authorizePage.isHtmlPage());
         HtmlPage authHtml = (HtmlPage) authorizePage;
         List<HtmlButton> validButtons = authHtml.getFormByName("auth").getButtonsByName("valid");

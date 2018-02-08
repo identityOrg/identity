@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <link rel='stylesheet' href='/webjars/bootstrap/css/bootstrap.min.css'>
+    <link rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
 </head>
 <body>
 <div class="container">
@@ -47,7 +47,7 @@
                         <!-- Button -->
 
                         <div class="col-sm-12 controls">
-                            <input id="btn-login" type="submit" class="btn btn-success" name="submit">Login </input>
+                            <button id="btn-login" type="submit" class="btn btn-success" name="submit">Login </button>
                         </div>
                     </div>
 
