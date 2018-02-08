@@ -57,6 +57,7 @@ public class Client implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public String getPassword() {
         return clientSecret;
     }

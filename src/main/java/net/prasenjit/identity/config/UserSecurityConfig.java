@@ -30,6 +30,7 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authenticated()
                 .and()
                 .formLogin()
+                .loginPage("/login")
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
     }

@@ -7,6 +7,7 @@ import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.User;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Data
@@ -20,15 +21,7 @@ public class AuthorizationModel {
     private String errorCode;
     private String errorDescription;
     private String redirectUri;
-    private Map<String, Boolean> filteredScopes;
+    private Map<String, Boolean> filteredScopes = new HashMap<>();
     private AccessToken accessToken;
     private AuthorizationCode authorizationCode;
-
-    public boolean isImplicitResponse() {
-        return "token".equals(responseType);
-    }
-
-    public boolean isAuthorizationCodeResponse() {
-        return "code".equals(responseType);
-    }
 }

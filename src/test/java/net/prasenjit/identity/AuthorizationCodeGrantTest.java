@@ -35,6 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class AuthorizationCodeGrantTest {
+    private static final String TOKEN_URL = "http://localhost/oauth/token";
+    private static final String REDIRECT_URL = "http://localhost:9090/login/oauth2/code/identity";
+    private static final String AUTHORIZE_URL = "http://localhost/oauth/authorize";
     @Autowired
     private WebApplicationContext context;
 
@@ -60,14 +63,14 @@ public class AuthorizationCodeGrantTest {
 
     @Test
     public void testSuccess() throws Exception {
-        UriComponents startUrl = UriComponentsBuilder.fromHttpUrl("http://localhost/oauth/authorize")
+        UriComponents startUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
                 .queryParam("response_type", "code")
                 .queryParam("client_id", "client")
                 .build();
         Page page = webClient.getPage(startUrl.toString());
         assertTrue(page.isHtmlPage());
         HtmlPage loginPage = (HtmlPage) page;
-        HtmlForm loginForm = loginPage.getFormByName("f");
+        HtmlForm loginForm = loginPage.getFormByName("login");
         loginForm.getInputByName("username").setValueAttribute("admin");
         loginForm.getInputByName("password").setValueAttribute("admin");
         Page authorizePage = loginForm.getInputByName("submit").click();
@@ -88,7 +91,7 @@ public class AuthorizationCodeGrantTest {
 
                     String credentials = Base64Utils.encodeToString("client:client".getBytes(StandardCharsets.US_ASCII));
 
-                    mockMvc.perform(post("http://localhost/oauth/token")
+                    mockMvc.perform(post(TOKEN_URL)
                             .param("grant_type", "authorization_code")
                             .param("code", authorizationCode)
                             .header("Authorization", "Basic " + credentials)
@@ -105,15 +108,15 @@ public class AuthorizationCodeGrantTest {
 
     @Test
     public void testSuccessWithRedirectUri() throws Exception {
-        UriComponents startUrl = UriComponentsBuilder.fromHttpUrl("http://localhost/oauth/authorize")
+        UriComponents startUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
                 .queryParam("response_type", "code")
                 .queryParam("client_id", "client")
-                .queryParam("redirect_uri", "http://localhost/oauth/redirect")
+                .queryParam("redirect_uri", REDIRECT_URL)
                 .build();
         Page page = webClient.getPage(startUrl.toString());
         assertTrue(page.isHtmlPage());
         HtmlPage loginPage = (HtmlPage) page;
-        HtmlForm loginForm = loginPage.getFormByName("f");
+        HtmlForm loginForm = loginPage.getFormByName("login");
         loginForm.getInputByName("username").setValueAttribute("admin");
         loginForm.getInputByName("password").setValueAttribute("admin");
         Page authorizePage = loginForm.getInputByName("submit").click();
@@ -136,10 +139,10 @@ public class AuthorizationCodeGrantTest {
 
                     String credentials = Base64Utils.encodeToString("client:client".getBytes(StandardCharsets.US_ASCII));
 
-                    mockMvc.perform(post("http://localhost/oauth/token")
+                    mockMvc.perform(post(TOKEN_URL)
                             .param("grant_type", "authorization_code")
                             .param("code", authorizationCode)
-                            .param("redirect_uri", "http://localhost/oauth/redirect")
+                            .param("redirect_uri", REDIRECT_URL)
                             .header("Authorization", "Basic " + credentials)
                             .accept(APPLICATION_JSON))
                             .andExpect(status().isOk())
@@ -155,16 +158,16 @@ public class AuthorizationCodeGrantTest {
     @Test
     public void testSuccessWithRedirectUriAndState() throws Exception {
         String state = RandomStringUtils.randomAlphanumeric(8);
-        UriComponents startUrl = UriComponentsBuilder.fromHttpUrl("http://localhost/oauth/authorize")
+        UriComponents startUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
                 .queryParam("response_type", "code")
                 .queryParam("client_id", "client")
                 .queryParam("state", state)
-                .queryParam("redirect_uri", "http://localhost/oauth/redirect")
+                .queryParam("redirect_uri", REDIRECT_URL)
                 .build();
         Page page = webClient.getPage(startUrl.toString());
         assertTrue(page.isHtmlPage());
         HtmlPage loginPage = (HtmlPage) page;
-        HtmlForm loginForm = loginPage.getFormByName("f");
+        HtmlForm loginForm = loginPage.getFormByName("login");
         loginForm.getInputByName("username").setValueAttribute("admin");
         loginForm.getInputByName("password").setValueAttribute("admin");
         Page authorizePage = loginForm.getInputByName("submit").click();
