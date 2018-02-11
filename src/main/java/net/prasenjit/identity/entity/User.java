@@ -37,8 +37,14 @@ public class User implements UserDetails {
     @Column(name = "PASSWORD_EXPIRY_DATE", nullable = false)
     private LocalDateTime passwordExpiryDate;
 
-    @Column(name = "ADMIN")
+    @Column(name = "ADMIN", nullable = false)
     private boolean admin;
+
+    @Column(name = "FIRST_NAME")
+    private String firstName;
+
+    @Column(name = "LAST_NAME")
+    private String lastName;
 
     @Override
     @JsonIgnore

@@ -3,9 +3,9 @@ package net.prasenjit.identity.controller.user;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.User;
-import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.repository.UserRepository;
+import net.prasenjit.identity.service.UserService;
 import org.springframework.data.domain.Example;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,6 +21,7 @@ import java.util.Optional;
 public class UserController implements UserApi {
 
     private final UserRepository userRepository;
+    private final UserService userService;
 
     @Override
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -43,23 +44,13 @@ public class UserController implements UserApi {
     @Override
     @PutMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public User update(@RequestBody User user) {
-        Optional<User> userOptional = userRepository.findById(user.getUsername());
-        if (userOptional.isPresent()) {
-            return userRepository.saveAndFlush(user);
-        } else {
-            throw new ItemNotFoundException("User not found");
-        }
+        return userService.updateUser(user);
     }
 
     @Override
     @ResponseStatus(code = HttpStatus.CREATED)
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public User create(@RequestBody User user) {
-        Optional<User> userOptional = userRepository.findById(user.getUsername());
-        if (!userOptional.isPresent()) {
-            return userRepository.saveAndFlush(user);
-        } else {
-            throw new ConflictException("User exists");
-        }
+        return userService.createUser(user);
     }
 }

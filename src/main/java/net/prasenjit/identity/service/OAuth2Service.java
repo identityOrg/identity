@@ -174,7 +174,7 @@ public class OAuth2Service {
 					authorizationModel.setAccessToken(accessToken);
 					return authorizationModel;
 				} else {
-					authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+					authorizationModel.setErrorCode(OAuthError.UNSUPPORTED_RESPONSE_TYPE);
 					authorizationModel.setErrorDescription("Invalid response type");
 					authorizationModel.setValid(false);
 					return authorizationModel;

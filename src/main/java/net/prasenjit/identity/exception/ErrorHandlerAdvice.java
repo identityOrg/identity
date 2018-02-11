@@ -12,9 +12,9 @@ import java.util.Map;
 @ControllerAdvice
 public class ErrorHandlerAdvice {
 
-    @ExceptionHandler(value = OAuthException.class)
     @ResponseBody
     @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = OAuthException.class)
     public Map<String, String> handleTokenError(OAuthException ex) {
         Map<String, String> response = new HashMap<>();
         response.put("code", ex.getError());
