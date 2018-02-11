@@ -7,12 +7,15 @@ import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.InvalidRequestException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.exception.OperationIgnoredException;
+import net.prasenjit.identity.model.api.CreateUserRequest;
+import net.prasenjit.identity.model.api.UpdateUserRequest;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.UserRepository;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +30,7 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final IdentityProperties identityProperties;
-    private final PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     @Override
     public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
@@ -40,23 +43,28 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public User createUser(User user) {
-        Optional<User> optionalUser = userRepository.findById(user.getUsername());
+    public User createUser(CreateUserRequest request) {
+        Optional<User> optionalUser = userRepository.findById(request.getUsername());
         if (optionalUser.isPresent()) {
             throw new ConflictException("User already exist.");
         }
+        User user = new User();
         user.setStatus(Status.LOCKED);
         LocalDateTime now = LocalDateTime.now();
         user.setPasswordExpiryDate(now.plus(identityProperties.getUserPasswordValidity()));
         user.setCreationDate(now);
-        user.setAdmin(false);
+        user.setAdmin(request.isAdmin());
         user.setPassword(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled user
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setUsername(request.getUsername());
+        user.setExpiryDate(request.getExpiryDate());
 
         return userRepository.saveAndFlush(user);
     }
 
     @Transactional
-    public User updateUser(User user) {
+    public User updateUser(UpdateUserRequest user) {
         Optional<User> optionalUser = userRepository.findById(user.getUsername());
         if (!optionalUser.isPresent()) {
             throw new ItemNotFoundException("User doesn't exist.");

@@ -6,6 +6,7 @@ import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.oauth.GrantType;
+import net.prasenjit.identity.oauth.OAuthError;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.RefreshTokenRepository;

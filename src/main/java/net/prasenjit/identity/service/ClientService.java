@@ -8,6 +8,8 @@ import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.InvalidRequestException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.exception.OperationIgnoredException;
+import net.prasenjit.identity.model.api.CreateClientRequest;
+import net.prasenjit.identity.model.api.UpdateClientRequest;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -45,33 +47,43 @@ public class ClientService implements UserDetailsService {
     }
 
     @Transactional
-    public Client createClient(Client client) {
-        Optional<Client> optionalClient = clientRepository.findById(client.getUsername());
+    public Client createClient(CreateClientRequest request) {
+        Optional<Client> optionalClient = clientRepository.findById(request.getClientId());
         if (optionalClient.isPresent()) {
             throw new ConflictException("Client already exist.");
         }
+        Client client = new Client();
         client.setStatus(Status.LOCKED);
         LocalDateTime now = LocalDateTime.now();
-        validateClientScope(client.getApprovedScopes());
         client.setCreationDate(now);
         client.setClientSecret(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled user
+        client.setRedirectUri(request.getRedirectUri());
+        client.setClientName(request.getClientName());
+        client.setExpiryDate(request.getExpiryDate());
+        client.setApprovedScopes(request.getApprovedScopes());
+        client.setAccessTokenValidity(request.getAccessTokenValidity());
+        client.setRefreshTokenValidity(request.getRefreshTokenValidity());
+        client.setClientId(request.getClientId());
+
+        validateClientScope(client.getApprovedScopes());
+
         return clientRepository.saveAndFlush(client);
     }
 
     @Transactional
-    public Client updateClient(Client client) {
-        Optional<Client> optionalClient = clientRepository.findById(client.getUsername());
+    public Client updateClient(UpdateClientRequest request) {
+        Optional<Client> optionalClient = clientRepository.findById(request.getClientId());
         if (!optionalClient.isPresent()) {
             throw new ItemNotFoundException("Client not found.");
         }
         Client savedClient = optionalClient.get();
-        savedClient.setRedirectUri(client.getRedirectUri());
-        savedClient.setClientName(client.getClientName());
-        savedClient.setRefreshTokenValidity(client.getRefreshTokenValidity());
-        savedClient.setAccessTokenValidity(client.getAccessTokenValidity());
-        savedClient.setApprovedScopes(client.getApprovedScopes());
-        savedClient.setExpiryDate(client.getExpiryDate());
-        validateClientScope(client.getApprovedScopes());
+        savedClient.setRedirectUri(request.getRedirectUri());
+        savedClient.setClientName(request.getClientName());
+        savedClient.setRefreshTokenValidity(request.getRefreshTokenValidity());
+        savedClient.setAccessTokenValidity(request.getAccessTokenValidity());
+        savedClient.setApprovedScopes(request.getApprovedScopes());
+        savedClient.setExpiryDate(request.getExpiryDate());
+        validateClientScope(request.getApprovedScopes());
         return savedClient;
     }
 

@@ -9,7 +9,7 @@ import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.service.OAuth2Service;
-import net.prasenjit.identity.service.OAuthError;
+import net.prasenjit.identity.oauth.OAuthError;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

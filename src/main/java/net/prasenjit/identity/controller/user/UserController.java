@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.exception.ItemNotFoundException;
+import net.prasenjit.identity.model.api.CreateUserRequest;
+import net.prasenjit.identity.model.api.SearchUserRequest;
+import net.prasenjit.identity.model.api.UpdateUserRequest;
 import net.prasenjit.identity.repository.UserRepository;
 import net.prasenjit.identity.service.UserService;
 import org.springframework.data.domain.Example;
@@ -25,8 +28,15 @@ public class UserController implements UserApi {
 
     @Override
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<User> searchClient(@ModelAttribute User client) {
-        Example<User> clientExample = Example.of(client);
+    public List<User> searchClient(@ModelAttribute SearchUserRequest request) {
+        User user = new User();
+        user.setStatus(request.getStatus());
+        user.setLastName(request.getLastName());
+        user.setFirstName(request.getFirstName());
+        user.setAdmin(request.isAdmin());
+        user.setUsername(request.getUsername());
+
+        Example<User> clientExample = Example.of(user);
         return userRepository.findAll(clientExample);
     }
 
@@ -43,14 +53,14 @@ public class UserController implements UserApi {
 
     @Override
     @PutMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User update(@RequestBody User user) {
-        return userService.updateUser(user);
+    public User update(@RequestBody UpdateUserRequest request) {
+        return userService.updateUser(request);
     }
 
     @Override
     @ResponseStatus(code = HttpStatus.CREATED)
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User create(@RequestBody User user) {
-        return userService.createUser(user);
+    public User create(@RequestBody CreateUserRequest request) {
+        return userService.createUser(request);
     }
 }
