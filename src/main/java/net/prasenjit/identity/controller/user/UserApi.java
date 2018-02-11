@@ -3,12 +3,7 @@ package net.prasenjit.identity.controller.user;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import net.prasenjit.identity.entity.User;
-import net.prasenjit.identity.model.api.CreateUserRequest;
-import net.prasenjit.identity.model.api.SearchUserRequest;
-import net.prasenjit.identity.model.api.UpdateUserRequest;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
+import net.prasenjit.identity.model.api.*;
 
 import java.util.List;
 
@@ -16,14 +11,20 @@ import java.util.List;
 public interface UserApi {
 
     @ApiOperation(value = "Search User", notes = "Search a user with any user attribute")
-    List<User> searchClient(@ModelAttribute SearchUserRequest request);
+    List<User> searchClient(SearchUserRequest request);
 
     @ApiOperation(value = "Find User", notes = "Find a client with username")
-    User findClient(@PathVariable(value = "username") String clientId);
+    User findClient(String clientId);
 
     @ApiOperation(value = "Update User", notes = "Update a user attributes")
-    User update(@RequestBody UpdateUserRequest request);
+    User update(String username, UpdateUserRequest request);
 
     @ApiOperation(value = "Create User", notes = "Create a user, user is created is disabled state.")
-    User create(@RequestBody CreateUserRequest request);
+    User create(CreateUserRequest request);
+
+    @ApiOperation(value = "Change Status", notes = "Change status of a user.")
+    User status(String username, StatusUserRequest request);
+
+    @ApiOperation(value = "Change password", notes = "Change password of a user.")
+    User password(String username, PasswordUserRequest request);
 }

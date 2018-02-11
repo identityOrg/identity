@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.exception.ItemNotFoundException;
-import net.prasenjit.identity.model.api.CreateUserRequest;
-import net.prasenjit.identity.model.api.SearchUserRequest;
-import net.prasenjit.identity.model.api.UpdateUserRequest;
+import net.prasenjit.identity.model.api.*;
 import net.prasenjit.identity.repository.UserRepository;
 import net.prasenjit.identity.service.UserService;
 import org.springframework.data.domain.Example;
@@ -52,8 +50,9 @@ public class UserController implements UserApi {
     }
 
     @Override
-    @PutMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User update(@RequestBody UpdateUserRequest request) {
+    @PutMapping(value = "{username}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public User update(@PathVariable(value = "username") String username, @RequestBody UpdateUserRequest request) {
+        request.setUsername(username);
         return userService.updateUser(request);
     }
 
@@ -62,5 +61,17 @@ public class UserController implements UserApi {
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public User create(@RequestBody CreateUserRequest request) {
         return userService.createUser(request);
+    }
+
+    @Override
+    @PostMapping(value = "{username}/status", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public User status(@PathVariable(value = "username") String username, @RequestBody StatusUserRequest request) {
+        return userService.changeStatus(username, request.getStatus(), request.getPassword());
+    }
+
+    @Override
+    @PostMapping(value = "{username}/password", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public User password(@PathVariable(value = "username") String username, @RequestBody PasswordUserRequest request) {
+        return userService.changePassword(username, request.getOldPassword(), request.getNewPassword());
     }
 }

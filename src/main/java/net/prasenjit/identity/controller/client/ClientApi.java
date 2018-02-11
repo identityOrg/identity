@@ -5,10 +5,8 @@ import io.swagger.annotations.ApiOperation;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.model.api.CreateClientRequest;
 import net.prasenjit.identity.model.api.SearchClientRequest;
+import net.prasenjit.identity.model.api.StatusClientRequest;
 import net.prasenjit.identity.model.api.UpdateClientRequest;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -16,14 +14,21 @@ import java.util.List;
 public interface ClientApi {
 
     @ApiOperation(value = "Search Client", notes = "Search a client with any client attribute")
-    List<Client> searchClient(@ModelAttribute SearchClientRequest request);
+    List<Client> searchClient(SearchClientRequest request);
 
     @ApiOperation(value = "Find Client", notes = "Find a client with clientId")
-    Client findClient(@PathVariable(value = "clientId") String clientId);
+    Client findClient(String clientId);
 
     @ApiOperation(value = "Update Client", notes = "Update a client attributes")
-    Client update(@RequestBody UpdateClientRequest request);
+    Client update(String clientId, UpdateClientRequest request);
 
     @ApiOperation(value = "Create Client", notes = "Create a client, client is created is disabled state.")
-    Client create(@RequestBody CreateClientRequest request);
+    Client create(CreateClientRequest request);
+
+    @ApiOperation(value = "Change Status", notes = "Change client status.")
+    Client status(String clientId, StatusClientRequest request);
+
+    @ApiOperation(value = "Reset Secret", notes = "Reset client secret.")
+    Client secret(String clientId);
+
 }
