@@ -3,7 +3,7 @@ package net.prasenjit.identity.controller.user;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import net.prasenjit.identity.entity.User;
-import net.prasenjit.identity.model.api.*;
+import net.prasenjit.identity.model.api.user.*;
 
 import java.util.List;
 

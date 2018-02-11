@@ -3,10 +3,10 @@ package net.prasenjit.identity.controller.client;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import net.prasenjit.identity.entity.Client;
-import net.prasenjit.identity.model.api.CreateClientRequest;
-import net.prasenjit.identity.model.api.SearchClientRequest;
-import net.prasenjit.identity.model.api.StatusClientRequest;
-import net.prasenjit.identity.model.api.UpdateClientRequest;
+import net.prasenjit.identity.model.api.client.CreateClientRequest;
+import net.prasenjit.identity.model.api.client.SearchClientRequest;
+import net.prasenjit.identity.model.api.client.StatusClientRequest;
+import net.prasenjit.identity.model.api.client.UpdateClientRequest;
 
 import java.util.List;
 

@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.exception.ItemNotFoundException;
-import net.prasenjit.identity.model.api.CreateClientRequest;
-import net.prasenjit.identity.model.api.SearchClientRequest;
-import net.prasenjit.identity.model.api.StatusClientRequest;
-import net.prasenjit.identity.model.api.UpdateClientRequest;
+import net.prasenjit.identity.model.api.client.CreateClientRequest;
+import net.prasenjit.identity.model.api.client.SearchClientRequest;
+import net.prasenjit.identity.model.api.client.StatusClientRequest;
+import net.prasenjit.identity.model.api.client.UpdateClientRequest;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.service.ClientService;
 import org.springframework.data.domain.Example;
@@ -21,14 +21,14 @@ import java.util.Optional;
 @RestController
 @SwaggerDocumented
 @RequiredArgsConstructor
-@RequestMapping(value = "api/client")
+@RequestMapping(value = "api/client", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ClientController implements ClientApi {
 
     private final ClientRepository clientRepository;
     private final ClientService clientService;
 
     @Override
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping
     public List<Client> searchClient(@ModelAttribute SearchClientRequest request) {
         Client client = new Client();
         client.setClientName(request.getClientName());
@@ -40,7 +40,7 @@ public class ClientController implements ClientApi {
     }
 
     @Override
-    @GetMapping(value = "{clientId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "{clientId}")
     public Client findClient(@PathVariable(value = "clientId") String clientId) {
         Optional<Client> clientOptional = clientRepository.findById(clientId);
         if (clientOptional.isPresent()) {
@@ -51,7 +51,7 @@ public class ClientController implements ClientApi {
     }
 
     @Override
-    @PutMapping(value = "{clientId}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = "{clientId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Client update(@PathVariable(value = "clientId") String clientId, @RequestBody UpdateClientRequest request) {
         request.setClientId(clientId);
         return clientService.updateClient(request);
@@ -59,19 +59,19 @@ public class ClientController implements ClientApi {
 
     @Override
     @ResponseStatus(code = HttpStatus.CREATED)
-    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public Client create(@RequestBody CreateClientRequest request) {
         return clientService.createClient(request);
     }
 
     @Override
-    @PostMapping(value = "{clientId}/status", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "{clientId}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Client status(@PathVariable(value = "clientId") String clientId, @RequestBody StatusClientRequest request) {
         return clientService.changeStatus(clientId, request.getStatus());
     }
 
     @Override
-    @PostMapping(value = "{clientId}/secret", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "{clientId}/secret", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Client secret(@PathVariable(value = "clientId") String clientId) {
         return clientService.resetSecret(clientId);
     }

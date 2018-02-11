@@ -1,4 +1,4 @@
-package net.prasenjit.identity.model.api;
+package net.prasenjit.identity.model.api.user;
 
 import lombok.Data;
 

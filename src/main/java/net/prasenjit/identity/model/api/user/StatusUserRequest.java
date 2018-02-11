@@ -1,4 +1,4 @@
-package net.prasenjit.identity.model.api;
+package net.prasenjit.identity.model.api.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;

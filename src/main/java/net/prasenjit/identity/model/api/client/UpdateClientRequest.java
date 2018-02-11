@@ -1,5 +1,6 @@
-package net.prasenjit.identity.model.api;
+package net.prasenjit.identity.model.api.client;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import net.prasenjit.identity.entity.Status;
 
@@ -7,7 +8,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Data
-public class CreateClientRequest {
+public class UpdateClientRequest {
+    @JsonIgnore
     private String clientId;
     private String clientName;
     private Status status;
