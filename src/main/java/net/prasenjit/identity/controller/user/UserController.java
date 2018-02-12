@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,7 +52,8 @@ public class UserController implements UserApi {
 
     @Override
     @PutMapping(value = "{username}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User update(@PathVariable(value = "username") String username, @RequestBody UpdateUserRequest request) {
+    public User update(@PathVariable(value = "username") String username,
+                       @RequestBody @Valid UpdateUserRequest request) {
         request.setUsername(username);
         return userService.updateUser(request);
     }
@@ -59,19 +61,21 @@ public class UserController implements UserApi {
     @Override
     @ResponseStatus(code = HttpStatus.CREATED)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User create(@RequestBody CreateUserRequest request) {
+    public User create(@RequestBody @Valid CreateUserRequest request) {
         return userService.createUser(request);
     }
 
     @Override
     @PostMapping(value = "{username}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User status(@PathVariable(value = "username") String username, @RequestBody StatusUserRequest request) {
+    public User status(@PathVariable(value = "username") String username,
+                       @RequestBody @Valid StatusUserRequest request) {
         return userService.changeStatus(username, request.getStatus(), request.getPassword());
     }
 
     @Override
     @PostMapping(value = "{username}/password", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User password(@PathVariable(value = "username") String username, @RequestBody PasswordUserRequest request) {
+    public User password(@PathVariable(value = "username") String username,
+                         @RequestBody @Valid PasswordUserRequest request) {
         return userService.changePassword(username, request.getOldPassword(), request.getNewPassword());
     }
 }

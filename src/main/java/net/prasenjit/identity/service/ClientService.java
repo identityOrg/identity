@@ -57,7 +57,7 @@ public class ClientService implements UserDetailsService {
         LocalDateTime now = LocalDateTime.now();
         client.setCreationDate(now);
         client.setClientSecret(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled user
-        client.setRedirectUri(request.getRedirectUri());
+        client.setRedirectUri(request.getRedirectUri().toString());
         client.setClientName(request.getClientName());
         client.setExpiryDate(request.getExpiryDate());
         client.setApprovedScopes(request.getApprovedScopes());
@@ -77,7 +77,7 @@ public class ClientService implements UserDetailsService {
             throw new ItemNotFoundException("Client not found.");
         }
         Client savedClient = optionalClient.get();
-        savedClient.setRedirectUri(request.getRedirectUri());
+        savedClient.setRedirectUri(request.getRedirectUri().toString());
         savedClient.setClientName(request.getClientName());
         savedClient.setRefreshTokenValidity(request.getRefreshTokenValidity());
         savedClient.setAccessTokenValidity(request.getAccessTokenValidity());

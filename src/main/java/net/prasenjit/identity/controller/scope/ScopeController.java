@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +26,7 @@ public class ScopeController implements ScopeApi {
     @Override
     @Transactional
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Scope create(Scope scope) {
+    public Scope create(@RequestBody @Valid Scope scope) {
         Optional<Scope> scopeOptional = scopeRepository.findById(scope.getScopeId());
         if (scopeOptional.isPresent()) {
             throw new ConflictException("Scope already present");
@@ -35,7 +36,7 @@ public class ScopeController implements ScopeApi {
 
     @Override
     @PutMapping(value = "{scopeId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Scope update(@PathVariable("scopeId") String scopeId, UpdateScopeRequest request) {
+    public Scope update(@PathVariable("scopeId") String scopeId, @RequestBody @Valid UpdateScopeRequest request) {
         Optional<Scope> scopeOptional = scopeRepository.findById(scopeId);
         if (scopeOptional.isPresent()) {
             throw new ItemNotFoundException("Scope not exist");

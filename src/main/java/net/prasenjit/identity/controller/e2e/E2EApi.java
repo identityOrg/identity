@@ -1,7 +1,7 @@
-package net.prasenjit.identity.controller;
+package net.prasenjit.identity.controller.e2e;
 
+import com.nimbusds.jose.jwk.RSAKey;
 import io.swagger.annotations.*;
-import net.prasenjit.identity.model.AsymmetricE2EResponse;
 
 @Api(value = "E2E", tags = "e2e", description = "End to end encryption API's")
 public interface E2EApi {
@@ -13,7 +13,7 @@ public interface E2EApi {
                     responseHeaders = @ResponseHeader(name = "X-Session-Id",
                             description = "Current session id associated with response", response = String.class))
     )
-    AsymmetricE2EResponse asymmetricE2E();
+    RSAKey asymmetricE2E();
 
     @ApiOperation(value = "Encrypt Text", notes = "Encrypt text data using RSA Public Key")
     @ApiResponses(

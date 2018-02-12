@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,7 +53,8 @@ public class ClientController implements ClientApi {
 
     @Override
     @PutMapping(value = "{clientId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Client update(@PathVariable(value = "clientId") String clientId, @RequestBody UpdateClientRequest request) {
+    public Client update(@PathVariable(value = "clientId") String clientId,
+                         @RequestBody @Valid UpdateClientRequest request) {
         request.setClientId(clientId);
         return clientService.updateClient(request);
     }
@@ -60,13 +62,14 @@ public class ClientController implements ClientApi {
     @Override
     @ResponseStatus(code = HttpStatus.CREATED)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Client create(@RequestBody CreateClientRequest request) {
+    public Client create(@RequestBody @Valid CreateClientRequest request) {
         return clientService.createClient(request);
     }
 
     @Override
     @PostMapping(value = "{clientId}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Client status(@PathVariable(value = "clientId") String clientId, @RequestBody StatusClientRequest request) {
+    public Client status(@PathVariable(value = "clientId") String clientId,
+                         @RequestBody @Valid StatusClientRequest request) {
         return clientService.changeStatus(clientId, request.getStatus());
     }
 

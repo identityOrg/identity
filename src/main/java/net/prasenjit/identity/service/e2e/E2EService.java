@@ -1,13 +1,14 @@
 package net.prasenjit.identity.service.e2e;
 
+import com.nimbusds.jose.jwk.RSAKey;
 import net.prasenjit.crypto.endtoend.RsaEncryptorBuilder;
-import net.prasenjit.identity.model.AsymmetricE2EResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.context.annotation.SessionScope;
 
+import javax.servlet.http.HttpSession;
 import java.io.Serializable;
-import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -16,13 +17,16 @@ import java.security.interfaces.RSAPublicKey;
 @Service
 @SessionScope
 public class E2EService implements Serializable {
-	private static final long serialVersionUID = -5325012556475091825L;
+    private static final long serialVersionUID = -5325012556475091825L;
 
-	private KeyPair keyPair;
+    private KeyPair keyPair;
 
     private E2eStatus status = E2eStatus.NONE;
 
     private transient Object sync = new Object();
+
+    @Autowired
+    private HttpSession httpSession;
 
     public void generateAsymmetricKey() {
         synchronized (sync) {
@@ -39,12 +43,11 @@ public class E2EService implements Serializable {
         }
     }
 
-    public AsymmetricE2EResponse getAsymmetricKey() {
+    public RSAKey getAsymmetricKey() {
         generateAsymmetricKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        BigInteger publicExponent = publicKey.getPublicExponent();
-        BigInteger modulus = publicKey.getModulus();
-        return new AsymmetricE2EResponse(publicExponent.toString(16), modulus.toString(16));
+        RSAKey.Builder keyBuilder = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
+                .keyID(httpSession.getId());
+        return keyBuilder.build();
     }
 
     public String encrypt(String data) {
