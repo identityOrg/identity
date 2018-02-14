@@ -23,7 +23,8 @@ public class E2EController implements E2EApi {
     @Override
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public RSAKey asymmetricE2E() {
-        return e2EService.getAsymmetricKey();
+        //return e2EService.getAsymmetricKey(authentication);
+        return null;
     }
 
     /*
@@ -34,7 +35,8 @@ public class E2EController implements E2EApi {
     @Override
     @PostMapping(value = "encrypt", consumes = MediaType.TEXT_PLAIN_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
     public String encrypt(@RequestBody String data) {
-        return e2EService.encrypt(data);
+        //return e2EService.encrypt(authentication, data);
+        return null;
     }
 
     /*
@@ -45,6 +47,7 @@ public class E2EController implements E2EApi {
     @Override
     @PostMapping(value = "decrypt", consumes = MediaType.TEXT_PLAIN_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
     public String decrypt(@RequestBody String data) {
-        return e2EService.decrypt(data);
+        //return e2EService.decrypt(authentication, data);
+        return null;
     }
 }
