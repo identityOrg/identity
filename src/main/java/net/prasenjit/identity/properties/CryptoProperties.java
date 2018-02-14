@@ -1,5 +1,7 @@
 package net.prasenjit.identity.properties;
 
+import java.util.List;
+
 import org.springframework.core.io.Resource;
 
 import lombok.Data;
@@ -15,4 +17,6 @@ public class CryptoProperties {
 	private String keyStoreType;
 	private String mainKeyPassword;
 	private String clientKeyPassword;
+
+	private List<String> cyclePassword;
 }
