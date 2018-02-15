@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.doc.SwaggerDocumented;
 import net.prasenjit.identity.service.e2e.E2EService;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,9 +23,8 @@ public class E2EController implements E2EApi {
      */
     @Override
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public RSAKey asymmetricE2E() {
-        //return e2EService.getAsymmetricKey(authentication);
-        return null;
+    public RSAKey asymmetricE2E(Authentication authentication) {
+        return e2EService.getAsymmetricKey(authentication);
     }
 
     /*
@@ -34,9 +34,8 @@ public class E2EController implements E2EApi {
      */
     @Override
     @PostMapping(value = "encrypt", consumes = MediaType.TEXT_PLAIN_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
-    public String encrypt(@RequestBody String data) {
-        //return e2EService.encrypt(authentication, data);
-        return null;
+    public String encrypt(@RequestBody String data, Authentication authentication) {
+        return e2EService.encrypt(authentication, data);
     }
 
     /*
@@ -46,8 +45,7 @@ public class E2EController implements E2EApi {
      */
     @Override
     @PostMapping(value = "decrypt", consumes = MediaType.TEXT_PLAIN_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
-    public String decrypt(@RequestBody String data) {
-        //return e2EService.decrypt(authentication, data);
-        return null;
+    public String decrypt(@RequestBody String data, Authentication authentication) {
+        return e2EService.decrypt(authentication, data);
     }
 }

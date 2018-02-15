@@ -2,6 +2,7 @@ package net.prasenjit.identity.controller.e2e;
 
 import com.nimbusds.jose.jwk.RSAKey;
 import io.swagger.annotations.*;
+import org.springframework.security.core.Authentication;
 
 @Api(value = "E2E", tags = "e2e", description = "End to end encryption API's")
 public interface E2EApi {
@@ -13,7 +14,7 @@ public interface E2EApi {
                     responseHeaders = @ResponseHeader(name = "X-Session-Id",
                             description = "Current session id associated with response", response = String.class))
     )
-    RSAKey asymmetricE2E();
+    RSAKey asymmetricE2E(Authentication authentication);
 
     @ApiOperation(value = "Encrypt Text", notes = "Encrypt text data using RSA Public Key")
     @ApiResponses(
@@ -21,7 +22,7 @@ public interface E2EApi {
                     responseHeaders = @ResponseHeader(name = "X-Session-Id",
                             description = "Current session id associated with response", response = String.class))
     )
-    String encrypt(String data);
+    String encrypt(String data, Authentication authentication);
 
     @ApiOperation(value = "Decrypt Text", notes = "Decrypt text data using RSA Private Key")
     @ApiResponses(
@@ -29,6 +30,6 @@ public interface E2EApi {
                     responseHeaders = @ResponseHeader(name = "X-Session-Id",
                             description = "Current session id associated with response", response = String.class))
     )
-    String decrypt(String data);
+    String decrypt(String data, Authentication authentication);
 
 }

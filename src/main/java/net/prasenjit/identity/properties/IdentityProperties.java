@@ -12,5 +12,6 @@ import java.time.temporal.ChronoUnit;
 @ConfigurationProperties(prefix = "identity")
 public class IdentityProperties {
     private CryptoProperties cryptoProperties = new CryptoProperties();
-    private Duration userPasswordValidity = Duration.of(1, ChronoUnit.HOURS);
+    private Duration userPasswordValidity = Duration.ofDays(60);
+    private Duration e2eKeyValidity = Duration.ofHours(6);
 }
