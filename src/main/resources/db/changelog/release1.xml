@@ -142,6 +142,27 @@
             <column name="LAST_NAME" type="VARCHAR(255)"/>
         </createTable>
     </changeSet>
+    <changeSet author="prasenjit-net" id="1518736842966-4">
+        <createTable tableName="T_E2E_KEY">
+            <column name="ASSOCIATION" type="VARCHAR(256)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="USER_TYPE" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CURRENT_PRIVATE_KEY" type="CLOB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CURRENT_PUBLIC_KEY" type="CLOB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="OLD_PRIVATE_KEY" type="CLOB"/>
+            <column name="OLD_PUBLIC_KEY" type="CLOB"/>
+        </createTable>
+    </changeSet>
     <changeSet author="prasenjit-net" id="1517437401075-7">
         <addPrimaryKey columnNames="ACCESS_TOKEN"
                        constraintName="T_ACCESS_TOKENPK" tableName="T_ACCESS_TOKEN"/>
@@ -190,5 +211,8 @@
     <changeSet author="prasenjit-net" id="1517437401075-18">
         <addUniqueConstraint columnNames="USERNAME"
                              constraintName="UC_T_USERUSERNAME_COL" tableName="T_USER"/>
+    </changeSet>
+    <changeSet author="prasenjit (generated)" id="1518736842966-11">
+        <addPrimaryKey columnNames="ASSOCIATION, USER_TYPE" constraintName="T_E2E_KEYPK" tableName="T_E2E_KEY"/>
     </changeSet>
 </databaseChangeLog>
