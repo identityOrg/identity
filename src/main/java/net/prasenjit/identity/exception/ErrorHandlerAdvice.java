@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +20,17 @@ public class ErrorHandlerAdvice {
         Map<String, String> response = new HashMap<>();
         response.put("code", ex.getError());
         response.put("description", ex.getMessage());
+        return response;
+    }
+
+    @ResponseBody
+    @ResponseStatus(code = HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(value = UnauthenticatedClientException.class)
+    public Map<String, String> clientAuthenticationRequired(UnauthenticatedClientException ex, HttpServletResponse httpServletResponse) {
+        Map<String, String> response = new HashMap<>();
+        response.put("code", ex.getError());
+        response.put("description", ex.getMessage());
+        httpServletResponse.addHeader("WWW-Authenticate","default");
         return response;
     }
 }

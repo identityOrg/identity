@@ -70,11 +70,13 @@ public class CodeFactory {
         return refreshToken;
     }
 
-    public OAuthToken createOAuthToken(AccessToken accessToken, RefreshToken refreshToken1) {
+    public OAuthToken createOAuthToken(AccessToken accessToken, RefreshToken refreshToken) {
         OAuthToken oAuthToken = new OAuthToken();
         oAuthToken.setAccessToken(accessToken.getAssessToken());
-        oAuthToken.setRefreshToken(refreshToken1.getRefreshToken());
-        oAuthToken.setTokenType("Bearer");
+        if (refreshToken != null) {
+            oAuthToken.setRefreshToken(refreshToken.getRefreshToken());
+        }
+        oAuthToken.setTokenType("bearer");
         oAuthToken.setScope(accessToken.getScope());
         long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
         oAuthToken.setExpiresIn(expIn);

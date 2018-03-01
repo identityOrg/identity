@@ -6,6 +6,7 @@ import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.exception.OAuthException;
+import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.service.OAuth2Service;
@@ -36,7 +37,7 @@ public class OAuthController {
         if (client != null) {
             return oAuth2Service.processPasswordGrant(client, username, password, scope);
         } else {
-            throw new OAuthException("unauthorized_client", "client not authenticated");
+            throw new UnauthenticatedClientException("unauthorized_client", "client not authenticated");
         }
     }
 
@@ -49,7 +50,7 @@ public class OAuthController {
         if (client != null) {
             return oAuth2Service.processClientCredentialsGrant(client, scope);
         } else {
-            throw new OAuthException("unauthorized_client", "client not authenticated");
+            throw new UnauthenticatedClientException("unauthorized_client", "client not authenticated");
         }
     }
 

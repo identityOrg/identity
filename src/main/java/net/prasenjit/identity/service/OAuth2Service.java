@@ -51,17 +51,12 @@ public class OAuth2Service {
 		String filteredScopes = filterScope(client.getApprovedScopes(), requestedScope);
 		AccessToken accessToken = codeFactory.createAccessToken((User) authentication.getPrincipal(),
 				client.getClientId(), client.getAccessTokenValidity(), filteredScopes);
-		OAuthToken token = new OAuthToken();
-		token.setAccessToken(accessToken.getAssessToken());
-		token.setTokenType("bearer");
-		token.setExpiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()));
-		token.setScope(filteredScopes);
+		RefreshToken refreshToken = null;
 		if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
-			RefreshToken refreshToken = codeFactory.createRefreshToken(client.getClientId(), username, filteredScopes,
+			refreshToken = codeFactory.createRefreshToken(client.getClientId(), username, filteredScopes,
 					client.getRefreshTokenValidity());
-			token.setRefreshToken(refreshToken.getRefreshToken());
 		}
-		return token;
+		return codeFactory.createOAuthToken(accessToken, refreshToken);
 	}
 
 	public OAuthToken processClientCredentialsGrant(Client client, String scope) {
@@ -71,12 +66,7 @@ public class OAuth2Service {
 		String filteredScope = filterScope(client.getApprovedScopes(), scope);
 		AccessToken accessToken = codeFactory.createAccessToken(client, client.getClientId(),
 				client.getAccessTokenValidity(), filteredScope);
-		OAuthToken token = new OAuthToken();
-		token.setAccessToken(accessToken.getAssessToken());
-		token.setTokenType("bearer");
-		token.setExpiresIn(ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate()));
-		token.setScope(filteredScope);
-		return token;
+		return codeFactory.createOAuthToken(accessToken, null);
 	}
 
 	public AuthorizationModel validateAuthorizationGrant(String responseType, User principal, String clientId,
@@ -222,20 +212,13 @@ public class OAuth2Service {
 									AccessToken accessToken = codeFactory.createAccessToken(associatedUser.get(),
 											client.getClientId(), client.getAccessTokenValidity(),
 											authorizationCode.get().getScope());
-									OAuthToken oAuthToken = new OAuthToken();
-									oAuthToken.setScope(accessToken.getScope());
-									long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(),
-											accessToken.getExpiryDate());
-									oAuthToken.setExpiresIn(expIn);
-									oAuthToken.setTokenType("Bearer");
-									oAuthToken.setAccessToken(accessToken.getAssessToken());
+									RefreshToken refreshToken = null;
 									if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {
-										RefreshToken refreshToken = codeFactory.createRefreshToken(client.getClientId(),
+										refreshToken = codeFactory.createRefreshToken(client.getClientId(),
 												associatedUser.get().getUsername(), accessToken.getScope(),
 												client.getRefreshTokenValidity());
-										oAuthToken.setRefreshToken(refreshToken.getRefreshToken());
 									}
-									return oAuthToken;
+									return codeFactory.createOAuthToken(accessToken, refreshToken);
 								}
 							}
 						}
