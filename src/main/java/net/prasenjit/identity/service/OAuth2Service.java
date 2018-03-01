@@ -262,9 +262,11 @@ public class OAuth2Service {
 	public String createTokenResponseFragment(AccessToken accessToken, String state) {
 		StringBuilder builder = new StringBuilder();
 		long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
-		builder.append("access_token").append('=').append(accessToken.getAssessToken()).append("token_type").append('=')
-				.append("Bearer").append("expires_in").append('=').append(expIn).append("scope").append('=')
-				.append(accessToken.getScope()).append("state").append('=').append(state);
+		builder.append("access_token").append('=').append(accessToken.getAssessToken()).append("&")
+				.append("token_type").append('=').append("Bearer").append("&")
+				.append("expires_in").append('=').append(expIn).append("&")
+				.append("scope").append('=').append(accessToken.getScope()).append("&")
+				.append("state").append('=').append(state);
 		return builder.toString();
 	}
 
