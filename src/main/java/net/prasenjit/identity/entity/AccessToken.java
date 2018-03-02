@@ -19,7 +19,7 @@ public class AccessToken {
 
     @Lob
     @Column(name = "USER_PROFILE", nullable = false)
-    @Convert(converter = UserDetailConverter.class, disableConversion=true)
+    @Convert(converter = UserDetailConverter.class, disableConversion = true)
     private UserDetails userProfile;
 
     @Column(name = "CLIENT_ID", length = 50, nullable = false)

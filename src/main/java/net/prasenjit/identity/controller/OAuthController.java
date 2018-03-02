@@ -9,8 +9,8 @@ import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
-import net.prasenjit.identity.service.OAuth2Service;
 import net.prasenjit.identity.oauth.OAuthError;
+import net.prasenjit.identity.service.OAuth2Service;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -135,7 +135,7 @@ public class OAuthController {
     }
 
     @SuppressWarnings("unchecked")
-	private <T> T extractPrincipal(Authentication authentication, Class<T> userClass) {
+    private <T> T extractPrincipal(Authentication authentication, Class<T> userClass) {
         if (authentication != null && authentication.isAuthenticated()) {
             Object principal = authentication.getPrincipal();
             if (principal != null && userClass.isInstance(principal)) {

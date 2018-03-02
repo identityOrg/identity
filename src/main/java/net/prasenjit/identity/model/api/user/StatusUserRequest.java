@@ -1,6 +1,5 @@
 package net.prasenjit.identity.model.api.user;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import net.prasenjit.identity.entity.Status;
 

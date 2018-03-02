@@ -16,9 +16,9 @@ import java.util.Collection;
 @Entity
 @Table(name = "T_CLIENT")
 public class Client implements UserDetails {
-	private static final long serialVersionUID = 4183078040533025925L;
+    private static final long serialVersionUID = 4183078040533025925L;
 
-	@Id
+    @Id
     @Column(name = "CLIENT_ID", length = 50, nullable = false, unique = true)
     private String clientId;
 

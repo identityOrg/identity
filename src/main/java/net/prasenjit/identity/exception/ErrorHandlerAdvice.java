@@ -30,7 +30,7 @@ public class ErrorHandlerAdvice {
         Map<String, String> response = new HashMap<>();
         response.put("code", ex.getError());
         response.put("description", ex.getMessage());
-        httpServletResponse.addHeader("WWW-Authenticate","default");
+        httpServletResponse.addHeader("WWW-Authenticate", "default");
         return response;
     }
 }
