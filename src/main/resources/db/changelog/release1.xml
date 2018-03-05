@@ -2,7 +2,7 @@
 <databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
-    <changeSet author="prasenjit-net" id="1517437401075-1">
+    <changeSet author="prasenjit-net" id="03032018-1">
         <createTable tableName="T_ACCESS_TOKEN">
             <column name="ACCESS_TOKEN" type="VARCHAR(50)">
                 <constraints nullable="false"/>
@@ -10,10 +10,10 @@
             <column name="CLIENT_ID" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+            <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)">
+            <column name="EXPIRY_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="SCOPE" type="VARCHAR(500)">
@@ -27,7 +27,7 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-2">
+    <changeSet author="prasenjit-net" id="03032018-2">
         <createTable tableName="T_AUTHORIZATION_CODE">
             <column name="AUTHORIZATION_CODE" type="VARCHAR(50)">
                 <constraints nullable="false"/>
@@ -35,10 +35,10 @@
             <column name="CLIENT_ID" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+            <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)">
+            <column name="EXPIRY_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="RETURN_URL" type="VARCHAR(500)"/>
@@ -54,12 +54,12 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-3">
+    <changeSet author="prasenjit-net" id="03032018-3">
         <createTable tableName="T_CLIENT">
             <column name="CLIENT_ID" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="ACCESS_TOKEN_VALIDITY" type="BIGINT(19)">
+            <column name="ACCESS_TOKEN_VALIDITY" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
             <column name="APPROVED_SCOPE" type="VARCHAR(500)">
@@ -69,14 +69,14 @@
                 <constraints nullable="false"/>
             </column>
             <column name="CLIENT_SECRET" type="VARCHAR(50)"/>
-            <column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+            <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)"/>
+            <column name="EXPIRY_DATE" type="TIMESTAMP"/>
             <column name="REDIRECT_URI" type="VARCHAR(500)">
                 <constraints nullable="false"/>
             </column>
-            <column name="REFRESH_TOKEN_VALIDITY" type="BIGINT(19)">
+            <column name="REFRESH_TOKEN_VALIDITY" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
             <column name="STATUS" type="VARCHAR(255)">
@@ -84,7 +84,7 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-4">
+    <changeSet author="prasenjit-net" id="03032018-4">
         <createTable tableName="T_REFRESH_TOKEN">
             <column name="REFRESH_TOKEN" type="VARCHAR(50)">
                 <constraints nullable="false"/>
@@ -92,10 +92,10 @@
             <column name="CLIENT_ID" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+            <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)">
+            <column name="EXPIRY_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="SCOPE" type="VARCHAR(50)">
@@ -109,7 +109,7 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-5">
+    <changeSet author="prasenjit-net" id="03032018-5">
         <createTable tableName="T_SCOPE">
             <column name="SCOPE_ID" type="VARCHAR(10)">
                 <constraints nullable="false"/>
@@ -119,20 +119,20 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-6">
+    <changeSet author="prasenjit-net" id="03032018-6">
         <createTable tableName="T_USER">
             <column name="USERNAME" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
             <column name="ADMIN" type="BOOLEAN"/>
-            <column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+            <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP(23, 10)"/>
+            <column name="EXPIRY_DATE" type="TIMESTAMP"/>
             <column name="PASSWORD" type="VARCHAR(200)">
                 <constraints nullable="false"/>
             </column>
-            <column name="PASSWORD_EXPIRY_DATE" type="TIMESTAMP(23, 10)">
+            <column name="PASSWORD_EXPIRY_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="STATUS" type="VARCHAR(10)">
@@ -142,15 +142,15 @@
             <column name="LAST_NAME" type="VARCHAR(255)"/>
         </createTable>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1518736842966-4">
+    <changeSet author="prasenjit-net" id="03032018-7">
         <createTable tableName="T_E2E_KEY">
-            <column name="ASSOCIATION" type="VARCHAR(256)">
+            <column name="ASSOCIATION" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
             <column name="USER_TYPE" type="VARCHAR(10)">
                 <constraints nullable="false"/>
             </column>
-            <column name="CREATION_DATE" type="TIMESTAMP(23, 10)">
+            <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="CURRENT_PRIVATE_KEY" type="CLOB">
@@ -163,56 +163,35 @@
             <column name="OLD_PUBLIC_KEY" type="CLOB"/>
         </createTable>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-7">
+    <changeSet author="prasenjit-net" id="03032018-8">
         <addPrimaryKey columnNames="ACCESS_TOKEN"
                        constraintName="T_ACCESS_TOKENPK" tableName="T_ACCESS_TOKEN"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-8">
+    <changeSet author="prasenjit-net" id="03032018-9">
         <addPrimaryKey columnNames="AUTHORIZATION_CODE"
                        constraintName="T_AUTHORIZATION_CODEPK" tableName="T_AUTHORIZATION_CODE"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-9">
+    <changeSet author="prasenjit-net" id="03032018-10">
         <addPrimaryKey columnNames="CLIENT_ID" constraintName="T_CLIENTPK"
                        tableName="T_CLIENT"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-10">
+    <changeSet author="prasenjit-net" id="03032018-11">
         <addPrimaryKey columnNames="REFRESH_TOKEN"
                        constraintName="T_REFRESH_TOKENPK" tableName="T_REFRESH_TOKEN"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-11">
+    <changeSet author="prasenjit-net" id="03032018-12">
         <addPrimaryKey columnNames="SCOPE_ID" constraintName="T_SCOPEPK"
                        tableName="T_SCOPE"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-12">
+    <changeSet author="prasenjit-net" id="03032018-13">
         <addPrimaryKey columnNames="USERNAME" constraintName="T_USERPK"
                        tableName="T_USER"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-13">
-        <addUniqueConstraint columnNames="AUTHORIZATION_CODE"
-                             constraintName="UC_T_AUTHORIZATION_CODEAUTHORIZATION_CODE_COL"
-                             tableName="T_AUTHORIZATION_CODE"/>
-    </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-14">
-        <addUniqueConstraint columnNames="CLIENT_ID"
-                             constraintName="UC_T_CLIENTCLIENT_ID_COL" tableName="T_CLIENT"/>
-    </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-15">
-        <addUniqueConstraint columnNames="REFRESH_TOKEN"
-                             constraintName="UC_T_REFRESH_TOKENREFRESH_TOKEN_COL" tableName="T_REFRESH_TOKEN"/>
-    </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-16">
-        <addUniqueConstraint columnNames="SCOPE_ID"
-                             constraintName="UC_T_SCOPESCOPE_ID_COL" tableName="T_SCOPE"/>
-    </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-17">
+    <changeSet author="prasenjit-net" id="03032018-14">
         <addUniqueConstraint columnNames="SCOPE_NAME"
                              constraintName="UC_T_SCOPESCOPE_NAME_COL" tableName="T_SCOPE"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="1517437401075-18">
-        <addUniqueConstraint columnNames="USERNAME"
-                             constraintName="UC_T_USERUSERNAME_COL" tableName="T_USER"/>
-    </changeSet>
-    <changeSet author="prasenjit (generated)" id="1518736842966-11">
+    <changeSet author="prasenjit-net" id="03032018-15">
         <addPrimaryKey columnNames="ASSOCIATION, USER_TYPE" constraintName="T_E2E_KEYPK" tableName="T_E2E_KEY"/>
     </changeSet>
 </databaseChangeLog>

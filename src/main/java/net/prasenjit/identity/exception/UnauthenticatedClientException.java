@@ -11,9 +11,4 @@ public class UnauthenticatedClientException extends RuntimeException {
         super(message);
         this.error = error;
     }
-
-    public UnauthenticatedClientException(String error, String message, Throwable cause) {
-        super(message, cause);
-        this.error = error;
-    }
 }

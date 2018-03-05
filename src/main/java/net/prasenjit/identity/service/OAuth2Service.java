@@ -3,6 +3,7 @@ package net.prasenjit.identity.service;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.*;
 import net.prasenjit.identity.exception.OAuthException;
+import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.oauth.GrantType;
@@ -46,7 +47,7 @@ public class OAuth2Service {
         try {
             authentication = authenticationManager.authenticate(authentication);
         } catch (BadCredentialsException e) {
-            throw new OAuthException("access_denied", "user authentication failed");
+            throw new OAuthException("access_denied", "user authentication failed", e);
         }
         String filteredScopes = filterScope(client.getApprovedScopes(), requestedScope);
         AccessToken accessToken = codeFactory.createAccessToken((User) authentication.getPrincipal(),
@@ -187,7 +188,7 @@ public class OAuth2Service {
             Optional<Client> optionalClient = clientRepository.findById(clientId);
             if (optionalClient.isPresent()) {
                 if (optionalClient.get().isSecureClient()) {
-                    throw new OAuthException("unauthorized_client", "Secure client must be authenticated");
+                    throw new UnauthenticatedClientException("unauthorized_client", "Secure client must be authenticated");
                 } else {
                     client = optionalClient.get();
                 }
@@ -231,7 +232,7 @@ public class OAuth2Service {
 
     public OAuthToken processRefreshTokenGrantToken(Client client, String refreshToken) {
         if (client == null) {
-            throw new OAuthException("unauthorized_client", "Client is not authenticated");
+            throw new UnauthenticatedClientException("unauthorized_client", "Client is not authenticated");
         }
         Optional<RefreshToken> tokenOptional = refreshTokenRepository.findById(refreshToken);
         if (tokenOptional.isPresent()) {
@@ -247,7 +248,7 @@ public class OAuth2Service {
                                 client.getRefreshTokenValidity());
                         return codeFactory.createOAuthToken(accessToken, refreshToken1);
                     } else {
-                        throw new OAuthException("access_denied", "Invalid user");
+                        throw new UnauthenticatedClientException("access_denied", "Invalid user");
                     }
                 } else {
                     throw new OAuthException("access_denied", "Associated user not found");
