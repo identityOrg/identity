@@ -130,13 +130,6 @@
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.oracle/ojdbc6 -->
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>ojdbc7</artifactId>
-            <version>12</version>
-            <scope>runtime</scope>
-        </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -280,5 +273,18 @@
         </repository>
     </repositories>
 
+    <profiles>
+        <profile>
+            <id>oracle</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.oracle</groupId>
+                    <artifactId>ojdbc7</artifactId>
+                    <version>12</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
 </project>
