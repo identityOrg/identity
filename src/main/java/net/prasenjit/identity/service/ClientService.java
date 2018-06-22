@@ -24,6 +24,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -48,9 +49,17 @@ public class ClientService implements UserDetailsService {
 
     @Transactional
     public Client createClient(CreateClientRequest request) {
-        Optional<Client> optionalClient = clientRepository.findById(request.getClientId());
-        if (optionalClient.isPresent()) {
-            throw new ConflictException("Client already exist.");
+        if (StringUtils.hasText(request.getClientId())) {
+            Optional<Client> optionalClient = clientRepository.findById(request.getClientId());
+            if (optionalClient.isPresent()) {
+                throw new ConflictException("Client already exist.");
+            }
+        } else {
+            Optional<Client> optional;
+            do {
+                request.setClientId(UUID.randomUUID().toString());
+                optional = clientRepository.findById(request.getClientId());
+            } while (optional.isPresent());
         }
         Client client = new Client();
         client.setStatus(Status.LOCKED);
@@ -60,12 +69,10 @@ public class ClientService implements UserDetailsService {
         client.setRedirectUri(request.getRedirectUri().toString());
         client.setClientName(request.getClientName());
         client.setExpiryDate(request.getExpiryDate());
-        client.setApprovedScopes(request.getApprovedScopes());
         client.setAccessTokenValidity(request.getAccessTokenValidity());
         client.setRefreshTokenValidity(request.getRefreshTokenValidity());
         client.setClientId(request.getClientId());
-
-        validateClientScope(client.getApprovedScopes());
+        client.setScopes(request.getScopes());
 
         return clientRepository.saveAndFlush(client);
     }
@@ -81,9 +88,9 @@ public class ClientService implements UserDetailsService {
         savedClient.setClientName(request.getClientName());
         savedClient.setRefreshTokenValidity(request.getRefreshTokenValidity());
         savedClient.setAccessTokenValidity(request.getAccessTokenValidity());
-        savedClient.setApprovedScopes(request.getApprovedScopes());
+        savedClient.setScopes(request.getScopes());
         savedClient.setExpiryDate(request.getExpiryDate());
-        validateClientScope(request.getApprovedScopes());
+
         return savedClient;
     }
 
