@@ -72,6 +72,8 @@ public class UserService implements UserDetailsService {
         User savedUser = optionalUser.get();
         savedUser.setFirstName(user.getFirstName());
         savedUser.setLastName(user.getLastName());
+        savedUser.setExpiryDate(user.getExpiryDate());
+        savedUser.setAdmin(user.getAdmin());
 
         return savedUser;
     }

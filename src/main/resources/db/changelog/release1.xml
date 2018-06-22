@@ -62,9 +62,6 @@
             <column name="ACCESS_TOKEN_VALIDITY" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
-            <column name="APPROVED_SCOPE" type="VARCHAR(500)">
-                <constraints nullable="false"/>
-            </column>
             <column name="CLIENT_NAME" type="VARCHAR(500)">
                 <constraints nullable="false"/>
             </column>
@@ -164,34 +161,54 @@
         </createTable>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-8">
+        <createTable tableName="T_CLIENT_SCOPE">
+            <column name="CLIENT_ID" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SCOPE_ID" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="prasenjit-net" id="03032018-20">
         <addPrimaryKey columnNames="ACCESS_TOKEN"
                        constraintName="T_ACCESS_TOKENPK" tableName="T_ACCESS_TOKEN"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-9">
+    <changeSet author="prasenjit-net" id="03032018-21">
         <addPrimaryKey columnNames="AUTHORIZATION_CODE"
                        constraintName="T_AUTHORIZATION_CODEPK" tableName="T_AUTHORIZATION_CODE"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-10">
+    <changeSet author="prasenjit-net" id="03032018-22">
         <addPrimaryKey columnNames="CLIENT_ID" constraintName="T_CLIENTPK"
                        tableName="T_CLIENT"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-11">
+    <changeSet author="prasenjit-net" id="03032018-23">
         <addPrimaryKey columnNames="REFRESH_TOKEN"
                        constraintName="T_REFRESH_TOKENPK" tableName="T_REFRESH_TOKEN"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-12">
+    <changeSet author="prasenjit-net" id="03032018-24">
         <addPrimaryKey columnNames="SCOPE_ID" constraintName="T_SCOPEPK"
                        tableName="T_SCOPE"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-13">
+    <changeSet author="prasenjit-net" id="03032018-25">
         <addPrimaryKey columnNames="USERNAME" constraintName="T_USERPK"
                        tableName="T_USER"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-14">
+    <changeSet author="prasenjit-net" id="03032018-26">
         <addUniqueConstraint columnNames="SCOPE_NAME"
                              constraintName="UC_T_SCOPESCOPE_NAME_COL" tableName="T_SCOPE"/>
     </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-15">
+    <changeSet author="prasenjit-net" id="03032018-27">
         <addPrimaryKey columnNames="ASSOCIATION, USER_TYPE" constraintName="T_E2E_KEYPK" tableName="T_E2E_KEY"/>
+    </changeSet>
+    <changeSet author="prasenjit-net" id="03032018-28">
+        <addForeignKeyConstraint baseTableName="T_CLIENT_SCOPE" baseColumnNames="CLIENT_ID"
+                                 constraintName="FK_CLIENT_SCOPE_CLIENT"
+                                 referencedTableName="T_CLIENT"
+                                 referencedColumnNames="CLIENT_ID"/>
+        <addForeignKeyConstraint baseTableName="T_CLIENT_SCOPE" baseColumnNames="SCOPE_ID"
+                                 constraintName="FK_CLIENT_SCOPE_SCOPE"
+                                 referencedTableName="T_SCOPE"
+                                 referencedColumnNames="SCOPE_ID"/>
     </changeSet>
 </databaseChangeLog>

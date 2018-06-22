@@ -20,6 +20,7 @@ public class ResourceSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.antMatcher("/api/**")
+                .cors().and()
                 .csrf().disable()
                 .addFilterBefore(createBearerFilter(), BasicAuthenticationFilter.class)
                 .authorizeRequests()

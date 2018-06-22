@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class CreateUserRequest {
-    @Pattern(regexp = "/^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$/")
+    @Pattern(regexp = "^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$")
     @NotNull
     private String username;
     private boolean admin;

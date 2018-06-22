@@ -2,9 +2,11 @@ package net.prasenjit.identity;
 
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.Scope;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.repository.ScopeRepository;
 import net.prasenjit.identity.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,6 +31,8 @@ public class IdentityApplication implements ApplicationRunner {
     @Autowired
     private ClientRepository clientRepository;
     private PasswordEncoder userPasswordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    @Autowired
+    private ScopeRepository scopeRepository;
 
     public static void main(String[] args) {
         SpringApplication.run(IdentityApplication.class, args);
@@ -36,6 +40,9 @@ public class IdentityApplication implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+
+        scopeRepository.save(new Scope("scope1", "Scope 1"));
+        scopeRepository.save(new Scope("scope2", "Scope 2"));
 
         User admin = createAdmin("admin");
         userRepository.saveAndFlush(admin);
@@ -57,7 +64,7 @@ public class IdentityApplication implements ApplicationRunner {
         client.setStatus(Status.ACTIVE);
         client.setClientName("Test Client");
         client.setApprovedScopes("scope1");
-        client.setRedirectUri("http://localhost:9090/login/oauth2/code/identity");
+        client.setRedirectUri("http://localhost:4200/callback");
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
         return client;

@@ -6,11 +6,16 @@ import net.prasenjit.identity.oauth.GrantType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import javax.persistence.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Data
 @Entity
@@ -39,8 +44,11 @@ public class Client implements UserDetails {
     @Column(name = "EXPIRY_DATE")
     private LocalDateTime expiryDate;
 
-    @Column(name = "APPROVED_SCOPE", length = 500, nullable = false)
-    private String approvedScopes;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "T_CLIENT_SCOPE",
+            joinColumns = @JoinColumn(name = "CLIENT_ID", referencedColumnName = "CLIENT_ID"),
+            inverseJoinColumns = @JoinColumn(name = "SCOPE_ID", referencedColumnName = "SCOPE_ID"))
+    private Set<Scope> scopes;
 
     @Column(name = "REDIRECT_URI", length = 500, nullable = false)
     private String redirectUri;
@@ -78,6 +86,7 @@ public class Client implements UserDetails {
         }
     }
 
+
     @Override
     @JsonIgnore
     public boolean isAccountNonLocked() {
@@ -113,6 +122,22 @@ public class Client implements UserDetails {
 
     @JsonIgnore
     public boolean isSecureClient() {
-        return null != clientSecret;
+        return StringUtils.hasText(clientSecret);
+    }
+
+    public String getApprovedScopes() {
+        if (!CollectionUtils.isEmpty(this.scopes)) {
+            return this.scopes.stream().map(Scope::getScopeId).reduce((x, y) -> x + " " + y).orElse(null);
+        }
+        return null;
+    }
+
+    public void setApprovedScopes(String approvedScopes) {
+        if (StringUtils.hasText(approvedScopes)) {
+            String[] scopes = StringUtils.delimitedListToStringArray(approvedScopes, " ");
+            this.scopes = Stream.of(scopes).map(s -> new Scope(s, null)).collect(Collectors.toSet());
+        } else {
+            this.scopes = null;
+        }
     }
 }

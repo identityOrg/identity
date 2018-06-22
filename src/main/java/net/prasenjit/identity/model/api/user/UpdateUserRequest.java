@@ -2,8 +2,10 @@ package net.prasenjit.identity.model.api.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotEmpty;
+import java.time.LocalDateTime;
 
 @Data
 public class UpdateUserRequest {
@@ -13,4 +15,7 @@ public class UpdateUserRequest {
     private String firstName;
     @NotEmpty
     private String lastName;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime expiryDate;
+    private Boolean admin;
 }

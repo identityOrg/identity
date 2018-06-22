@@ -38,7 +38,7 @@ public class User implements UserDetails {
     private LocalDateTime passwordExpiryDate;
 
     @Column(name = "ADMIN", nullable = false)
-    private boolean admin;
+    private Boolean admin;
 
     @Column(name = "FIRST_NAME")
     private String firstName;
@@ -47,7 +47,6 @@ public class User implements UserDetails {
     private String lastName;
 
     @Override
-    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return admin ? AuthorityUtils.createAuthorityList("USER", "ADMIN") : AuthorityUtils.createAuthorityList("USER");
     }

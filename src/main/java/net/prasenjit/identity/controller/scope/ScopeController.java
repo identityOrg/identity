@@ -38,18 +38,17 @@ public class ScopeController implements ScopeApi {
     @PutMapping(value = "{scopeId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Scope update(@PathVariable("scopeId") String scopeId, @RequestBody @Valid UpdateScopeRequest request) {
         Optional<Scope> scopeOptional = scopeRepository.findById(scopeId);
-        if (scopeOptional.isPresent()) {
+        if (!scopeOptional.isPresent()) {
             throw new ItemNotFoundException("Scope not exist");
         }
-        Scope scope = new Scope();
-        scope.setScopeId(scopeId);
+        Scope scope = scopeOptional.get();
         scope.setScopeName(request.getScopeName());
 
         return scopeRepository.saveAndFlush(scope);
     }
 
     @Override
-    @GetMapping(value = "{scopeId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "{scopeId}")
     public Scope findScope(@PathVariable("scopeId") String scopeId) {
         Optional<Scope> scopeOptional = scopeRepository.findById(scopeId);
         if (!scopeOptional.isPresent()) {

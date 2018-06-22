@@ -7,7 +7,7 @@ import net.prasenjit.identity.entity.Status;
 public class SearchUserRequest {
     private String username;
     private Status status;
-    private boolean admin;
+    private Boolean admin;
     private String firstName;
     private String lastName;
 }

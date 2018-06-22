@@ -32,7 +32,7 @@ public class UserController implements UserApi {
         user.setStatus(request.getStatus());
         user.setLastName(request.getLastName());
         user.setFirstName(request.getFirstName());
-        user.setAdmin(request.isAdmin());
+        user.setAdmin(request.getAdmin());
         user.setUsername(request.getUsername());
 
         Example<User> clientExample = Example.of(user);
