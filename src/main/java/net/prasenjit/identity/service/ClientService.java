@@ -8,6 +8,7 @@ import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.InvalidRequestException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.exception.OperationIgnoredException;
+import net.prasenjit.identity.model.api.client.ClientSecretResponse;
 import net.prasenjit.identity.model.api.client.CreateClientRequest;
 import net.prasenjit.identity.model.api.client.UpdateClientRequest;
 import net.prasenjit.identity.repository.ClientRepository;
@@ -128,4 +129,15 @@ public class ClientService implements UserDetailsService {
         }
     }
 
+    public ClientSecretResponse displayClientSecret(String clientId) {
+        Optional<Client> clientOptional = clientRepository.findById(clientId);
+        if (clientOptional.isPresent()) {
+            Client client = clientOptional.get();
+            ClientSecretResponse resp = new ClientSecretResponse();
+            resp.setClientSecret(textEncryptor.decrypt(client.getClientSecret()));
+            return resp;
+        } else {
+            throw new ItemNotFoundException("Client not found");
+        }
+    }
 }

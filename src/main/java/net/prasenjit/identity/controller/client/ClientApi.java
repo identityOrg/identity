@@ -3,10 +3,7 @@ package net.prasenjit.identity.controller.client;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import net.prasenjit.identity.entity.Client;
-import net.prasenjit.identity.model.api.client.CreateClientRequest;
-import net.prasenjit.identity.model.api.client.SearchClientRequest;
-import net.prasenjit.identity.model.api.client.StatusClientRequest;
-import net.prasenjit.identity.model.api.client.UpdateClientRequest;
+import net.prasenjit.identity.model.api.client.*;
 
 import java.util.List;
 
@@ -31,4 +28,6 @@ public interface ClientApi {
     @ApiOperation(value = "Reset Secret", notes = "Reset client secret.")
     Client secret(String clientId);
 
+    @ApiOperation(value = "Get Secret", notes = "Get client secret.")
+    ClientSecretResponse getSecret(String clientId);
 }

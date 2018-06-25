@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.exception.ItemNotFoundException;
-import net.prasenjit.identity.model.api.client.CreateClientRequest;
-import net.prasenjit.identity.model.api.client.SearchClientRequest;
-import net.prasenjit.identity.model.api.client.StatusClientRequest;
-import net.prasenjit.identity.model.api.client.UpdateClientRequest;
+import net.prasenjit.identity.model.api.client.*;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.service.ClientService;
 import org.springframework.data.domain.Example;
@@ -77,5 +74,10 @@ public class ClientController implements ClientApi {
     @PostMapping(value = "{clientId}/secret", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Client secret(@PathVariable(value = "clientId") String clientId) {
         return clientService.resetSecret(clientId);
+    }
+
+    @Override
+    public ClientSecretResponse getSecret(String clientId) {
+        return clientService.displayClientSecret(clientId);
     }
 }
