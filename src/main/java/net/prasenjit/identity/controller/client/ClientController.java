@@ -71,13 +71,14 @@ public class ClientController implements ClientApi {
     }
 
     @Override
-    @PostMapping(value = "{clientId}/secret", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "{clientId}/secret")
     public Client secret(@PathVariable(value = "clientId") String clientId) {
         return clientService.resetSecret(clientId);
     }
 
     @Override
-    public ClientSecretResponse getSecret(String clientId) {
+    @GetMapping(value = "{clientId}/secret")
+    public ClientSecretResponse getSecret(@PathVariable(value = "clientId") String clientId) {
         return clientService.displayClientSecret(clientId);
     }
 }

@@ -129,6 +129,7 @@ public class ClientService implements UserDetailsService {
         }
     }
 
+    @Transactional(readOnly = true)
     public ClientSecretResponse displayClientSecret(String clientId) {
         Optional<Client> clientOptional = clientRepository.findById(clientId);
         if (clientOptional.isPresent()) {
