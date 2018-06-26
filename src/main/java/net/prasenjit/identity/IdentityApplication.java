@@ -14,12 +14,14 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+@EnableAsync
 @SpringBootApplication
 public class IdentityApplication implements ApplicationRunner {
 

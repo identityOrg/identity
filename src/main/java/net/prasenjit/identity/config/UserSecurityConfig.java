@@ -13,14 +13,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 @Order(100)
 public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.parentAuthenticationManager(authenticationManager);
-    }
-
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable()
