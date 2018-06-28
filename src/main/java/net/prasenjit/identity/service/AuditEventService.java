@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AuthenticationAuditService {
+public class AuditEventService {
 
     private static final String PRINCIPLE_TYPE_USER = "USER";
     private static final String PRINCIPLE_TYPE_CLIENT = "CLIENT";
