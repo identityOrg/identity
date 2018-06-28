@@ -49,6 +49,9 @@ public class IdentityApplication implements ApplicationRunner {
         User admin = createAdmin("admin");
         userRepository.saveAndFlush(admin);
 
+        admin = createAdmin("user");
+        userRepository.saveAndFlush(admin);
+
         Client client = createClient("client", true);
         clientRepository.saveAndFlush(client);
 
