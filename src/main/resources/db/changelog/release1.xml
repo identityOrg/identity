@@ -132,7 +132,10 @@
             <column name="PASSWORD_EXPIRY_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="STATUS" type="VARCHAR(10)">
+            <column name="ACTIVE" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="LOCKED" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
             <column name="FIRST_NAME" type="VARCHAR(255)"/>

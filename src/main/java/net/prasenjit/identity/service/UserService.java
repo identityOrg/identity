@@ -49,7 +49,8 @@ public class UserService implements UserDetailsService {
             throw new ConflictException("User already exist.");
         }
         User user = new User();
-        user.setStatus(Status.LOCKED);
+        user.setActive(false);
+        user.setLocked(false);
         LocalDateTime now = LocalDateTime.now();
         user.setPasswordExpiryDate(now.plus(identityProperties.getUserPasswordValidity()));
         user.setCreationDate(now);
@@ -83,10 +84,10 @@ public class UserService implements UserDetailsService {
         Optional<User> optionalUser = userRepository.findById(username);
         if (!optionalUser.isPresent()) {
             throw new ItemNotFoundException("User doesn't exist.");
-        } else if (optionalUser.get().getStatus() == status) {
+        } else if (optionalUser.get().isEnabled() == (status == Status.ACTIVE)) {
             throw new OperationIgnoredException("Status not changed");
         } else {
-            optionalUser.get().setStatus(status);
+            optionalUser.get().setActive(status == Status.ACTIVE);
             if (status == Status.ACTIVE) {
                 Assert.notNull(password, "Password is required to activate user.");
                 optionalUser.get().setPassword(passwordEncoder.encode(password));

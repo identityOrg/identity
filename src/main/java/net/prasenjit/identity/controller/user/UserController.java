@@ -29,7 +29,8 @@ public class UserController implements UserApi {
     @GetMapping
     public List<User> searchClient(@ModelAttribute SearchUserRequest request) {
         User user = new User();
-        user.setStatus(request.getStatus());
+        user.setLocked(request.getLocked());
+        user.setActive(request.getActive());
         user.setLastName(request.getLastName());
         user.setFirstName(request.getFirstName());
         user.setAdmin(request.getAdmin());

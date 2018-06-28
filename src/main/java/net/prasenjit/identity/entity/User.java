@@ -24,9 +24,11 @@ public class User implements UserDetails {
     @Column(name = "PASSWORD", length = 200, nullable = false)
     private String password;
 
-    @Column(name = "STATUS", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private Status status;
+    @Column(name = "LOCKED", nullable = false)
+    private Boolean locked;
+
+    @Column(name = "ACTIVE", nullable = false)
+    private Boolean active;
 
     @Column(name = "CREATION_DATE", nullable = false)
     private LocalDateTime creationDate;
@@ -65,22 +67,19 @@ public class User implements UserDetails {
     @Override
     @JsonIgnore
     public boolean isAccountNonLocked() {
-        return status != Status.LOCKED;
+        return !locked;
     }
 
     @Override
     @JsonIgnore
     public boolean isCredentialsNonExpired() {
-        if (passwordExpiryDate != null) {
-            return passwordExpiryDate.isAfter(LocalDateTime.now());
-        }
-        return true;
+        return passwordExpiryDate == null || passwordExpiryDate.isAfter(LocalDateTime.now());
     }
 
     @Override
     @JsonIgnore
     public boolean isEnabled() {
-        return status == Status.ACTIVE;
+        return active;
     }
 
     @JsonIgnore

@@ -25,6 +25,8 @@ public class Profile implements UserDetails {
     private String firstName;
     private String lastName;
     private Status status;
+    private Boolean locked;
+    private Boolean active;
     private boolean client;
 
     @JsonCreator
@@ -42,7 +44,8 @@ public class Profile implements UserDetails {
         user.getAuthorities().stream()
                 .map(a -> new SimpleGrantedAuthority(a.getAuthority()))
                 .forEach(a -> this.authorities.add(a));
-        this.status = user.getStatus();
+        this.active = user.getActive();
+        this.locked = user.getLocked();
         this.client = false;
     }
 

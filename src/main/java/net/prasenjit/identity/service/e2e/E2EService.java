@@ -8,6 +8,7 @@ import net.prasenjit.identity.crypto.CyclicEncryptorFactory;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.E2EKey;
 import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.E2EKeyRepository;
 import org.springframework.security.core.Authentication;
@@ -112,10 +113,12 @@ public class E2EService {
         }
         UserDetails principal = (UserDetails) authentication.getPrincipal();
         System.out.println(principal.getClass());
-        if (principal.getClass().getName().equals(User.class.getName())) {
+        if (principal instanceof User) {
             return E2EKey.UserType.USER;
-        } else if (Client.class.getName().equals(principal.getClass().getName())) {
+        } else if (principal instanceof Client) {
             return E2EKey.UserType.CLIENT;
+        } else if (principal instanceof Profile) {
+            return ((Profile) principal).isClient() ? E2EKey.UserType.CLIENT : E2EKey.UserType.USER;
         }
         throw new RuntimeException("Could not determine User Type.");
     }
