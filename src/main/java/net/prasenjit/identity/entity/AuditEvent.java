@@ -23,6 +23,9 @@ public class AuditEvent {
     @Column(name = "AUTH_TYPE", updatable = false)
     private String authType;
 
+    @Column(name = "FAILURE", updatable = false)
+    private Boolean failure;
+
     @Column(name = "EXCEPTION_NAME", updatable = false)
     private String exceptionName;
 

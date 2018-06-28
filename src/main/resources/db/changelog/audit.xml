@@ -13,6 +13,9 @@
             <column name="EVENT_TIME" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
+            <column name="FAILURE" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
             <column name="EXCEPTION_NAME" type="VARCHAR(255)"/>
             <column name="EXCEPTION_MESSAGE" type="VARCHAR(500)"/>
             <column name="PRINCIPLE_NAME" type="VARCHAR(50)"/>

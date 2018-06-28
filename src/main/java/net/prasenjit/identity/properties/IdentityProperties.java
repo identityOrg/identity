@@ -13,4 +13,6 @@ public class IdentityProperties {
     private CryptoProperties cryptoProperties = new CryptoProperties();
     private Duration userPasswordValidity = Duration.ofDays(60);
     private Duration e2eKeyValidity = Duration.ofHours(6);
+    private int lockUserOnErrorCount = 3;
+    private int lockUserOn7DayErrorCount = 10;
 }

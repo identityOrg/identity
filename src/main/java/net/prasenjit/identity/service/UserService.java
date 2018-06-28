@@ -80,6 +80,17 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
+    public User lockUser(String username, boolean lock) {
+        Optional<User> optionalUser = userRepository.findById(username);
+        if (!optionalUser.isPresent()) {
+            throw new ItemNotFoundException("User doesn't exist.");
+        } else {
+            optionalUser.get().setLocked(lock);
+        }
+        return optionalUser.get();
+    }
+
+    @Transactional
     public User changeStatus(String username, Status status, String password) {
         Optional<User> optionalUser = userRepository.findById(username);
         if (!optionalUser.isPresent()) {
