@@ -19,7 +19,7 @@
             <column name="SCOPE" type="VARCHAR(500)">
                 <constraints nullable="false"/>
             </column>
-            <column name="USER_PROFILE" type="BLOB">
+            <column name="USER_PROFILE" type="CLOB">
                 <constraints nullable="false"/>
             </column>
             <column name="USERNAME" type="VARCHAR(50)">

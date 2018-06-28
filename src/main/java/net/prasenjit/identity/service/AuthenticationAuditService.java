@@ -5,9 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.AuditEvent;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.oauth.BasicAuthenticationToken;
 import net.prasenjit.identity.oauth.BearerAuthenticationToken;
-import net.prasenjit.identity.repository.AuditEvent1Repository;
+import net.prasenjit.identity.repository.AuditEventRepository;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,7 +28,12 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class AuthenticationAuditService {
 
-    private final AuditEvent1Repository auditRepository;
+    private static final String PRINCIPLE_TYPE_USER = "USER";
+    private static final String PRINCIPLE_TYPE_CLIENT = "CLIENT";
+    private static final String AUTH_TYPE_BASIC = "BASIC";
+    private static final String AUTH_TYPE_BEARER = "BEARER";
+    private static final String AUTH_TYPE_FORM = "FORM";
+    private final AuditEventRepository auditRepository;
 
     @Transactional
     @EventListener(value = AuthenticationSuccessEvent.class)
@@ -89,16 +95,19 @@ public class AuthenticationAuditService {
                 audit.setRemoteIp(((WebAuthenticationDetails) authToken.getDetails()).getRemoteAddress());
             }
             if (authToken.getPrincipal() instanceof User) {
-                audit.setPrincipleType("USER");
+                audit.setPrincipleType(PRINCIPLE_TYPE_USER);
             } else if (authToken.getPrincipal() instanceof Client) {
-                audit.setPrincipleType("CLIENT");
+                audit.setPrincipleType(PRINCIPLE_TYPE_CLIENT);
+            } else if (authToken.getPrincipal() instanceof Profile) {
+                audit.setPrincipleType(((Profile) authToken.getPrincipal()).isClient() ? PRINCIPLE_TYPE_CLIENT
+                        : PRINCIPLE_TYPE_USER);
             }
             if (authToken instanceof BasicAuthenticationToken) {
-                audit.setAuthType("BASIC");
+                audit.setAuthType(AUTH_TYPE_BASIC);
             } else if (authToken instanceof BearerAuthenticationToken) {
-                audit.setAuthType("BEARER");
+                audit.setAuthType(AUTH_TYPE_BEARER);
             } else if (authToken instanceof UsernamePasswordAuthenticationToken) {
-                audit.setAuthType("FORM");
+                audit.setAuthType(AUTH_TYPE_FORM);
             }
         }
     }

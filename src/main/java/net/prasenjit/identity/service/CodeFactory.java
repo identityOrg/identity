@@ -5,6 +5,7 @@ import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.RefreshToken;
 import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.RefreshTokenRepository;
@@ -48,7 +49,7 @@ public class CodeFactory {
         LocalDateTime creationDate = LocalDateTime.now();
         accessToken.setCreationDate(creationDate);
         accessToken.setExpiryDate(creationDate.plus(duration));
-        accessToken.setUserProfile(user);
+        accessToken.setUserProfile(Profile.create(user));
         accessToken.setClientId(clientId);
         accessToken.setScope(scope);
         accessTokenRepository.saveAndFlush(accessToken);

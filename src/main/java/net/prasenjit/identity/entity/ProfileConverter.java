@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.userdetails.UserDetails;
+import net.prasenjit.identity.model.Profile;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
@@ -14,11 +14,11 @@ import java.io.IOException;
 
 @Slf4j
 @Converter(autoApply = true)
-public class UserDetailConverter implements AttributeConverter<UserDetails, String> {
+public class ProfileConverter implements AttributeConverter<Profile, String> {
 
     private ObjectMapper objectMapper;
 
-    public UserDetailConverter() {
+    public ProfileConverter() {
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         VisibilityChecker<?> visibility = objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
                 .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
@@ -30,18 +30,9 @@ public class UserDetailConverter implements AttributeConverter<UserDetails, Stri
     }
 
     @Override
-    public String convertToDatabaseColumn(UserDetails userDetails) {
-        StringBuilder builder;
-        if (userDetails instanceof User) {
-            builder = new StringBuilder("USER|");
-        } else if (userDetails instanceof Client) {
-            builder = new StringBuilder("CLIENT|");
-        } else {
-            throw new RuntimeException("Invalid source class for UserDetail JPA converter");
-        }
+    public String convertToDatabaseColumn(Profile userDetails) {
         try {
-            builder.append(objectMapper.writeValueAsString(userDetails));
-            return builder.toString();
+            return objectMapper.writeValueAsString(userDetails);
         } catch (JsonProcessingException e) {
             log.error("Failed to JSON convert user detail in JPA converter");
             throw new RuntimeException(e);
@@ -49,18 +40,9 @@ public class UserDetailConverter implements AttributeConverter<UserDetails, Stri
     }
 
     @Override
-    public UserDetails convertToEntityAttribute(String s) {
-        String jsonString;
+    public Profile convertToEntityAttribute(String s) {
         try {
-            if (s.startsWith("USER")) {
-                jsonString = s.substring(5);
-                return objectMapper.readValue(jsonString, User.class);
-            } else if (s.startsWith("CLIENT")) {
-                jsonString = s.substring(7);
-                return objectMapper.readValue(jsonString, Client.class);
-            } else {
-                throw new RuntimeException("Invalid serialized object in JPA converter");
-            }
+            return objectMapper.readValue(s, Profile.class);
         } catch (IOException e) {
             log.error("Error reading JSON to object in JPA converter");
             throw new RuntimeException(e);

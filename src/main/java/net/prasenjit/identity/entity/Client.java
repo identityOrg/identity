@@ -13,6 +13,7 @@ import javax.persistence.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,7 +62,15 @@ public class Client implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return AuthorityUtils.createAuthorityList("CLIENT");
+        if (CollectionUtils.isEmpty(scopes)) {
+            return AuthorityUtils.createAuthorityList("CLIENT");
+        } else {
+            List<String> scopeList = scopes.stream()
+                    .map(s -> s.getScopeId().toUpperCase())
+                    .map(s -> "SCOPE_" + s).collect(Collectors.toList());
+            scopeList.add("CLIENT");
+            return AuthorityUtils.createAuthorityList(scopeList.toArray(new String[0]));
+        }
     }
 
     @Override

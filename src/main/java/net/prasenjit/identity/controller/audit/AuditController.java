@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.AuditEvent;
 import net.prasenjit.identity.model.api.audit.SearchAuditRequest;
-import net.prasenjit.identity.repository.AuditEvent1Repository;
+import net.prasenjit.identity.repository.AuditEventRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
@@ -22,7 +22,7 @@ import java.util.List;
 @RequestMapping(value = "api/audit", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AuditController implements AuditApi {
 
-    private final AuditEvent1Repository auditRepository;
+    private final AuditEventRepository auditRepository;
 
     @Override
     @GetMapping
