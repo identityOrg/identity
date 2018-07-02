@@ -12,6 +12,7 @@ import java.util.List;
 public interface AuditEventRepository extends JpaRepository<AuditEvent, String> {
     @Query("select a from AuditEvent as a where a.authType = 'FORM' and a.principleType='USER'" +
             " and a.principleName = ?1 and a.eventTime > ?2 order by a.eventTime desc")
-    List<AuditEvent> last7DaysEventforUserFormLogin(String principle,
-                                                    LocalDateTime eventTime);
+    List<AuditEvent> last7DaysEventforUserFormLogin(String principle, LocalDateTime eventTime);
+
+    List<AuditEvent> findByDisplayLevelGreaterThan(int displayLevel);
 }

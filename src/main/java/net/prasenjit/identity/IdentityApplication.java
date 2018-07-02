@@ -83,7 +83,7 @@ public class IdentityApplication implements ApplicationRunner {
         user.setPassword(userPasswordEncoder.encode(username));
         user.setActive(true);
         user.setLocked(false);
-        user.setPasswordExpiryDate(LocalDateTime.now().plusDays(2));
+        user.setPasswordExpiryDate(LocalDateTime.now().plusDays(1));
         return user;
     }
 }

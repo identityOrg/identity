@@ -5,9 +5,6 @@ import net.prasenjit.identity.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.AuditEvent;
 import net.prasenjit.identity.model.api.audit.SearchAuditRequest;
 import net.prasenjit.identity.repository.AuditEventRepository;
-import org.springframework.beans.BeanUtils;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -27,10 +24,12 @@ public class AuditController implements AuditApi {
     @Override
     @GetMapping
     public List<AuditEvent> searchAudit(@ModelAttribute SearchAuditRequest searchAuditRequest) {
-        AuditEvent audit = new AuditEvent();
-        BeanUtils.copyProperties(searchAuditRequest, audit);
+        //AuditEvent audit = new AuditEvent();
+        //BeanUtils.copyProperties(searchAuditRequest, audit);
 
-        Example<AuditEvent> auditEx = Example.of(audit, ExampleMatcher.matchingAny());
-        return auditRepository.findAll(auditEx);
+        //ExampleMatcher matcher = ExampleMatcher.matchingAny()
+        //        .withMatcher("displayLevel", match -> match.caseSensitive())
+        //Example<AuditEvent> auditEx = Example.of(audit, matcher);
+        return auditRepository.findByDisplayLevelGreaterThan(searchAuditRequest.getDisplayLevel());
     }
 }

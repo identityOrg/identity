@@ -1,8 +1,13 @@
 package net.prasenjit.identity.service;
 
 import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.events.ChangePasswordEvent;
+import net.prasenjit.identity.events.ChangeStatusEvent;
+import net.prasenjit.identity.events.CreateEvent;
+import net.prasenjit.identity.events.UpdateEvent;
 import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.InvalidRequestException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
@@ -12,6 +17,7 @@ import net.prasenjit.identity.model.api.user.UpdateUserRequest;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.UserRepository;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -30,6 +36,7 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final IdentityProperties identityProperties;
+    private final ApplicationEventPublisher eventPublisher;
     private PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     @Override
@@ -61,6 +68,9 @@ public class UserService implements UserDetailsService {
         user.setUsername(request.getUsername());
         user.setExpiryDate(request.getExpiryDate());
 
+        CreateEvent csEvent = new CreateEvent(this, ResourceType.USER, user.getUsername());
+        eventPublisher.publishEvent(csEvent);
+
         return userRepository.saveAndFlush(user);
     }
 
@@ -76,18 +86,20 @@ public class UserService implements UserDetailsService {
         savedUser.setExpiryDate(user.getExpiryDate());
         savedUser.setAdmin(user.getAdmin());
 
+        UpdateEvent csEvent = new UpdateEvent(this, ResourceType.USER, user.getUsername());
+        eventPublisher.publishEvent(csEvent);
+
         return savedUser;
     }
 
     @Transactional
-    public User lockUser(String username, boolean lock) {
+    public void lockUser(String username, boolean lock) {
         Optional<User> optionalUser = userRepository.findById(username);
         if (!optionalUser.isPresent()) {
             throw new ItemNotFoundException("User doesn't exist.");
         } else {
             optionalUser.get().setLocked(lock);
         }
-        return optionalUser.get();
     }
 
     @Transactional
@@ -102,6 +114,9 @@ public class UserService implements UserDetailsService {
             if (status == Status.ACTIVE) {
                 Assert.notNull(password, "Password is required to activate user.");
                 optionalUser.get().setPassword(passwordEncoder.encode(password));
+
+                ChangeStatusEvent csEvent = new ChangeStatusEvent(this, ResourceType.USER, username, status);
+                eventPublisher.publishEvent(csEvent);
             }
         }
         return optionalUser.get();
@@ -115,6 +130,9 @@ public class UserService implements UserDetailsService {
         } else {
             if (passwordEncoder.matches(oldPassword, optionalUser.get().getPassword())) {
                 optionalUser.get().setPassword(passwordEncoder.encode(newPassword));
+
+                ChangePasswordEvent cpEvent = new ChangePasswordEvent(this, ResourceType.USER, username);
+                eventPublisher.publishEvent(cpEvent);
             } else {
                 throw new InvalidRequestException("Old password doesnt match");
             }

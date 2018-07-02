@@ -13,13 +13,15 @@
             <column name="EVENT_TIME" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="FAILURE" type="BOOLEAN">
+            <column name="DISPLAY_LEVEL" type="INT">
                 <constraints nullable="false"/>
             </column>
             <column name="EXCEPTION_NAME" type="VARCHAR(255)"/>
             <column name="EXCEPTION_MESSAGE" type="VARCHAR(500)"/>
             <column name="PRINCIPLE_NAME" type="VARCHAR(50)"/>
-            <column name="PRINCIPLE_TYPE" type="VARCHAR(50)"/>
+            <column name="PRINCIPLE_TYPE" type="VARCHAR(15)"/>
+            <column name="RESOURCE_ID" type="VARCHAR(50)"/>
+            <column name="RESOURCE_TYPE" type="VARCHAR(15)"/>
             <column name="REMOTE_IP" type="VARCHAR(50)"/>
             <column name="SESSION_ID" type="VARCHAR(100)"/>
             <column name="MESSAGE" type="VARCHAR(100)"/>

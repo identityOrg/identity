@@ -3,19 +3,19 @@ package net.prasenjit.identity.service;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.Status;
+import net.prasenjit.identity.events.*;
 import net.prasenjit.identity.exception.ConflictException;
-import net.prasenjit.identity.exception.InvalidRequestException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.exception.OperationIgnoredException;
 import net.prasenjit.identity.model.api.client.ClientSecretResponse;
 import net.prasenjit.identity.model.api.client.CreateClientRequest;
 import net.prasenjit.identity.model.api.client.UpdateClientRequest;
 import net.prasenjit.identity.repository.ClientRepository;
-import net.prasenjit.identity.repository.ScopeRepository;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -32,13 +32,12 @@ import java.util.UUID;
 public class ClientService implements UserDetailsService {
 
     private final ClientRepository clientRepository;
-    private final ScopeRepository scopeRepository;
-
-    @Autowired
+    private final ApplicationEventPublisher eventPublisher;
     @Qualifier("client-password")
-    public TextEncryptor textEncryptor;
+    private final TextEncryptor textEncryptor;
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
         Optional<Client> client = clientRepository.findById(s);
         if (client.isPresent()) {
@@ -75,6 +74,10 @@ public class ClientService implements UserDetailsService {
         client.setClientId(request.getClientId());
         client.setScopes(request.getScopes());
 
+        CreateEvent csEvent = new CreateEvent(this,
+                ResourceType.CLIENT, request.getClientId());
+        eventPublisher.publishEvent(csEvent);
+
         return clientRepository.saveAndFlush(client);
     }
 
@@ -92,6 +95,10 @@ public class ClientService implements UserDetailsService {
         savedClient.setScopes(request.getScopes());
         savedClient.setExpiryDate(request.getExpiryDate());
 
+        UpdateEvent csEvent = new UpdateEvent(this,
+                ResourceType.CLIENT, request.getClientId());
+        eventPublisher.publishEvent(csEvent);
+
         return savedClient;
     }
 
@@ -104,6 +111,10 @@ public class ClientService implements UserDetailsService {
             throw new OperationIgnoredException("Status not changed");
         } else {
             optionalClient.get().setStatus(status);
+
+            ChangeStatusEvent csEvent = new ChangeStatusEvent(this,
+                    ResourceType.CLIENT, clientId, status);
+            eventPublisher.publishEvent(csEvent);
         }
         return optionalClient.get();
     }
@@ -116,17 +127,12 @@ public class ClientService implements UserDetailsService {
         } else {
             String encryptedClientId = textEncryptor.encrypt(RandomStringUtils.randomAlphanumeric(20));
             optionalClient.get().setClientSecret(encryptedClientId);
+
+            ChangePasswordEvent cpEvent = new ChangePasswordEvent(this,
+                    ResourceType.CLIENT, clientId);
+            eventPublisher.publishEvent(cpEvent);
         }
         return optionalClient.get();
-    }
-
-    private void validateClientScope(String approvedScopes) {
-        String[] scopes = StringUtils.delimitedListToStringArray(approvedScopes, " ");
-        for (String scope : scopes) {
-            if (!scopeRepository.findById(scope).isPresent()) {
-                throw new InvalidRequestException("Invalid scope");
-            }
-        }
     }
 
     @Transactional(readOnly = true)

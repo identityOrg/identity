@@ -2,11 +2,15 @@ package net.prasenjit.identity.controller.scope;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.doc.SwaggerDocumented;
+import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.Scope;
+import net.prasenjit.identity.events.CreateEvent;
+import net.prasenjit.identity.events.UpdateEvent;
 import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.model.api.scope.UpdateScopeRequest;
 import net.prasenjit.identity.repository.ScopeRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +26,7 @@ import java.util.Optional;
 public class ScopeController implements ScopeApi {
 
     private final ScopeRepository scopeRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -31,6 +36,10 @@ public class ScopeController implements ScopeApi {
         if (scopeOptional.isPresent()) {
             throw new ConflictException("Scope already present");
         }
+
+        CreateEvent csEvent = new CreateEvent(this, ResourceType.SCOPE, scope.getScopeId());
+        eventPublisher.publishEvent(csEvent);
+
         return scopeRepository.saveAndFlush(scope);
     }
 
@@ -43,6 +52,9 @@ public class ScopeController implements ScopeApi {
         }
         Scope scope = scopeOptional.get();
         scope.setScopeName(request.getScopeName());
+
+        UpdateEvent csEvent = new UpdateEvent(this, ResourceType.SCOPE, scopeId);
+        eventPublisher.publishEvent(csEvent);
 
         return scopeRepository.saveAndFlush(scope);
     }

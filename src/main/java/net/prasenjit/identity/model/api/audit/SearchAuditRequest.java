@@ -6,6 +6,7 @@ import lombok.Data;
 public class SearchAuditRequest {
     private String eventName;
     private String authType;
+    private int displayLevel = 0;
     private String exceptionName;
     private String exceptionMessage;
     private String principleName;
