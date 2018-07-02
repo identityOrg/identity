@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.session.SessionFixationPr
 import org.springframework.security.web.authentication.switchuser.AuthenticationSwitchUserEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -99,8 +100,11 @@ public class AuditEventService {
     }
 
     private void checkErrorCount(AuditEvent audit) {
+        if (audit.getAuthType() != AuthenticationType.FORM) {
+            return;
+        }
         LocalDateTime last7Days = LocalDateTime.now().minusDays(7);
-        List<AuditEvent> events = auditRepository.last7DaysEventforUserFormLogin(audit.getPrincipleName(), last7Days);
+        List<AuditEvent> events = auditRepository.last7DaysEventForUserFormLogin(audit.getPrincipleName(), last7Days);
         int successiveErrorCount = 0;
         for (AuditEvent event : events) {
             if (event.getDisplayLevel() > 1) {
@@ -122,7 +126,11 @@ public class AuditEventService {
     }
 
     private void fillDetailAuditInfo(Authentication authentication, AuditEvent audit) {
-        audit.setPrincipleName(authentication.getName());
+        if (StringUtils.hasText(authentication.getName())) {
+            audit.setPrincipleName(authentication.getName());
+        } else if (authentication.getCredentials() instanceof String) {
+            audit.setPrincipleName((String) authentication.getCredentials());
+        }
         if (authentication.getDetails() != null && authentication.getDetails() instanceof WebAuthenticationDetails) {
             audit.setSessionId(((WebAuthenticationDetails) authentication.getDetails()).getSessionId());
             audit.setRemoteIp(((WebAuthenticationDetails) authentication.getDetails()).getRemoteAddress());
@@ -133,10 +141,12 @@ public class AuditEventService {
         } else if (authentication instanceof BasicAuthenticationToken) {
             audit.setPrincipleType(PrincipleType.CLIENT);
             audit.setAuthType(AuthenticationType.BASIC);
-        } else if (authentication.getPrincipal() instanceof Profile) {
+        } else {
             audit.setAuthType(AuthenticationType.BEARER);
-            audit.setPrincipleType(((Profile) authentication.getPrincipal()).isClient() ? PrincipleType.CLIENT
-                    : PrincipleType.USER);
+            if (authentication.getPrincipal() instanceof Profile) {
+                audit.setPrincipleType(((Profile) authentication.getPrincipal()).isClient() ? PrincipleType.CLIENT
+                        : PrincipleType.USER);
+            }
         }
     }
 }
