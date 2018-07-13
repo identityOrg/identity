@@ -11,6 +11,7 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "identity")
 public class IdentityProperties {
     private CryptoProperties cryptoProperties = new CryptoProperties();
+    private ServerMetadata serverMetadata = new ServerMetadata();
     private Duration userPasswordValidity = Duration.ofDays(60);
     private Duration e2eKeyValidity = Duration.ofHours(6);
     private int lockUserOnErrorCount = 3;

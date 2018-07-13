@@ -11,6 +11,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -27,7 +29,7 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/login", "/webjars/**", "/swagger-resources/**")
+                .antMatchers("/login", "/webjars/**", "/swagger-resources/**", "/.well-known/**")
                 .permitAll()
                 .mvcMatchers("/oauth/authorize")
                 .authenticated()
@@ -57,7 +59,7 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
                                             AuthenticationException exception) throws IOException, ServletException {
             if (exception instanceof CredentialsExpiredException) {
                 response.sendRedirect("/changePassword");
-            }else {
+            } else {
                 response.sendRedirect("/login?error");
             }
         }
@@ -76,8 +78,8 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
         @Override
         public void commence(HttpServletRequest request, HttpServletResponse response,
                              AuthenticationException authException) throws IOException, ServletException {
-            String requestURI = request.getRequestURI();
-            request.getSession().setAttribute(PREVIOUS_URL, requestURI);
+            UriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentRequest();
+            request.getSession().setAttribute(PREVIOUS_URL, builder.build().toString());
             response.sendRedirect("/login");
         }
     }
