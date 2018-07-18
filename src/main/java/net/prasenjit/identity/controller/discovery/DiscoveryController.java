@@ -1,4 +1,4 @@
-package net.prasenjit.identity.controller.openid.discovery;
+package net.prasenjit.identity.controller.discovery;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.model.openid.discovery.DiscoveryResponse;

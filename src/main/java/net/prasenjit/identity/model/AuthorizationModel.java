@@ -13,6 +13,7 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 public class AuthorizationModel {
+    private boolean openid;
     private boolean valid;
     private Client client;
     private User user;

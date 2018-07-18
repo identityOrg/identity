@@ -6,6 +6,7 @@ import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
 import net.prasenjit.identity.oauth.GrantType;
 import net.prasenjit.identity.oauth.OAuthError;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
@@ -70,22 +71,21 @@ public class OAuth2Service {
         return codeFactory.createOAuthToken(accessToken, null);
     }
 
-    public AuthorizationModel validateAuthorizationGrant(String responseType, User principal, String clientId,
-                                                         String scope, String state, String redirectUri) {
+    public AuthorizationModel validateAuthorizationGrant(User principal, AuthorizeRequest request) {
         AuthorizationModel authorizationModel = new AuthorizationModel();
-        authorizationModel.setState(state);
+        authorizationModel.setState(request.getState());
         authorizationModel.setUser(principal);
         authorizationModel.setValid(false);
-        authorizationModel.setResponseType(responseType);
-        authorizationModel.setRedirectUri(redirectUri);
+        authorizationModel.setResponseType(request.getResponse_type());
+        authorizationModel.setRedirectUri(request.getRedirect_uri());
 
-        if (clientId == null) {
+        if (request.getClient_id() == null) {
             authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
             authorizationModel.setErrorDescription("Client id not specified");
             return authorizationModel;
         }
 
-        Optional<Client> client = clientRepository.findById(clientId);
+        Optional<Client> client = clientRepository.findById(request.getClient_id());
 
         if (!client.isPresent()) {
             authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
@@ -93,33 +93,35 @@ public class OAuth2Service {
             return authorizationModel;
         } else {
             authorizationModel.setClient(client.get());
-            if (redirectUri != null && !client.get().getRedirectUri().equals(redirectUri)) {
+            if (request.getRedirect_uri() != null && !client.get().getRedirectUri().equals(request.getRedirect_uri())) {
                 authorizationModel.setRedirectUri(client.get().getRedirectUri());
                 authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
                 authorizationModel.setErrorDescription("Redirect URL doesn't match");
                 return authorizationModel;
             }
 
-            if ("code".equals(responseType)) {
+            if ("code".equals(request.getResponse_type())) {
                 if (!client.get().supportsGrant(GrantType.AUTHORIZATION_CODE)) {
                     authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
                     authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
                     return authorizationModel;
                 }
-                Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(), scope);
+                Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(),
+                        request.getScope());
 
                 authorizationModel.setClient(client.get());
                 authorizationModel.setUser(principal);
                 authorizationModel.setFilteredScopes(scopeToApprove);
                 authorizationModel.setValid(true);
                 return authorizationModel;
-            } else if ("token".equals(responseType)) {
+            } else if ("token".equals(request.getResponse_type())) {
                 if (!client.get().supportsGrant(GrantType.IMPLICIT)) {
                     authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
                     authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
                     return authorizationModel;
                 }
-                Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(), scope);
+                Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(),
+                        request.getScope());
 
                 authorizationModel.setClient(client.get());
                 authorizationModel.setUser(principal);

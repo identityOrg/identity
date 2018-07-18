@@ -9,6 +9,7 @@ import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
 import net.prasenjit.identity.oauth.OAuthError;
 import net.prasenjit.identity.service.OAuth2Service;
 import org.springframework.security.core.Authentication;
@@ -76,16 +77,10 @@ public class OAuthController {
     }
 
     @GetMapping("authorize")
-    public String oAuthAuthorize(@RequestParam(value = "response_type", required = false) String responseType,
-                                 @RequestParam(value = "client_id", required = false) String clientId,
-                                 @RequestParam(value = "redirect_uri", required = false) String redirectUri,
-                                 @RequestParam(value = "scope", defaultValue = "") String scope,
-                                 @RequestParam(value = "state", required = false) String state,
-                                 Authentication authentication, Model model) {
+    public String oAuthAuthorize(AuthorizeRequest request, Authentication authentication, Model model) {
         log.info("Processing authorization code grant");
         User user = extractPrincipal(authentication, User.class);
-        AuthorizationModel authorizationModel = oAuth2Service.validateAuthorizationGrant(responseType,
-                user, clientId, scope, state, redirectUri);
+        AuthorizationModel authorizationModel = oAuth2Service.validateAuthorizationGrant(user, request);
         if (authorizationModel.isValid()) {
             model.addAttribute("model", authorizationModel);
             return "authorize";
