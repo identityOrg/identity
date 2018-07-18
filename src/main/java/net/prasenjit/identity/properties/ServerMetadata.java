@@ -16,10 +16,12 @@ public class ServerMetadata {
     /**
      * REQUIRED. URL of the OP's OAuth 2.0 Authorization Endpoint [OpenID.Core].
      */
+    @JsonProperty("authorization_endpoint")
     private String authorizationEndpoint;
     /**
      * URL of the OP's OAuth 2.0 Token Endpoint [OpenID.Core]. This is REQUIRED unless only the Implicit Flow is used.
      */
+    @JsonProperty("token_endpoint")
     private String tokenEndpoint;
     /**
      * OPTIONAL. JSON array containing a list of Client Authentication methods supported by this Token Endpoint.
@@ -42,9 +44,8 @@ public class ServerMetadata {
      * RECOMMENDED. URL of the OP's UserInfo Endpoint [OpenID.Core]. This URL MUST use the https scheme and MAY
      * contain port, path, and query parameter components.
      */
+    @JsonProperty("userinfo_endpoint")
     private String userinfoEndpoint;
-    private String checkSessionIframe;
-    private String endSessionEndpoint;
     /**
      * REQUIRED. URL of the OP's JSON Web Key Set [JWK] document. This contains the signing key(s) the RP uses to
      * validate signatures from the OP. The JWK Set MAY also contain the Server's encryption key(s), which are used
@@ -54,57 +55,68 @@ public class ServerMetadata {
      * NOT RECOMMENDED, as it is less secure. The JWK x5c parameter MAY be used to provide X.509 representations of
      * keys provided. When used, the bare key values MUST still be present and MUST match those in the certificate.
      */
+    @JsonProperty("jwks_uri")
     private String jwksURI;
     /**
      * RECOMMENDED. URL of the OP's Dynamic Client Registration Endpoint [OpenID.Registration].
      */
+    @JsonProperty("registration_endpoint")
     private String registrationEndpoint;
     /**
      * RECOMMENDED. JSON array containing a list of the OAuth 2.0 [RFC6749] scope values that this server supports.
      * The server MUST support the openid scope value. Servers MAY choose not to advertise some supported scope
      * values even when this parameter is used, although those defined in [OpenID.Core] SHOULD be listed, if supported.
      */
+    @JsonProperty("scopes_supported")
     private List<String> scopesSupported;
     /**
      * REQUIRED. JSON array containing a list of the OAuth 2.0 response_type values that this OP supports. Dynamic
      * OpenID Providers MUST support the code, id_token, and the token id_token Response Type values.
      */
+    @JsonProperty("response_types_supported")
     private String[] responseTypesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the OAuth 2.0 response_mode values that this OP supports, as
      * specified in OAuth 2.0 Multiple Response Type Encoding Practices [OAuth.Responses]. If omitted, the default
      * for Dynamic OpenID Providers is ["query", "fragment"].
      */
+    @JsonProperty("response_modes_supported")
     private String[] responseModesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the OAuth 2.0 Grant Type values that this OP supports. Dynamic
      * OpenID Providers MUST support the authorization_code and implicit Grant Type values and MAY support other
      * Grant Types. If omitted, the default value is ["authorization_code", "implicit"].
      */
+    @JsonProperty("grant_types_supported")
     private String[] grantTypesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the Authentication Context Class References that this OP supports.
      */
+    @JsonProperty("acr_values_supported")
     private String[] acrValuesSupported;
     /**
      * REQUIRED. JSON array containing a list of the Subject Identifier types that this OP supports. Valid types
      * include pairwise and public.
      */
+    @JsonProperty("subject_types_supported")
     private String[] subjectTypesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the
      * UserInfo Endpoint to encode the Claims in a JWT [JWT]. The value none MAY be included.
      */
+    @JsonProperty("userinfo_signing_alg_values_supported")
     private String[] userinfoSigningAlgValuesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the JWE [JWE] encryption algorithms (alg values) [JWA] supported
      * by the UserInfo Endpoint to encode the Claims in a JWT [JWT].
      */
+    @JsonProperty("userinfo_encryption_alg_values_supported")
     private String[] userinfoEncryptionAlgValuesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the JWE encryption algorithms (enc values) [JWA] supported by the
      * UserInfo Endpoint to encode the Claims in a JWT [JWT].
      */
+    @JsonProperty("userinfo_encryption_enc_values_supported")
     private String[] userinfoEncryptionEncValuesSupported;
     /**
      * REQUIRED. JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for the
@@ -112,16 +124,19 @@ public class ServerMetadata {
      * supported, but MUST NOT be used unless the Response Type used returns no ID Token from the Authorization
      * Endpoint (such as when using the Authorization Code Flow).
      */
+    @JsonProperty("id_token_signing_alg_values_supported")
     private String[] idTokenSigningAlgValuesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the JWE encryption algorithms (alg values) supported by the OP for
      * the ID Token to encode the Claims in a JWT [JWT].
      */
+    @JsonProperty("id_token_encryption_alg_values_supported")
     private String[] idTokenEncryptionAlgValuesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the JWE encryption algorithms (enc values) supported by the OP for
      * the ID Token to encode the Claims in a JWT [JWT].
      */
+    @JsonProperty("id_token_encryption_enc_values_supported")
     private String[] idTokenEncryptionEncValuesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for
@@ -129,6 +144,7 @@ public class ServerMetadata {
      * are used both when the Request Object is passed by value (using the request parameter) and when it is passed
      * by reference (using the request_uri parameter). Servers SHOULD support none and RS256.
      */
+    @JsonProperty("request_object_signing_alg_values_supported")
     private String[] requestObjectSigningAlgValuesSupported;
     /**
      * OPTIONAL. JSON array containing a list of the JWE encryption algorithms (alg values) supported by the OP for

@@ -1,8 +1,8 @@
-package net.prasenjit.identity.service;
+package net.prasenjit.identity.service.openid;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.Scope;
-import net.prasenjit.identity.model.api.discovery.DiscoveryResponse;
+import net.prasenjit.identity.model.openid.discovery.DiscoveryResponse;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.properties.ServerMetadata;
 import net.prasenjit.identity.repository.ScopeRepository;
