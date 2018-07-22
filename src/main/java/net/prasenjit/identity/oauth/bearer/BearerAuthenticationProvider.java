@@ -1,4 +1,4 @@
-package net.prasenjit.identity.oauth;
+package net.prasenjit.identity.oauth.bearer;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.AccessToken;

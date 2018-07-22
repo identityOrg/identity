@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 
 @EnableAsync
 @SpringBootApplication
@@ -71,7 +72,7 @@ public class IdentityApplication implements ApplicationRunner {
         client.setCreationDate(LocalDateTime.now());
         client.setStatus(Status.ACTIVE);
         client.setClientName("Test Client");
-        client.setApprovedScopes("scope1");
+        client.setScopes(new HashSet<>(scopeRepository.findAll()));
         client.setRedirectUri("http://localhost:4200/callback");
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));

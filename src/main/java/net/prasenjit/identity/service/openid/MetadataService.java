@@ -8,6 +8,7 @@ import net.prasenjit.identity.properties.ServerMetadata;
 import net.prasenjit.identity.repository.ScopeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.stream.Collectors;
@@ -22,7 +23,8 @@ public class MetadataService {
     private final ScopeRepository scopeRepository;
     private boolean initialized = false;
 
-    public ServerMetadata findMetadata(UriComponentsBuilder builder) {
+    public ServerMetadata findMetadata() {
+        UriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentRequest();
         ServerMetadata metadata = identityProperties.getServerMetadata();
         if (!initialized) {
             if (!StringUtils.hasText(metadata.getIssuer())) {
@@ -58,11 +60,11 @@ public class MetadataService {
         return metadata;
     }
 
-    public DiscoveryResponse findWebFinder(String rel, String resource, UriComponentsBuilder builder) {
+    public DiscoveryResponse findWebFinder(String rel, String resource) {
         DiscoveryResponse discoveryResponse = new DiscoveryResponse();
         discoveryResponse.setSubject(resource);
         discoveryResponse.getLinks().add(new DiscoveryResponse.Link(IDENTITY_PROVIDER_REL,
-                findMetadata(builder).getIssuer()));
+                findMetadata().getIssuer()));
         return discoveryResponse;
 
     }

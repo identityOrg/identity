@@ -1,6 +1,6 @@
 package net.prasenjit.identity.config;
 
-import net.prasenjit.identity.oauth.BearerAuthenticationFilter;
+import net.prasenjit.identity.oauth.bearer.BearerAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -32,7 +32,7 @@ public class ClientSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     private Filter basicClientFilter() {
-        return new net.prasenjit.identity.oauth.BasicAuthenticationFilter(authenticationManager);
+        return new net.prasenjit.identity.oauth.basic.BasicAuthenticationFilter(authenticationManager);
     }
 
     private Filter bearerClientFilter() {

@@ -9,11 +9,11 @@ import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
 import net.prasenjit.identity.oauth.GrantType;
 import net.prasenjit.identity.oauth.OAuthError;
+import net.prasenjit.identity.oauth.user.UserAuthenticationToken;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.RefreshTokenRepository;
 import net.prasenjit.identity.repository.UserRepository;
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -71,7 +71,8 @@ public class OAuth2Service {
         return codeFactory.createOAuthToken(accessToken, null);
     }
 
-    public AuthorizationModel validateAuthorizationGrant(User principal, AuthorizeRequest request) {
+    public AuthorizationModel validateAuthorizationGrant(Authentication authentication, AuthorizeRequest request) {
+        User principal = extractPrincipal(authentication, User.class);
         AuthorizationModel authorizationModel = new AuthorizationModel();
         authorizationModel.setState(request.getState());
         authorizationModel.setUser(principal);
@@ -99,6 +100,39 @@ public class OAuth2Service {
                 authorizationModel.setErrorDescription("Redirect URL doesn't match");
                 return authorizationModel;
             }
+            Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(),
+                    request.getScope(), authorizationModel);
+
+            if (authorizationModel.isOpenid()) {
+                // handle prompt parameter for openid
+                if (StringUtils.hasText(request.getPrompt())) {
+                    String[] prompts = StringUtils.delimitedListToStringArray(request.getPrompt(), " ");
+                    Arrays.sort(prompts);
+                    boolean promptNone = Arrays.binarySearch(prompts, "none") > -1;
+                    boolean promptLogin = Arrays.binarySearch(prompts, "login") > -1;
+                    boolean promptConsent = Arrays.binarySearch(prompts, "consent") > -1;
+                    if (promptNone && (promptLogin || promptConsent)) {
+                        authorizationModel.setRedirectUri(client.get().getRedirectUri());
+                        authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+                        authorizationModel.setErrorDescription("Prompt none can not be combined with anything else");
+                        return authorizationModel;
+                    }
+                    if ((promptNone || (promptConsent && !promptLogin)) && principal == null) {
+                        authorizationModel.setRedirectUri(client.get().getRedirectUri());
+                        authorizationModel.setErrorCode(OAuthError.LOGIN_REQUIRED);
+                        authorizationModel.setErrorDescription("User not logged in and prompt none is requested");
+                        return authorizationModel;
+                    }
+                    // handle prompt redirect
+                }
+                // handle max_age parameter for openid
+                if (request.getMax_age() > 0) {
+                    UserAuthenticationToken userAuthentication = (UserAuthenticationToken) authentication;
+                    if (userAuthentication.getLoginTime().plusSeconds(request.getMax_age()).isBefore(LocalDateTime.now())) {
+                        // redirect for re-login
+                    }
+                }
+            }
 
             if ("code".equals(request.getResponse_type())) {
                 if (!client.get().supportsGrant(GrantType.AUTHORIZATION_CODE)) {
@@ -106,11 +140,8 @@ public class OAuth2Service {
                     authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
                     return authorizationModel;
                 }
-                Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(),
-                        request.getScope());
 
                 authorizationModel.setClient(client.get());
-                authorizationModel.setUser(principal);
                 authorizationModel.setFilteredScopes(scopeToApprove);
                 authorizationModel.setValid(true);
                 return authorizationModel;
@@ -120,11 +151,8 @@ public class OAuth2Service {
                     authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
                     return authorizationModel;
                 }
-                Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(),
-                        request.getScope());
 
                 authorizationModel.setClient(client.get());
-                authorizationModel.setUser(principal);
                 authorizationModel.setFilteredScopes(scopeToApprove);
                 authorizationModel.setValid(true);
                 return authorizationModel;
@@ -273,7 +301,8 @@ public class OAuth2Service {
         return builder.toString();
     }
 
-    private Map<String, Boolean> filterScopeToMap(String approvedScopes, String requestedScope) {
+    private Map<String, Boolean> filterScopeToMap(String approvedScopes, String requestedScope,
+                                                  AuthorizationModel authorizationModel) {
         String[] approved = StringUtils.delimitedListToStringArray(approvedScopes, " ");
         String[] requested = StringUtils.delimitedListToStringArray(requestedScope, " ");
         if (approved.length == 0) {
@@ -282,9 +311,14 @@ public class OAuth2Service {
         if (requested.length == 0) {
             return Stream.of(approved).collect(Collectors.toMap(o -> o, o -> Boolean.TRUE));
         }
+        Arrays.sort(approved);
+        Arrays.sort(requested);
+        if (Arrays.binarySearch(requested, "openid") > -1) {
+            authorizationModel.setOpenid(true);
+        }
         Map<String, Boolean> filteredMap = new HashMap<>();
         for (String r : requested) {
-            if (ArrayUtils.contains(approved, r)) {
+            if (Arrays.binarySearch(approved, r) > -1) {
                 filteredMap.put(r, Boolean.TRUE);
             }
         }
@@ -300,12 +334,25 @@ public class OAuth2Service {
         if (requested.length == 0) {
             return approvedScopes;
         }
+        Arrays.sort(approved);
+        Arrays.sort(requested);
         List<String> filtered = new ArrayList<>();
         for (String r : requested) {
-            if (ArrayUtils.contains(approved, r)) {
+            if (Arrays.binarySearch(approved, r) > -1) {
                 filtered.add(r);
             }
         }
         return StringUtils.collectionToDelimitedString(filtered, " ");
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T extractPrincipal(Authentication authentication, Class<T> userClass) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            if (principal != null && userClass.isInstance(principal)) {
+                return (T) principal;
+            }
+        }
+        return null;
     }
 }

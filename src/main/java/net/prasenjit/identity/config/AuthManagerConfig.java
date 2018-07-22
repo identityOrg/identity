@@ -2,8 +2,9 @@ package net.prasenjit.identity.config;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.TextEncryptor;
-import net.prasenjit.identity.oauth.BasicAuthenticationProvider;
-import net.prasenjit.identity.oauth.BearerAuthenticationProvider;
+import net.prasenjit.identity.oauth.basic.BasicAuthenticationProvider;
+import net.prasenjit.identity.oauth.bearer.BearerAuthenticationProvider;
+import net.prasenjit.identity.oauth.user.UserAuthenticationProvider;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.service.ClientService;
 import net.prasenjit.identity.service.UserService;
@@ -12,7 +13,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.*;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -48,7 +48,7 @@ public class AuthManagerConfig {
     }
 
     private AuthenticationProvider userAuthProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        UserAuthenticationProvider provider = new UserAuthenticationProvider();
         provider.setPasswordEncoder(PasswordEncoderFactories.createDelegatingPasswordEncoder());
         provider.setUserDetailsService(userService);
         return provider;

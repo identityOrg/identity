@@ -103,7 +103,7 @@ public class Profile implements UserDetails {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class SimpleGrantedAuthority implements GrantedAuthority {
+    public static class SimpleGrantedAuthority implements GrantedAuthority {
         private String authority;
     }
 }

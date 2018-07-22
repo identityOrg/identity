@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.prasenjit.identity.oauth;
+package net.prasenjit.identity.oauth.basic;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

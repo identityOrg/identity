@@ -1,6 +1,6 @@
 package net.prasenjit.identity.config;
 
-import net.prasenjit.identity.oauth.BearerAuthenticationFilter;
+import net.prasenjit.identity.oauth.bearer.BearerAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;

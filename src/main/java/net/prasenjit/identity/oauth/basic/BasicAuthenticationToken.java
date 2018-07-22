@@ -1,4 +1,4 @@
-package net.prasenjit.identity.oauth;
+package net.prasenjit.identity.oauth.basic;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;

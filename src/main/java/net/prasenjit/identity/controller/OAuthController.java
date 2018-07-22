@@ -79,8 +79,7 @@ public class OAuthController {
     @GetMapping("authorize")
     public String oAuthAuthorize(AuthorizeRequest request, Authentication authentication, Model model) {
         log.info("Processing authorization code grant");
-        User user = extractPrincipal(authentication, User.class);
-        AuthorizationModel authorizationModel = oAuth2Service.validateAuthorizationGrant(user, request);
+        AuthorizationModel authorizationModel = oAuth2Service.validateAuthorizationGrant(authentication, request);
         if (authorizationModel.isValid()) {
             model.addAttribute("model", authorizationModel);
             return "authorize";

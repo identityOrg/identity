@@ -7,14 +7,15 @@ import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.User;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 @Data
 @NoArgsConstructor
-public class AuthorizationModel {
-    private boolean openid;
-    private boolean valid;
+public class AuthorizationModel implements Serializable {
+    private boolean openid = false;
+    private boolean valid = false;
     private Client client;
     private User user;
     private String responseType;
