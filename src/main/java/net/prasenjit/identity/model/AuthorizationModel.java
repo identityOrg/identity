@@ -17,7 +17,7 @@ public class AuthorizationModel implements Serializable {
     private boolean openid = false;
     private boolean valid = false;
     private Client client;
-    private User user;
+    private Profile profile;
     private String responseType;
     private String state;
     private String errorCode;

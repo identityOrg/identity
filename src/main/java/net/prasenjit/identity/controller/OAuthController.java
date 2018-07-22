@@ -9,6 +9,7 @@ import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
 import net.prasenjit.identity.oauth.OAuthError;
 import net.prasenjit.identity.service.OAuth2Service;
@@ -91,8 +92,8 @@ public class OAuthController {
     @PostMapping("authorize")
     public String submitAuthorize(@ModelAttribute AuthorizationModel authorizationModel,
                                   Authentication authentication) {
-        User user = extractPrincipal(authentication, User.class);
-        authorizationModel.setUser(user);
+        Profile profile = extractPrincipal(authentication, Profile.class);
+        authorizationModel.setProfile(profile);
         authorizationModel = oAuth2Service.processAuthorizationOrImplicitGrant(authorizationModel);
         if (authorizationModel.isValid()) {
             AuthorizationCode authorizationCode = authorizationModel.getAuthorizationCode();

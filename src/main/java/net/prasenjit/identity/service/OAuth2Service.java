@@ -6,6 +6,7 @@ import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
 import net.prasenjit.identity.oauth.GrantType;
 import net.prasenjit.identity.oauth.OAuthError;
@@ -72,10 +73,10 @@ public class OAuth2Service {
     }
 
     public AuthorizationModel validateAuthorizationGrant(Authentication authentication, AuthorizeRequest request) {
-        User principal = extractPrincipal(authentication, User.class);
+        Profile principal = extractPrincipal(authentication, Profile.class);
         AuthorizationModel authorizationModel = new AuthorizationModel();
         authorizationModel.setState(request.getState());
-        authorizationModel.setUser(principal);
+        authorizationModel.setProfile(principal);
         authorizationModel.setValid(false);
         authorizationModel.setResponseType(request.getResponse_type());
         authorizationModel.setRedirectUri(request.getRedirect_uri());
@@ -182,7 +183,7 @@ public class OAuth2Service {
                     AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(
                             client.get().getClientId(), authorizationModel.getRedirectUri(),
                             StringUtils.collectionToDelimitedString(approvedScope, " "),
-                            authorizationModel.getUser().getUsername(), authorizationModel.getState(),
+                            authorizationModel.getProfile().getUsername(), authorizationModel.getState(),
                             Duration.ofMinutes(10));
                     authorizationModel.setAuthorizationCode(authorizationCode);
                     if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
@@ -190,7 +191,7 @@ public class OAuth2Service {
                     }
                     return authorizationModel;
                 } else if ("token".equals(authorizationModel.getResponseType())) {
-                    AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getUser(),
+                    AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getProfile(),
                             client.get().getClientId(), client.get().getAccessTokenValidity(),
                             StringUtils.collectionToDelimitedString(approvedScope, " "));
                     authorizationModel.setAccessToken(accessToken);
