@@ -2,9 +2,9 @@ package net.prasenjit.identity.config;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.TextEncryptor;
-import net.prasenjit.identity.oauth.basic.BasicAuthenticationProvider;
-import net.prasenjit.identity.oauth.bearer.BearerAuthenticationProvider;
-import net.prasenjit.identity.oauth.user.UserAuthenticationProvider;
+import net.prasenjit.identity.security.basic.BasicAuthenticationProvider;
+import net.prasenjit.identity.security.bearer.BearerAuthenticationProvider;
+import net.prasenjit.identity.security.user.UserAuthenticationProvider;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.service.ClientService;
 import net.prasenjit.identity.service.UserService;

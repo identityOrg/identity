@@ -26,4 +26,6 @@ public class AuthorizationModel implements Serializable {
     private Map<String, Boolean> filteredScopes = new HashMap<>();
     private AccessToken accessToken;
     private AuthorizationCode authorizationCode;
+    private boolean loginRequired;
+    private boolean consentRequired;
 }

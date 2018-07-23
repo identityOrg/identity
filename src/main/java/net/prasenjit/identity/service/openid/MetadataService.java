@@ -30,9 +30,9 @@ public class MetadataService {
             if (!StringUtils.hasText(metadata.getIssuer())) {
                 UriComponentsBuilder builder1 = builder.cloneBuilder();
                 metadata.setIssuer(builder1.build().toString());
-                metadata.setAuthorizationEndpoint(builder1.pathSegment("oauth", "authorize").build().toString());
+                metadata.setAuthorizationEndpoint(builder1.pathSegment("security", "authorize").build().toString());
                 builder1 = builder.cloneBuilder();
-                metadata.setTokenEndpoint(builder1.pathSegment("oauth", "token").toUriString());
+                metadata.setTokenEndpoint(builder1.pathSegment("security", "token").toUriString());
                 builder1 = builder.cloneBuilder();
                 metadata.setUserinfoEndpoint(builder1.pathSegment("api", "me").toUriString());
                 builder1 = builder.cloneBuilder();

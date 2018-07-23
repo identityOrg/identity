@@ -18,7 +18,7 @@ import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.Profile.SimpleGrantedAuthority;
-import net.prasenjit.identity.oauth.user.UserAuthenticationToken;
+import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;

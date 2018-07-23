@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.*;
 import net.prasenjit.identity.events.AbstractModificationEvent;
 import net.prasenjit.identity.model.Profile;
-import net.prasenjit.identity.oauth.basic.BasicAuthenticationToken;
+import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.AuditEventRepository;
 import net.prasenjit.identity.repository.UserRepository;

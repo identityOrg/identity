@@ -1,10 +1,10 @@
-package net.prasenjit.identity.oauth;
+package net.prasenjit.identity.security;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import net.prasenjit.identity.model.Profile;
-import net.prasenjit.identity.oauth.user.UserAuthenticationToken;
+import net.prasenjit.identity.properties.IdentityProperties;
+import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import net.prasenjit.identity.service.CodeFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.RememberMeServices;
@@ -23,11 +23,9 @@ public class JWTRememberMe implements RememberMeServices, LogoutHandler {
     private static final String COOKIE_NAME = "S_CONTEXT";
 
     private final CodeFactory codeFactory;
+    private final IdentityProperties identityProperties;
     @Setter
     private Boolean useSecureCookie = false;
-    @Setter
-    @Getter
-    private int tokenValiditySeconds = 30 * 24 * 60 * 60;
 
     @Override
     public Authentication autoLogin(HttpServletRequest request, HttpServletResponse response) {
@@ -46,9 +44,7 @@ public class JWTRememberMe implements RememberMeServices, LogoutHandler {
 
     @Override
     public void loginFail(HttpServletRequest request, HttpServletResponse response) {
-        Cookie idCookie = new Cookie(COOKIE_NAME, "");
-        idCookie.setMaxAge(0);
-        response.addCookie(idCookie);
+        setCookie("", 0, request, response);
     }
 
     @Override
@@ -59,6 +55,10 @@ public class JWTRememberMe implements RememberMeServices, LogoutHandler {
             String idToken = codeFactory.createIDToken(profile, loginTime);
             setCookie(idToken, getTokenValiditySeconds(), request, response);
         }
+    }
+
+    private int getTokenValiditySeconds() {
+        return identityProperties.getRememberLoginDays() * 24 * 60 * 60;
     }
 
     @Override

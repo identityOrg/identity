@@ -8,13 +8,13 @@ import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
-import net.prasenjit.identity.oauth.GrantType;
-import net.prasenjit.identity.oauth.OAuthError;
-import net.prasenjit.identity.oauth.user.UserAuthenticationToken;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.RefreshTokenRepository;
 import net.prasenjit.identity.repository.UserRepository;
+import net.prasenjit.identity.security.GrantType;
+import net.prasenjit.identity.security.OAuthError;
+import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -124,13 +124,19 @@ public class OAuth2Service {
                         authorizationModel.setErrorDescription("User not logged in and prompt none is requested");
                         return authorizationModel;
                     }
+                    authorizationModel.setLoginRequired(promptLogin);
+                    authorizationModel.setConsentRequired(promptConsent);
                     // handle prompt redirect
+                } else if (principal == null) {
+                    authorizationModel.setLoginRequired(true);
+                    authorizationModel.setConsentRequired(true);
                 }
                 // handle max_age parameter for openid
                 if (request.getMax_age() > 0) {
                     UserAuthenticationToken userAuthentication = (UserAuthenticationToken) authentication;
                     if (userAuthentication.getLoginTime().plusSeconds(request.getMax_age()).isBefore(LocalDateTime.now())) {
                         // redirect for re-login
+                        authorizationModel.setLoginRequired(true);
                     }
                 }
             }

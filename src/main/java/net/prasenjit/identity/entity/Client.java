@@ -2,7 +2,7 @@ package net.prasenjit.identity.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
-import net.prasenjit.identity.oauth.GrantType;
+import net.prasenjit.identity.security.GrantType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;

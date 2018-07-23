@@ -1,8 +1,8 @@
 package net.prasenjit.identity.config;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.oauth.JWTRememberMe;
-import net.prasenjit.identity.oauth.user.UserAuthenticationFilter;
+import net.prasenjit.identity.security.JWTRememberMe;
+import net.prasenjit.identity.security.user.UserAuthenticationFilter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -46,7 +46,7 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/login", "/webjars/**", "/swagger-resources/**", "/.well-known/**")
                 .permitAll()
-                .mvcMatchers("/oauth/authorize")
+                .mvcMatchers("/security/authorize")
                 .authenticated()
                 .antMatchers("/*.png", "/*.ico", "/*.xml", "/*.svg", "/*.webmanifest")
                 .permitAll()

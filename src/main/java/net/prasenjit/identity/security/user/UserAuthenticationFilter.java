@@ -1,4 +1,4 @@
-package net.prasenjit.identity.oauth.user;
+package net.prasenjit.identity.security.user;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package net.prasenjit.identity.oauth;
+package net.prasenjit.identity.security;
 
 public interface OAuthError {
     String INVALID_REQUEST = "invalid_request";

@@ -1,6 +1,6 @@
 package net.prasenjit.identity.config;
 
-import net.prasenjit.identity.oauth.bearer.BearerAuthenticationFilter;
+import net.prasenjit.identity.security.bearer.BearerAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -21,7 +21,7 @@ public class ClientSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.requestMatchers().mvcMatchers("/oauth/token")
+        http.requestMatchers().mvcMatchers("/security/token")
                 .and()
                 .csrf().disable()
                 .authorizeRequests().anyRequest().permitAll()
@@ -32,7 +32,7 @@ public class ClientSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     private Filter basicClientFilter() {
-        return new net.prasenjit.identity.oauth.basic.BasicAuthenticationFilter(authenticationManager);
+        return new net.prasenjit.identity.security.basic.BasicAuthenticationFilter(authenticationManager);
     }
 
     private Filter bearerClientFilter() {

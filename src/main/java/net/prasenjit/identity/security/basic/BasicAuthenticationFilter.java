@@ -1,4 +1,4 @@
-package net.prasenjit.identity.oauth.basic;
+package net.prasenjit.identity.security.basic;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationDetailsSource;

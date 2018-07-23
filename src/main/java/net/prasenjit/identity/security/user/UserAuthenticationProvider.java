@@ -1,4 +1,4 @@
-package net.prasenjit.identity.oauth.user;
+package net.prasenjit.identity.security.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -124,17 +124,24 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
             this.userCache.putUserInCache(user);
         }
 
-        return createSuccessAuthentication(authentication, user);
+        return createSuccessAuthentication((UserAuthenticationToken) authentication, user);
     }
 
-    private Authentication createSuccessAuthentication(Authentication authentication, UserDetails user) {
+    private Authentication createSuccessAuthentication(UserAuthenticationToken authentication, UserDetails user) {
         // Ensure we return the original credentials the user supplied,
         // so subsequent attempts are successful even with encoded passwords.
         // Also ensure we return the original getDetails(), so that future
         // authentication events after cache expiry contain the details
+
+        LocalDateTime loginTime;
+        if (authentication.isRemembered()) {
+            loginTime = authentication.getLoginTime();
+        } else {
+            loginTime = LocalDateTime.now();
+        }
         UserAuthenticationToken result = new UserAuthenticationToken(
                 Profile.create(user), authentication.getCredentials(),
-                authoritiesMapper.mapAuthorities(user.getAuthorities()), LocalDateTime.now());
+                authoritiesMapper.mapAuthorities(user.getAuthorities()), loginTime);
         result.setDetails(authentication.getDetails());
 
         return result;
