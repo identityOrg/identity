@@ -4,7 +4,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.endtoend.RsaEncryptorBuilder;
-import net.prasenjit.identity.crypto.CyclicEncryptorFactory;
+import net.prasenjit.identity.security.crypto.CyclicEncryptorFactory;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.entity.E2EKey;
 import net.prasenjit.identity.entity.User;

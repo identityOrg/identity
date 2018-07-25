@@ -2,7 +2,7 @@ package net.prasenjit.identity.controller.e2e;
 
 import com.nimbusds.jose.jwk.RSAKey;
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.doc.SwaggerDocumented;
+import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.service.e2e.E2EService;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;

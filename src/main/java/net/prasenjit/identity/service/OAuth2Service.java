@@ -72,9 +72,10 @@ public class OAuth2Service {
         return codeFactory.createOAuthToken(accessToken, null);
     }
 
-    public AuthorizationModel validateAuthorizationGrant(Authentication authentication, AuthorizeRequest request) {
+    public AuthorizationModel validateAuthorizationGrant(Authentication authentication, AuthorizeRequest request,
+                                                         AuthorizationModel authorizationModel) {
         Profile principal = extractPrincipal(authentication, Profile.class);
-        AuthorizationModel authorizationModel = new AuthorizationModel();
+        authorizationModel = authorizationModel == null ? new AuthorizationModel() : authorizationModel;
         authorizationModel.setState(request.getState());
         authorizationModel.setProfile(principal);
         authorizationModel.setValid(false);

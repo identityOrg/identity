@@ -1,4 +1,4 @@
-package net.prasenjit.identity.doc;
+package net.prasenjit.identity.config.doc;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;

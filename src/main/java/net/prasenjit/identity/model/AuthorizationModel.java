@@ -5,7 +5,6 @@ import lombok.NoArgsConstructor;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.Client;
-import net.prasenjit.identity.entity.User;
 
 import java.io.Serializable;
 import java.util.HashMap;

@@ -2,6 +2,7 @@ package net.prasenjit.identity.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.prasenjit.identity.config.AuthenticationHandler;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.exception.OAuthException;
@@ -9,6 +10,7 @@ import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
+import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
 import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.service.OAuth2Service;
@@ -16,8 +18,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+
+import static net.prasenjit.identity.properties.ApplicationConstants.PREVIOUS_URL;
 
 @Slf4j
 @Controller
@@ -26,6 +35,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class OAuthController {
 
     private final OAuth2Service oAuth2Service;
+    private final OpenIDSessionContainer sessionContainer;
+    private final AuthenticationHandler authenticationHandler;
 
     @PostMapping(value = "token", params = "grant_type=password")
     @ResponseBody
@@ -77,10 +88,17 @@ public class OAuthController {
     }
 
     @GetMapping("authorize")
-    public String oAuthAuthorize(AuthorizeRequest request, Authentication authentication, Model model) {
+    public String oAuthAuthorize(AuthorizeRequest request, Authentication authentication, Model model,
+                                 AuthorizationModel authorizationModel, HttpServletRequest httpRequest)
+            throws IOException, ServletException {
         log.info("Processing authorization code grant");
-        AuthorizationModel authorizationModel = oAuth2Service.validateAuthorizationGrant(authentication, request);
+        authorizationModel = oAuth2Service.validateAuthorizationGrant(authentication, request, authorizationModel);
         if (authorizationModel.isValid()) {
+            if (authorizationModel.isLoginRequired() && !sessionContainer.isInteractiveLoginDone()) {
+                UriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentRequest();
+                httpRequest.getSession().setAttribute(PREVIOUS_URL, builder.build().toString());
+                return "redirect:/login";
+            }
             model.addAttribute("model", authorizationModel);
             return "authorize";
         } else {

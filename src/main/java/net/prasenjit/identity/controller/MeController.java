@@ -1,6 +1,6 @@
 package net.prasenjit.identity.controller;
 
-import net.prasenjit.identity.doc.SwaggerDocumented;
+import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;

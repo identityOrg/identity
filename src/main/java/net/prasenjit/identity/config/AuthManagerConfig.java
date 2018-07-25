@@ -2,6 +2,7 @@ package net.prasenjit.identity.config;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.TextEncryptor;
+import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
 import net.prasenjit.identity.security.basic.BasicAuthenticationProvider;
 import net.prasenjit.identity.security.bearer.BearerAuthenticationProvider;
 import net.prasenjit.identity.security.user.UserAuthenticationProvider;
@@ -31,9 +32,10 @@ public class AuthManagerConfig {
     public TextEncryptor textEncryptor;
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationEventPublisher eventPublisher) {
+    public AuthenticationManager authenticationManager(AuthenticationEventPublisher eventPublisher,
+                                                       OpenIDSessionContainer sessionContainer) {
         List<AuthenticationProvider> providers = new ArrayList<>();
-        providers.add(userAuthProvider());
+        providers.add(userAuthProvider(sessionContainer));
         providers.add(bearerAuthProvider());
         providers.add(clientAuthProvider());
         ProviderManager providerManager = new ProviderManager(providers);
@@ -47,10 +49,11 @@ public class AuthManagerConfig {
         return new DefaultAuthenticationEventPublisher();
     }
 
-    private AuthenticationProvider userAuthProvider() {
+    private AuthenticationProvider userAuthProvider(OpenIDSessionContainer sessionContainer) {
         UserAuthenticationProvider provider = new UserAuthenticationProvider();
         provider.setPasswordEncoder(PasswordEncoderFactories.createDelegatingPasswordEncoder());
         provider.setUserDetailsService(userService);
+        provider.setSessionContainer(sessionContainer);
         return provider;
     }
 

@@ -1,4 +1,4 @@
-package net.prasenjit.identity.doc;
+package net.prasenjit.identity.config.doc;
 
 import com.fasterxml.classmate.TypeResolver;
 import net.prasenjit.identity.model.ApiError;

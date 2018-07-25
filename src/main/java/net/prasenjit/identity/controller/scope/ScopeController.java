@@ -1,7 +1,7 @@
 package net.prasenjit.identity.controller.scope;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.doc.SwaggerDocumented;
+import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.Scope;
 import net.prasenjit.identity.events.CreateEvent;

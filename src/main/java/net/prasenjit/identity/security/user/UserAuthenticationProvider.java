@@ -1,8 +1,10 @@
 package net.prasenjit.identity.security.user;
 
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.model.Profile;
+import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.MessageSource;
 import org.springframework.context.MessageSourceAware;
@@ -24,6 +26,9 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class UserAuthenticationProvider implements AuthenticationProvider, InitializingBean, MessageSourceAware {
     private static final String USER_NOT_FOUND_PASSWORD = "userNotFoundPassword";
+
+    @Setter
+    private OpenIDSessionContainer sessionContainer;
 
     private MessageSourceAccessor messages = SpringSecurityMessageSource.getAccessor();
     private UserCache userCache = new NullUserCache();
@@ -138,6 +143,7 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
             loginTime = authentication.getLoginTime();
         } else {
             loginTime = LocalDateTime.now();
+            sessionContainer.setInteractiveLoginDone(true);
         }
         UserAuthenticationToken result = new UserAuthenticationToken(
                 Profile.create(user), authentication.getCredentials(),
