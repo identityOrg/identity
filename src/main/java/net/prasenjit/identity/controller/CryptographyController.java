@@ -18,6 +18,6 @@ public class CryptographyController {
     @RequestMapping(value = "keys", method = {RequestMethod.GET, RequestMethod.POST},
             produces = MediaType.APPLICATION_JSON_VALUE)
     public List<RSAKey> keys() {
-        return cryptographyService.getOrGenerateLast5Keys();
+        return cryptographyService.getLast5Keys();
     }
 }

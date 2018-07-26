@@ -11,10 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import javax.crypto.Cipher;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.interfaces.RSAPublicKey;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,7 +30,16 @@ public class CryptographyService {
     private final CyclicEncryptorFactory encryptorFactory;
 
     @Transactional(readOnly = true)
-    public List<RSAKey> getOrGenerateLast5Keys() {
+    public List<RSAKey> getLast5Keys() {
+        List<JWKKey> keysToreturn = getOrGenerateJwkKeys();
+        return keysToreturn.stream().map(jwkKey -> {
+            Key publicKey = unwrapKey(jwkKey.getPublicKey(), jwkKey.getCreationDate(), PUBLIC);
+            return new RSAKey.Builder((RSAPublicKey) publicKey)
+                    .keyID(jwkKey.getId().toString()).build();
+        }).collect(Collectors.toList());
+    }
+
+    private List<JWKKey> getOrGenerateJwkKeys() {
         List<JWKKey> keysToreturn = new ArrayList<>();
         List<JWKKey> jwkKeys = keyRepository.findAll();
         if (CollectionUtils.isEmpty(jwkKeys)) {
@@ -48,15 +54,11 @@ public class CryptographyService {
                 for (int i = 0; i < 4 && i < jwkKeys.size(); i++) {
                     keysToreturn.add(jwkKeys.get(i));
                 }
-            }else {
+            } else {
                 keysToreturn.addAll(jwkKeys);
             }
         }
-        return keysToreturn.stream().map(jwkKey -> {
-            Key publicKey = unwrapKey(jwkKey.getPublicKey(), jwkKey.getCreationDate(), PUBLIC);
-            return new RSAKey.Builder((RSAPublicKey) publicKey)
-                    .keyID(jwkKey.getId().toString()).build();
-        }).collect(Collectors.toList());
+        return keysToreturn;
     }
 
     private JWKKey generateKeyPair() {
@@ -81,5 +83,10 @@ public class CryptographyService {
 
     private Key unwrapKey(String encodedKey, LocalDateTime encryptionDate, int type) {
         return encryptorFactory.createEncryptor(encryptionDate).unwrapKey(encodedKey, "RSA", type);
+    }
+
+    public PrivateKey getApplicableSigningKey() {
+        JWKKey jwkKey = getOrGenerateJwkKeys().get(0);
+        return (PrivateKey) unwrapKey(jwkKey.getPrivateKey(), jwkKey.getCreationDate(), PRIVATE);
     }
 }

@@ -1,6 +1,9 @@
 package net.prasenjit.identity.model.openid.core;
 
 import lombok.Data;
+import org.springframework.util.StringUtils;
+
+import java.util.Arrays;
 
 @Data
 public class AuthorizeRequest {

@@ -6,6 +6,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import net.prasenjit.crypto.store.CryptoKeyFactory;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.RefreshToken;
+import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.properties.IdentityProperties;
@@ -20,6 +22,7 @@ import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.repository.AuthorizationCodeRepository;
 import net.prasenjit.identity.repository.RefreshTokenRepository;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
+import net.prasenjit.identity.service.openid.CryptographyService;
 import net.prasenjit.identity.service.openid.MetadataService;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -34,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 
 //@Slf4j
 @Component
@@ -48,6 +52,7 @@ public class CodeFactory {
     private final IdentityProperties identityProperties;
     private final CryptoKeyFactory cryptoKeyFactory;
     private final UserService userService;
+    private final CryptographyService cryptographyService;
 
     private MACSigner macSigner;
     private MACVerifier macVerifier;
@@ -123,7 +128,7 @@ public class CodeFactory {
                     .subject(user.getUsername())
                     .issuer(metadataService.findMetadata().getIssuer())
                     .issueTime(convertToDate(loginTime))
-                    .expirationTime(convertToDate(loginTime.plusWeeks(identityProperties.getRememberLoginDays())))
+                    .expirationTime(convertToDate(loginTime.plusDays(identityProperties.getRememberLoginDays())))
 //                    .claim("profile.active", user.getActive())
 //                    .claim("profile.expiryDate", convertToDate(user.getExpiryDate()))
 //                    .claim("profile.passwordExpiryDate", convertToDate(user.getPasswordExpiryDate()))
@@ -179,6 +184,33 @@ public class CodeFactory {
             return new UserAuthenticationToken(claimsSet.getSubject(),
                     userDetails.getPassword(), true, creationTime);
         } catch (ParseException | JOSEException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String createIDToken(AuthorizationModel authorizationModel, String clientId,
+                                Duration idTokenValidity, List<String> scope) {
+        try {
+            Profile profile = authorizationModel.getProfile();
+            JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder()
+                    .subject(profile.getUsername())
+                    .issuer(metadataService.findMetadata().getIssuer())
+                    .audience(clientId)
+                    .issueTime(new Date())
+                    .expirationTime(convertToDate(authorizationModel.getLoginTime()
+                            .plus(idTokenValidity)))
+                    .claim("auth_time", convertToDate(authorizationModel.getLoginTime()))
+                    .claim("nonce", authorizationModel.getNonce())
+                    .claim("azp", clientId);
+            if (scope.contains("profile")) {
+                claimsSetBuilder.claim("given_name", profile.getFirstName())
+                        .claim("family_name", profile.getLastName());
+            }
+            SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claimsSetBuilder.build());
+            RSASSASigner signer = new RSASSASigner(cryptographyService.getApplicableSigningKey());
+            signedJWT.sign(signer);
+            return signedJWT.serialize();
+        } catch (JOSEException e) {
             throw new RuntimeException(e);
         }
     }

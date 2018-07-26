@@ -24,7 +24,6 @@ import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -105,6 +104,7 @@ public class OAuth2Service {
             }
             Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(),
                     request.getScope(), authorizationModel);
+            authorizationModel.setFilteredScopes(scopeToApprove);
 
             if (authorizationModel.isOpenid()) {
                 // handle prompt parameter for openid
@@ -143,33 +143,8 @@ public class OAuth2Service {
                 }
             }
 
-            if ("code".equals(request.getResponse_type())) {
-                if (!client.get().supportsGrant(GrantType.AUTHORIZATION_CODE)) {
-                    authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
-                    authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
-                    return authorizationModel;
-                }
-
-                authorizationModel.setClient(client.get());
-                authorizationModel.setFilteredScopes(scopeToApprove);
-                authorizationModel.setValid(true);
-                return authorizationModel;
-            } else if ("token".equals(request.getResponse_type())) {
-                if (!client.get().supportsGrant(GrantType.IMPLICIT)) {
-                    authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
-                    authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
-                    return authorizationModel;
-                }
-
-                authorizationModel.setClient(client.get());
-                authorizationModel.setFilteredScopes(scopeToApprove);
-                authorizationModel.setValid(true);
-                return authorizationModel;
-            } else {
-                authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-                authorizationModel.setErrorDescription("Unsupported response type");
-                return authorizationModel;
-            }
+            authorizationModel.setValid(true);
+            return authorizationModel;
 
         }
     }
@@ -187,29 +162,35 @@ public class OAuth2Service {
                 authorizationModel.setClient(client.get());
                 List<String> approvedScope = authorizationModel.getFilteredScopes().entrySet().stream()
                         .filter(Map.Entry::getValue).map(Map.Entry::getKey).collect(Collectors.toList());
-                if ("code".equals(authorizationModel.getResponseType())) {
+                if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
+                    authorizationModel.setRedirectUri(client.get().getRedirectUri());
+                }
+                if (authorizationModel.requireCodeResponse()) {
                     AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(
                             client.get().getClientId(), authorizationModel.getRedirectUri(),
                             StringUtils.collectionToDelimitedString(approvedScope, " "),
                             authorizationModel.getProfile().getUsername(), authorizationModel.getState(),
                             Duration.ofMinutes(10));
                     authorizationModel.setAuthorizationCode(authorizationCode);
-                    if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
-                        authorizationModel.setRedirectUri(client.get().getRedirectUri());
-                    }
-                    return authorizationModel;
-                } else if ("token".equals(authorizationModel.getResponseType())) {
+                }
+                if (authorizationModel.requireTokenResponse()) {
                     AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getProfile(),
                             client.get().getClientId(), client.get().getAccessTokenValidity(),
                             StringUtils.collectionToDelimitedString(approvedScope, " "));
                     authorizationModel.setAccessToken(accessToken);
-                    return authorizationModel;
-                } else {
+                }
+                if (authorizationModel.requireIDTokenResponse()) {
+                    String idToken = codeFactory.createIDToken(authorizationModel,
+                            client.get().getClientId(), client.get().getAccessTokenValidity(), approvedScope);
+                    authorizationModel.setIdToken(idToken);
+                }
+                if (!(authorizationModel.requireCodeResponse() || authorizationModel.requireTokenResponse()
+                        || authorizationModel.requireIDTokenResponse())) {
                     authorizationModel.setErrorCode(OAuthError.UNSUPPORTED_RESPONSE_TYPE);
                     authorizationModel.setErrorDescription("Invalid response type");
                     authorizationModel.setValid(false);
-                    return authorizationModel;
                 }
+                return authorizationModel;
             }
         }
         authorizationModel.setErrorCode(OAuthError.UNAUTHORIZED_REQUEST);
@@ -299,15 +280,11 @@ public class OAuth2Service {
         throw new OAuthException("access_denied", "Invalid refresh token");
     }
 
-    public String createTokenResponseFragment(AccessToken accessToken, String state) {
-        StringBuilder builder = new StringBuilder();
-        long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
-        builder.append("access_token").append('=').append(accessToken.getAssessToken()).append("&")
-                .append("token_type").append('=').append("Bearer").append("&")
-                .append("expires_in").append('=').append(expIn).append("&")
-                .append("scope").append('=').append(accessToken.getScope()).append("&")
-                .append("state").append('=').append(state);
-        return builder.toString();
+    public String createTokenResponseFragment(Map<String, String> respMap) {
+        String fragment = respMap.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .reduce((s, s2) -> s + "&" + s2).orElse("");
+        return fragment;
     }
 
     private Map<String, Boolean> filterScopeToMap(String approvedScopes, String requestedScope,

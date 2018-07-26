@@ -2,8 +2,7 @@ package net.prasenjit.identity.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.prasenjit.identity.config.AuthenticationHandler;
-import net.prasenjit.identity.entity.AuthorizationCode;
+import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
@@ -13,6 +12,7 @@ import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
 import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
 import net.prasenjit.identity.security.OAuthError;
+import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import net.prasenjit.identity.service.OAuth2Service;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -25,6 +25,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 import static net.prasenjit.identity.properties.ApplicationConstants.PREVIOUS_URL;
 
@@ -110,29 +114,42 @@ public class OAuthController {
                                   Authentication authentication) {
         Profile profile = extractPrincipal(authentication, Profile.class);
         authorizationModel.setProfile(profile);
+        authorizationModel.setLoginTime(((UserAuthenticationToken) authentication).getLoginTime());
         authorizationModel = oAuth2Service.processAuthorizationOrImplicitGrant(authorizationModel);
         if (authorizationModel.isValid()) {
-            AuthorizationCode authorizationCode = authorizationModel.getAuthorizationCode();
-            if (authorizationCode != null) {
-                UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
-                        .queryParam("code", authorizationCode.getAuthorizationCode())
-                        .queryParam("state", authorizationCode.getState())
-                        .queryParam("scope", authorizationCode.getScope()).build();
-                return "redirect:" + uri;
-            } else if (authorizationModel.getAccessToken() != null) {
-                String tokenFragment = oAuth2Service.createTokenResponseFragment(authorizationModel.getAccessToken(),
-                        authorizationModel.getState());
+            boolean responseAsFragment = false;
+            Map<String, String> responseMap = new HashMap<>();
+            responseMap.put("scope", authorizationModel.getState());
+            if (authorizationModel.requireTokenResponse()) {
+                responseAsFragment = true;
+                AccessToken token = authorizationModel.getAccessToken();
+                responseMap.put("access_token", token.getAssessToken());
+                responseMap.put("token_type", "bearer");
+                long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), token.getExpiryDate());
+                responseMap.put("expires_in", "" + expIn);
+            }
+            if (authorizationModel.requireIDTokenResponse()) {
+                responseAsFragment = true;
+                responseMap.put("id_token", authorizationModel.getIdToken());
+            }
+            if (authorizationModel.requireCodeResponse()) {
+                responseMap.put("code", authorizationModel.getAuthorizationCode().getAuthorizationCode());
+            }
+            if (responseAsFragment) {
+                String tokenFragment = oAuth2Service.createTokenResponseFragment(responseMap);
                 UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
                         .fragment(tokenFragment).build();
                 return "redirect:" + uri;
             } else {
-                authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-                authorizationModel.setErrorDescription("response_type is invalid");
-                return buildErrorUrl(authorizationModel);
+                String queryFragment = oAuth2Service.createTokenResponseFragment(responseMap);
+                UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
+                        .query(queryFragment).build();
+                return "redirect:" + uri;
             }
-        } else {
-            return buildErrorUrl(authorizationModel);
         }
+        authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+        authorizationModel.setErrorDescription("response_type is invalid");
+        return buildErrorUrl(authorizationModel);
     }
 
     private String buildErrorUrl(AuthorizationModel authorizationModel) {
