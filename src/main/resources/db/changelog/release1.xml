@@ -162,6 +162,20 @@
             <column name="OLD_PRIVATE_KEY" type="CLOB"/>
             <column name="OLD_PUBLIC_KEY" type="CLOB"/>
         </createTable>
+        <createTable tableName="T_JWK_KEY">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CREATION_DATE" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="PRIVATE_KEY" type="CLOB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="PUBLIC_KEY" type="CLOB">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-8">
         <createTable tableName="T_CLIENT_SCOPE">
@@ -203,6 +217,7 @@
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-27">
         <addPrimaryKey columnNames="ASSOCIATION, USER_TYPE" constraintName="T_E2E_KEYPK" tableName="T_E2E_KEY"/>
+        <addPrimaryKey columnNames="ID" constraintName="T_JWK_KEYPK" tableName="T_JWK_KEY"/>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-28">
         <addForeignKeyConstraint baseTableName="T_CLIENT_SCOPE" baseColumnNames="CLIENT_ID"

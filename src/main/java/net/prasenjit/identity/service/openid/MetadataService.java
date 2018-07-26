@@ -6,6 +6,7 @@ import net.prasenjit.identity.model.openid.discovery.DiscoveryResponse;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.properties.ServerMetadata;
 import net.prasenjit.identity.repository.ScopeRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -22,21 +23,23 @@ public class MetadataService {
     private final IdentityProperties identityProperties;
     private final ScopeRepository scopeRepository;
     private boolean initialized = false;
+    //@Value("server.port.internal")
+    private int serverPort;
 
     public ServerMetadata findMetadata() {
-        UriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentRequest();
+        UriComponentsBuilder builder = ServletUriComponentsBuilder.fromHttpUrl("http://localhost:" + serverPort + "/");
         ServerMetadata metadata = identityProperties.getServerMetadata();
         if (!initialized) {
             if (!StringUtils.hasText(metadata.getIssuer())) {
                 UriComponentsBuilder builder1 = builder.cloneBuilder();
                 metadata.setIssuer(builder1.build().toString());
-                metadata.setAuthorizationEndpoint(builder1.pathSegment("security", "authorize").build().toString());
+                metadata.setAuthorizationEndpoint(builder1.pathSegment("oauth", "authorize").build().toString());
                 builder1 = builder.cloneBuilder();
-                metadata.setTokenEndpoint(builder1.pathSegment("security", "token").toUriString());
+                metadata.setTokenEndpoint(builder1.pathSegment("oauth", "token").toUriString());
                 builder1 = builder.cloneBuilder();
                 metadata.setUserinfoEndpoint(builder1.pathSegment("api", "me").toUriString());
                 builder1 = builder.cloneBuilder();
-                metadata.setJwksURI(builder1.pathSegment("api", "jwks").toUriString());
+                metadata.setJwksURI(builder1.pathSegment("keys").toUriString());
             }
             metadata.setScopesSupported(scopeRepository.findAll().stream().map(Scope::getScopeId).collect(Collectors.toList()));
             metadata.setResponseTypesSupported(new String[]{"code", "code id_token", "id_token", "token id_token"});

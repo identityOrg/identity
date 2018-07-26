@@ -18,4 +18,6 @@ public class CryptoProperties {
     private String clientKeyPassword;
 
     private List<String> cyclePassword;
+
+    private int jwkKeySize = 2048;
 }
