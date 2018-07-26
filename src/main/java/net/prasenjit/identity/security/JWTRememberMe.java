@@ -36,7 +36,7 @@ public class JWTRememberMe implements RememberMeServices, LogoutHandler {
         for (Cookie cookie : cookies) {
             if (cookie.getName().equals(COOKIE_NAME)) {
                 String cookieBody = cookie.getValue();
-                return codeFactory.decodeIDToken(cookieBody);
+                return codeFactory.decodeCookieToken(cookieBody);
             }
         }
         return null;
@@ -52,7 +52,7 @@ public class JWTRememberMe implements RememberMeServices, LogoutHandler {
         if (successfulAuthentication instanceof UserAuthenticationToken) {
             Profile profile = (Profile) successfulAuthentication.getPrincipal();
             LocalDateTime loginTime = ((UserAuthenticationToken) successfulAuthentication).getLoginTime();
-            String idToken = codeFactory.createIDToken(profile, loginTime);
+            String idToken = codeFactory.createCookieToken(profile, loginTime);
             setCookie(idToken, getTokenValiditySeconds(), request, response);
         }
     }

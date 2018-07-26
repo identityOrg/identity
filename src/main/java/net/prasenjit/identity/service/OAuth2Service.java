@@ -81,6 +81,7 @@ public class OAuth2Service {
         authorizationModel.setValid(false);
         authorizationModel.setResponseType(request.getResponse_type());
         authorizationModel.setRedirectUri(request.getRedirect_uri());
+        authorizationModel.setNonce(request.getNonce());
 
         if (request.getClient_id() == null) {
             authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);

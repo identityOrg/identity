@@ -36,7 +36,6 @@ public class OAuthController {
 
     private final OAuth2Service oAuth2Service;
     private final OpenIDSessionContainer sessionContainer;
-    private final AuthenticationHandler authenticationHandler;
 
     @PostMapping(value = "token", params = "grant_type=password")
     @ResponseBody

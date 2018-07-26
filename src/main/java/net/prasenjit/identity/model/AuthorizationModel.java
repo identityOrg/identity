@@ -6,13 +6,12 @@ import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.Client;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 @Data
 @NoArgsConstructor
-public class AuthorizationModel implements Serializable {
+public class AuthorizationModel {
     private boolean openid = false;
     private boolean valid = false;
     private Client client;
@@ -27,4 +26,5 @@ public class AuthorizationModel implements Serializable {
     private AuthorizationCode authorizationCode;
     private boolean loginRequired;
     private boolean consentRequired;
+    private String nonce;
 }
