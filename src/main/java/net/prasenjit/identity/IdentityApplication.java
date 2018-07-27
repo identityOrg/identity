@@ -49,6 +49,7 @@ public class IdentityApplication implements ApplicationRunner {
         scopeRepository.save(new Scope("openid", "OpenID Scope"));
         scopeRepository.save(new Scope("profile", "OpenID Profile"));
         scopeRepository.save(new Scope("email", "OpenID Email"));
+        scopeRepository.save(new Scope("address", "OpenID Address"));
 
         User admin = createAdmin("admin");
         userRepository.saveAndFlush(admin);

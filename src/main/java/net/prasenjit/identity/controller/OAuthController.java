@@ -17,6 +17,7 @@ import net.prasenjit.identity.service.OAuth2Service;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponents;
@@ -119,7 +120,9 @@ public class OAuthController {
         if (authorizationModel.isValid()) {
             boolean responseAsFragment = false;
             Map<String, String> responseMap = new HashMap<>();
-            responseMap.put("scope", authorizationModel.getState());
+            if (StringUtils.hasText(authorizationModel.getState())) {
+                responseMap.put("state", authorizationModel.getState());
+            }
             if (authorizationModel.requireTokenResponse()) {
                 responseAsFragment = true;
                 AccessToken token = authorizationModel.getAccessToken();
@@ -127,6 +130,7 @@ public class OAuthController {
                 responseMap.put("token_type", "bearer");
                 long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), token.getExpiryDate());
                 responseMap.put("expires_in", "" + expIn);
+                //responseMap.put("scope", token.getScope()); //TODO handle scope later
             }
             if (authorizationModel.requireIDTokenResponse()) {
                 responseAsFragment = true;
@@ -150,6 +154,7 @@ public class OAuthController {
         authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
         authorizationModel.setErrorDescription("response_type is invalid");
         return buildErrorUrl(authorizationModel);
+
     }
 
     private String buildErrorUrl(AuthorizationModel authorizationModel) {

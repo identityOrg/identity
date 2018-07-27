@@ -2,6 +2,7 @@ package net.prasenjit.identity.service.openid;
 
 import com.nimbusds.jose.jwk.RSAKey;
 import lombok.RequiredArgsConstructor;
+import net.minidev.json.JSONObject;
 import net.prasenjit.identity.entity.JWKKey;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.JWKKeyRepository;
@@ -30,16 +31,17 @@ public class CryptographyService {
     private final CyclicEncryptorFactory encryptorFactory;
 
     @Transactional(readOnly = true)
-    public List<RSAKey> getLast5Keys() {
+    public List<JSONObject> getLast5Keys() {
         List<JWKKey> keysToreturn = getOrGenerateJwkKeys();
         return keysToreturn.stream().map(jwkKey -> {
             Key publicKey = unwrapKey(jwkKey.getPublicKey(), jwkKey.getCreationDate(), PUBLIC);
-            return new RSAKey.Builder((RSAPublicKey) publicKey)
+            RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) publicKey)
                     .keyID(jwkKey.getId().toString()).build();
+            return rsaKey.toJSONObject();
         }).collect(Collectors.toList());
     }
 
-    private List<JWKKey> getOrGenerateJwkKeys() {
+    public List<JWKKey> getOrGenerateJwkKeys() {
         List<JWKKey> keysToreturn = new ArrayList<>();
         List<JWKKey> jwkKeys = keyRepository.findAll();
         if (CollectionUtils.isEmpty(jwkKeys)) {
@@ -85,8 +87,7 @@ public class CryptographyService {
         return encryptorFactory.createEncryptor(encryptionDate).unwrapKey(encodedKey, "RSA", type);
     }
 
-    public PrivateKey getApplicableSigningKey() {
-        JWKKey jwkKey = getOrGenerateJwkKeys().get(0);
+    public PrivateKey getSigningKey(JWKKey jwkKey) {
         return (PrivateKey) unwrapKey(jwkKey.getPrivateKey(), jwkKey.getCreationDate(), PRIVATE);
     }
 }

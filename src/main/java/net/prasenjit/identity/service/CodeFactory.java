@@ -1,6 +1,5 @@
 package net.prasenjit.identity.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -13,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.store.CryptoKeyFactory;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
+import net.prasenjit.identity.entity.JWKKey;
 import net.prasenjit.identity.entity.RefreshToken;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
@@ -26,10 +26,15 @@ import net.prasenjit.identity.service.openid.MetadataService;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Base64Utils;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -43,7 +48,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class CodeFactory {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final AuthorizationCodeRepository authorizationCodeRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -139,16 +143,6 @@ public class CodeFactory {
                     .issuer(metadataService.findMetadata().getIssuer())
                     .issueTime(convertToDate(loginTime))
                     .expirationTime(convertToDate(loginTime.plusDays(identityProperties.getRememberLoginDays())))
-//                    .claim("profile.active", user.getActive())
-//                    .claim("profile.expiryDate", convertToDate(user.getExpiryDate()))
-//                    .claim("profile.passwordExpiryDate", convertToDate(user.getPasswordExpiryDate()))
-//                    .claim("profile.authorities", OBJECT_MAPPER.writeValueAsString(user.getAuthorities()))
-//                    .claim("profile.creationDate", convertToDate(user.getCreationDate()))
-//                    .claim("profile.firstName", user.getFirstName())
-//                    .claim("profile.lastName", user.getLastName())
-//                    .claim("profile.status", user.getStatus())
-//                    .claim("profile.locked", user.getLocked())
-//                    .claim("profile.client", user.isClient())
                     .build();
             SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
             signedJWT.sign(macSigner);
@@ -171,24 +165,6 @@ public class CodeFactory {
                 return null;
             }
 
-//            Profile profile = new Profile();
-//            profile.setActive(claimsSet.getBooleanClaim("profile.active"));
-//            profile.setClient(claimsSet.getBooleanClaim("profile.client"));
-//            profile.setCreationDate(convertToLocalDateTime(claimsSet.getDateClaim("profile.creationDate")));
-//            profile.setExpiryDate(convertToLocalDateTime(claimsSet.getDateClaim("profile.expiryDate")));
-//            profile.setFirstName(claimsSet.getStringClaim("profile.firstName"));
-//            profile.setLastName(claimsSet.getStringClaim("profile.lastName"));
-//            profile.setLocked(claimsSet.getBooleanClaim("profile.locked"));
-//            profile.setPasswordExpiryDate(convertToLocalDateTime(claimsSet.getDateClaim("profile.passwordExpiryDate")));
-//            String statusClaim = claimsSet.getStringClaim("profile.status");
-//            if (StringUtils.hasText(statusClaim)) {
-//                profile.setStatus(Status.valueOf(statusClaim));
-//            }
-//            profile.setUsername(claimsSet.getSubject());
-//            SimpleGrantedAuthority[] simpleGrantedAuthorities = OBJECT_MAPPER.readValue(
-//                    claimsSet.getStringClaim("profile.authorities"), SimpleGrantedAuthority[].class);
-//            profile.setAuthorities(CollectionUtils.arrayToList(simpleGrantedAuthorities));
-
             LocalDateTime creationTime = convertToLocalDateTime(claimsSet.getIssueTime());
 
             return new UserAuthenticationToken(claimsSet.getSubject(),
@@ -199,26 +175,42 @@ public class CodeFactory {
     }
 
     public String createIDToken(Profile profile, LocalDateTime loginTime, String nonce, String clientId,
-                                Duration idTokenValidity, List<String> scope) {
+                                Duration idTokenValidity, List<String> scope, String accessToken) {
         try {
+            LocalDateTime issueTime = LocalDateTime.now();
             JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder()
                     .subject(profile.getUsername())
                     .issuer(metadataService.findMetadata().getIssuer())
                     .audience(clientId)
-                    .issueTime(new Date())
-                    .expirationTime(convertToDate(loginTime.plus(idTokenValidity)))
+                    .issueTime(convertToDate(issueTime))
+                    .expirationTime(convertToDate(issueTime.plus(idTokenValidity)))
                     .claim("auth_time", convertToDate(loginTime))
                     .claim("nonce", nonce)
                     .claim("azp", clientId);
+            if (StringUtils.hasText(accessToken)) {
+                MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+                sha256.update(accessToken.getBytes(StandardCharsets.US_ASCII));
+                byte[] digest = sha256.digest();
+                byte[] octate = new byte[16];
+                System.arraycopy(digest, 0, octate, 0, 16);
+                String atHash = Base64Utils.encodeToUrlSafeString(octate);
+                claimsSetBuilder.claim("at_hash", atHash);
+            }
             if (scope.contains("profile")) {
                 claimsSetBuilder.claim("given_name", profile.getFirstName())
                         .claim("family_name", profile.getLastName());
             }
-            SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claimsSetBuilder.build());
-            RSASSASigner signer = new RSASSASigner(cryptographyService.getApplicableSigningKey());
+            JWKKey latestKey = cryptographyService.getOrGenerateJwkKeys().get(0);
+            PrivateKey signingKey = cryptographyService.getSigningKey(latestKey);
+            claimsSetBuilder.claim("kid", latestKey.getId());
+            JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
+                    .keyID("" + latestKey.getId()).build();
+
+            SignedJWT signedJWT = new SignedJWT(header, claimsSetBuilder.build());
+            RSASSASigner signer = new RSASSASigner(signingKey);
             signedJWT.sign(signer);
             return signedJWT.serialize();
-        } catch (JOSEException e) {
+        } catch (JOSEException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
     }

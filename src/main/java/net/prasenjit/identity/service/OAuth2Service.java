@@ -181,9 +181,14 @@ public class OAuth2Service {
                     authorizationModel.setAccessToken(accessToken);
                 }
                 if (authorizationModel.requireIDTokenResponse()) {
+                    String accessToken = null;
+                    if (authorizationModel.getAccessToken() != null) {
+                        accessToken = authorizationModel.getAccessToken().getAssessToken();
+                    }
                     String idToken = codeFactory.createIDToken(authorizationModel.getProfile(),
                             authorizationModel.getLoginTime(), authorizationModel.getNonce(),
-                            client.get().getClientId(), client.get().getAccessTokenValidity(), approvedScope);
+                            client.get().getClientId(), client.get().getAccessTokenValidity(),
+                            approvedScope, accessToken);
                     authorizationModel.setIdToken(idToken);
                 }
                 if (!(authorizationModel.requireCodeResponse() || authorizationModel.requireTokenResponse()
@@ -241,7 +246,7 @@ public class OAuth2Service {
                                         idToken = codeFactory.createIDToken(Profile.create(associatedUser.get()),
                                                 authorizationCode.get().getLoginDate(),
                                                 null, client.getClientId(), client.getAccessTokenValidity(),
-                                                CollectionUtils.arrayToList(strings));
+                                                CollectionUtils.arrayToList(strings), accessToken.getAssessToken());
                                     }
                                     RefreshToken refreshToken = null;
                                     if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {
