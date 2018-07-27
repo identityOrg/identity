@@ -28,9 +28,7 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/login", "/webjars/**", "/swagger-resources/**", "/.well-known/**")
-                .permitAll()
-                .antMatchers("/keys")
+                .antMatchers("/login", "/webjars/**", "/swagger-resources/**")
                 .permitAll()
                 .mvcMatchers("/security/authorize")
                 .authenticated()

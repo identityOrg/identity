@@ -15,4 +15,6 @@ public class OAuthToken {
     private long expiresIn;
     @JsonProperty("scope")
     private String scope;
+    @JsonProperty("id_token")
+    private String idToken;
 }

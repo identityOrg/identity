@@ -6,7 +6,6 @@ import net.prasenjit.identity.model.openid.discovery.DiscoveryResponse;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.properties.ServerMetadata;
 import net.prasenjit.identity.repository.ScopeRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -23,11 +22,11 @@ public class MetadataService {
     private final IdentityProperties identityProperties;
     private final ScopeRepository scopeRepository;
     private boolean initialized = false;
-    //@Value("server.port.internal")
+    //@Value("local.server.port")
     private int serverPort;
 
     public ServerMetadata findMetadata() {
-        UriComponentsBuilder builder = ServletUriComponentsBuilder.fromHttpUrl("http://localhost:" + serverPort + "/");
+        UriComponentsBuilder builder = ServletUriComponentsBuilder.fromHttpUrl("http://localhost:8080");
         ServerMetadata metadata = identityProperties.getServerMetadata();
         if (!initialized) {
             if (!StringUtils.hasText(metadata.getIssuer())) {
@@ -39,7 +38,7 @@ public class MetadataService {
                 builder1 = builder.cloneBuilder();
                 metadata.setUserinfoEndpoint(builder1.pathSegment("api", "me").toUriString());
                 builder1 = builder.cloneBuilder();
-                metadata.setJwksURI(builder1.pathSegment("keys").toUriString());
+                metadata.setJwksURI(builder1.pathSegment("api", "keys").toUriString());
             }
             metadata.setScopesSupported(scopeRepository.findAll().stream().map(Scope::getScopeId).collect(Collectors.toList()));
             metadata.setResponseTypesSupported(new String[]{"code", "code id_token", "id_token", "token id_token"});

@@ -34,11 +34,17 @@ public class AuthorizationCode {
     @Column(name = "USED", nullable = false)
     private boolean used;
 
+    @Column(name = "LOGIN_DATE", nullable = false)
+    private LocalDateTime loginDate;
+
     @Column(name = "CREATION_DATE", nullable = false)
     private LocalDateTime creationDate;
 
     @Column(name = "EXPIRY_DATE", nullable = false)
     private LocalDateTime expiryDate;
+
+    @Column(name = "OPEN_ID", nullable = false)
+    private boolean openId;
 
     public boolean isValid() {
         return LocalDateTime.now().isBefore(expiryDate);

@@ -15,7 +15,7 @@ import java.util.List;
 public class CryptographyController {
     private final CryptographyService cryptographyService;
 
-    @RequestMapping(value = "keys", method = {RequestMethod.GET, RequestMethod.POST},
+    @RequestMapping(value = "api/keys", method = {RequestMethod.GET, RequestMethod.POST},
             produces = MediaType.APPLICATION_JSON_VALUE)
     public List<RSAKey> keys() {
         return cryptographyService.getLast5Keys();

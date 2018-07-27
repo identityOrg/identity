@@ -14,7 +14,6 @@ import net.prasenjit.crypto.store.CryptoKeyFactory;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.RefreshToken;
-import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.properties.IdentityProperties;
@@ -27,6 +26,7 @@ import net.prasenjit.identity.service.openid.MetadataService;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.crypto.SecretKey;
@@ -65,7 +65,9 @@ public class CodeFactory {
         macVerifier = new MACVerifier(mainKey);
     }
 
-    public AuthorizationCode createAuthorizationCode(String clientId, String returnUrl, String scope, String userName, String state, Duration validity) {
+    public AuthorizationCode createAuthorizationCode(String clientId, String returnUrl, String scope, String userName,
+                                                     String state, Duration validity, LocalDateTime loginDate,
+                                                     boolean openId) {
         AuthorizationCode authorizationCode = new AuthorizationCode();
         authorizationCode.setClientId(clientId);
         LocalDateTime creationDate = LocalDateTime.now();
@@ -76,6 +78,8 @@ public class CodeFactory {
         authorizationCode.setUsername(userName);
         authorizationCode.setUsed(false);
         authorizationCode.setState(state);
+        authorizationCode.setOpenId(openId);
+        authorizationCode.setLoginDate(loginDate);
         authorizationCode.setAuthorizationCode(RandomStringUtils.randomAlphanumeric(8));
         authorizationCodeRepository.saveAndFlush(authorizationCode);
         return authorizationCode;
@@ -95,7 +99,8 @@ public class CodeFactory {
         return accessToken;
     }
 
-    public RefreshToken createRefreshToken(String clientId, String userName, String scope, Duration duration) {
+    public RefreshToken createRefreshToken(String clientId, String userName, String scope, LocalDateTime loginDate,
+                                           Duration duration, boolean openId) {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setClientId(clientId);
         LocalDateTime creationDate = LocalDateTime.now();
@@ -103,13 +108,15 @@ public class CodeFactory {
         refreshToken.setExpiryDate(creationDate.plus(duration));
         refreshToken.setScope(scope);
         refreshToken.setUsername(userName);
+        refreshToken.setLoginDate(loginDate);
+        refreshToken.setOpenId(openId);
         refreshToken.setRefreshToken(RandomStringUtils.randomAlphanumeric(24));
         refreshToken.setUsed(false);
         refreshTokenRepository.saveAndFlush(refreshToken);
         return refreshToken;
     }
 
-    public OAuthToken createOAuthToken(AccessToken accessToken, RefreshToken refreshToken) {
+    public OAuthToken createOAuthToken(AccessToken accessToken, RefreshToken refreshToken, String idToken) {
         OAuthToken oAuthToken = new OAuthToken();
         oAuthToken.setAccessToken(accessToken.getAssessToken());
         if (refreshToken != null) {
@@ -119,6 +126,9 @@ public class CodeFactory {
         oAuthToken.setScope(accessToken.getScope());
         long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
         oAuthToken.setExpiresIn(expIn);
+        if (StringUtils.hasText(idToken)) {
+            oAuthToken.setIdToken(idToken);
+        }
         return oAuthToken;
     }
 
@@ -188,19 +198,17 @@ public class CodeFactory {
         }
     }
 
-    public String createIDToken(AuthorizationModel authorizationModel, String clientId,
+    public String createIDToken(Profile profile, LocalDateTime loginTime, String nonce, String clientId,
                                 Duration idTokenValidity, List<String> scope) {
         try {
-            Profile profile = authorizationModel.getProfile();
             JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder()
                     .subject(profile.getUsername())
                     .issuer(metadataService.findMetadata().getIssuer())
                     .audience(clientId)
                     .issueTime(new Date())
-                    .expirationTime(convertToDate(authorizationModel.getLoginTime()
-                            .plus(idTokenValidity)))
-                    .claim("auth_time", convertToDate(authorizationModel.getLoginTime()))
-                    .claim("nonce", authorizationModel.getNonce())
+                    .expirationTime(convertToDate(loginTime.plus(idTokenValidity)))
+                    .claim("auth_time", convertToDate(loginTime))
+                    .claim("nonce", nonce)
                     .claim("azp", clientId);
             if (scope.contains("profile")) {
                 claimsSetBuilder.claim("given_name", profile.getFirstName())

@@ -20,6 +20,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
@@ -56,9 +57,9 @@ public class OAuth2Service {
         RefreshToken refreshToken = null;
         if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
             refreshToken = codeFactory.createRefreshToken(client.getClientId(), username, filteredScopes,
-                    client.getRefreshTokenValidity());
+                    LocalDateTime.now(), client.getRefreshTokenValidity(), false);
         }
-        return codeFactory.createOAuthToken(accessToken, refreshToken);
+        return codeFactory.createOAuthToken(accessToken, refreshToken, null);
     }
 
     public OAuthToken processClientCredentialsGrant(Client client, String scope) {
@@ -68,7 +69,7 @@ public class OAuth2Service {
         String filteredScope = filterScope(client.getApprovedScopes(), scope);
         AccessToken accessToken = codeFactory.createAccessToken(client, client.getClientId(),
                 client.getAccessTokenValidity(), filteredScope);
-        return codeFactory.createOAuthToken(accessToken, null);
+        return codeFactory.createOAuthToken(accessToken, null, null);
     }
 
     public AuthorizationModel validateAuthorizationGrant(Authentication authentication, AuthorizeRequest request,
@@ -170,7 +171,7 @@ public class OAuth2Service {
                             client.get().getClientId(), authorizationModel.getRedirectUri(),
                             StringUtils.collectionToDelimitedString(approvedScope, " "),
                             authorizationModel.getProfile().getUsername(), authorizationModel.getState(),
-                            Duration.ofMinutes(10));
+                            Duration.ofMinutes(10), authorizationModel.getLoginTime(), authorizationModel.isOpenid());
                     authorizationModel.setAuthorizationCode(authorizationCode);
                 }
                 if (authorizationModel.requireTokenResponse()) {
@@ -180,7 +181,8 @@ public class OAuth2Service {
                     authorizationModel.setAccessToken(accessToken);
                 }
                 if (authorizationModel.requireIDTokenResponse()) {
-                    String idToken = codeFactory.createIDToken(authorizationModel,
+                    String idToken = codeFactory.createIDToken(authorizationModel.getProfile(),
+                            authorizationModel.getLoginTime(), authorizationModel.getNonce(),
                             client.get().getClientId(), client.get().getAccessTokenValidity(), approvedScope);
                     authorizationModel.setIdToken(idToken);
                 }
@@ -233,13 +235,22 @@ public class OAuth2Service {
                                     AccessToken accessToken = codeFactory.createAccessToken(associatedUser.get(),
                                             client.getClientId(), client.getAccessTokenValidity(),
                                             authorizationCode.get().getScope());
+                                    String idToken = null;
+                                    if (authorizationCode.get().isOpenId()) {
+                                        String[] strings = StringUtils.delimitedListToStringArray(authorizationCode.get().getScope(), " ");
+                                        idToken = codeFactory.createIDToken(Profile.create(associatedUser.get()),
+                                                authorizationCode.get().getLoginDate(),
+                                                null, client.getClientId(), client.getAccessTokenValidity(),
+                                                CollectionUtils.arrayToList(strings));
+                                    }
                                     RefreshToken refreshToken = null;
                                     if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {
                                         refreshToken = codeFactory.createRefreshToken(client.getClientId(),
-                                                associatedUser.get().getUsername(), accessToken.getScope(),
-                                                client.getRefreshTokenValidity());
+                                                associatedUser.get().getUsername(),
+                                                accessToken.getScope(), authorizationCode.get().getLoginDate(),
+                                                client.getRefreshTokenValidity(), authorizationCode.get().isOpenId());
                                     }
-                                    return codeFactory.createOAuthToken(accessToken, refreshToken);
+                                    return codeFactory.createOAuthToken(accessToken, refreshToken, idToken);
                                 }
                             }
                         }
@@ -265,8 +276,9 @@ public class OAuth2Service {
                                 client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope());
                         RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),
                                 userOptional.get().getUsername(), tokenOptional.get().getScope(),
-                                client.getRefreshTokenValidity());
-                        return codeFactory.createOAuthToken(accessToken, refreshToken1);
+                                tokenOptional.get().getLoginDate(), client.getRefreshTokenValidity(),
+                                tokenOptional.get().isOpenId());
+                        return codeFactory.createOAuthToken(accessToken, refreshToken1, null); // TODO add id token from refresh token
                     } else {
                         throw new UnauthenticatedClientException("access_denied", "Invalid user");
                     }

@@ -125,7 +125,7 @@ public class AuthorizeRequest {
      * PAPE [OpenID.PAPE] max_auth_age request parameter.) When max_age is used, the ID Token returned MUST include
      * an auth_time Claim Value.
      */
-    private Long max_age;
+    private long max_age = -1;
     /**
      * OPTIONAL. End-User's preferred languages and scripts for the user interface, represented as a space-separated
      * list of BCP47 [RFC5646] language tag values, ordered by preference. For instance, the value "fr-CA fr en"

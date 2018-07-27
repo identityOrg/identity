@@ -41,6 +41,12 @@
             <column name="EXPIRY_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
+            <column name="LOGIN_DATE" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="OPEN_ID" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
             <column name="RETURN_URL" type="VARCHAR(500)"/>
             <column name="SCOPE" type="VARCHAR(500)">
                 <constraints nullable="false"/>
@@ -92,6 +98,9 @@
             <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
+            <column name="LOGIN_DATE" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
             <column name="EXPIRY_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
@@ -99,6 +108,9 @@
                 <constraints nullable="false"/>
             </column>
             <column name="USED" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="OPEN_ID" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
             <column name="USERNAME" type="VARCHAR(50)">
