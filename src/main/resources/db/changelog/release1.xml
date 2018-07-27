@@ -10,6 +10,9 @@
             <column name="CLIENT_ID" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
+            <column name="LOGIN_DATE" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
             <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>

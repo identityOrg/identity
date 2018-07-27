@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -44,13 +45,15 @@ public class E2eTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
 
         UserDetails client = clientService.loadUserByUsername("client");
-        createAccessToken = codeFactory.createAccessToken(client, "client", Duration.ofMinutes(1), "openid");
+        createAccessToken = codeFactory.createAccessToken(client, "client", Duration.ofMinutes(1),
+                "openid", LocalDateTime.now());
     }
 
     @Test
     public void testEncryptionDecryption() throws Exception {
         String token = createAccessToken.getAssessToken();
-        mockMvc.perform(get("/api/e2e").header("Authorization", "Bearer " + token)).andExpect(status().isOk())
+        mockMvc.perform(get("/api/e2e")
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.publicExponent", notNullValue()))
                 .andExpect(jsonPath("$.modulus", notNullValue())).andReturn();

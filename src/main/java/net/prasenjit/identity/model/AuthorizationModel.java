@@ -5,7 +5,6 @@ import lombok.NoArgsConstructor;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.Client;
-import net.prasenjit.identity.model.openid.IDToken;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;

@@ -53,7 +53,7 @@ public class OAuth2Service {
         }
         String filteredScopes = filterScope(client.getApprovedScopes(), requestedScope);
         AccessToken accessToken = codeFactory.createAccessToken((User) authentication.getPrincipal(),
-                client.getClientId(), client.getAccessTokenValidity(), filteredScopes);
+                client.getClientId(), client.getAccessTokenValidity(), filteredScopes, LocalDateTime.now());
         RefreshToken refreshToken = null;
         if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
             refreshToken = codeFactory.createRefreshToken(client.getClientId(), username, filteredScopes,
@@ -68,7 +68,7 @@ public class OAuth2Service {
         }
         String filteredScope = filterScope(client.getApprovedScopes(), scope);
         AccessToken accessToken = codeFactory.createAccessToken(client, client.getClientId(),
-                client.getAccessTokenValidity(), filteredScope);
+                client.getAccessTokenValidity(), filteredScope, LocalDateTime.now());
         return codeFactory.createOAuthToken(accessToken, null, null);
     }
 
@@ -177,7 +177,8 @@ public class OAuth2Service {
                 if (authorizationModel.requireTokenResponse()) {
                     AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getProfile(),
                             client.get().getClientId(), client.get().getAccessTokenValidity(),
-                            StringUtils.collectionToDelimitedString(approvedScope, " "));
+                            StringUtils.collectionToDelimitedString(approvedScope, " "),
+                            authorizationModel.getLoginTime());
                     authorizationModel.setAccessToken(accessToken);
                 }
                 if (authorizationModel.requireIDTokenResponse()) {
@@ -239,7 +240,8 @@ public class OAuth2Service {
                                 if (associatedUser.isPresent()) {
                                     AccessToken accessToken = codeFactory.createAccessToken(associatedUser.get(),
                                             client.getClientId(), client.getAccessTokenValidity(),
-                                            authorizationCode.get().getScope());
+                                            authorizationCode.get().getScope(),
+                                            authorizationCode.get().getLoginDate());
                                     String idToken = null;
                                     if (authorizationCode.get().isOpenId()) {
                                         String[] strings = StringUtils.delimitedListToStringArray(authorizationCode.get().getScope(), " ");
@@ -278,7 +280,8 @@ public class OAuth2Service {
                     if (userOptional.get().isValid()) {
                         tokenOptional.get().setUsed(true);
                         AccessToken accessToken = codeFactory.createAccessToken(userOptional.get(),
-                                client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope());
+                                client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope(),
+                                tokenOptional.get().getLoginDate());
                         RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),
                                 userOptional.get().getUsername(), tokenOptional.get().getScope(),
                                 tokenOptional.get().getLoginDate(), client.getRefreshTokenValidity(),

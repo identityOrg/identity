@@ -89,7 +89,8 @@ public class CodeFactory {
         return authorizationCode;
     }
 
-    public AccessToken createAccessToken(UserDetails user, String clientId, Duration duration, String scope) {
+    public AccessToken createAccessToken(UserDetails user, String clientId, Duration duration,
+                                         String scope, LocalDateTime loginDate) {
         AccessToken accessToken = new AccessToken();
         accessToken.setAssessToken(RandomStringUtils.randomAlphanumeric(24));
         accessToken.setUsername(user.getUsername());
@@ -99,6 +100,7 @@ public class CodeFactory {
         accessToken.setUserProfile(Profile.create(user));
         accessToken.setClientId(clientId);
         accessToken.setScope(scope);
+        accessToken.setLoginDate(loginDate);
         accessTokenRepository.saveAndFlush(accessToken);
         return accessToken;
     }
