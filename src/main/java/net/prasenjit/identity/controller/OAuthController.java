@@ -103,6 +103,9 @@ public class OAuthController {
                 httpRequest.getSession().setAttribute(PREVIOUS_URL, builder.build().toString());
                 return "redirect:/login";
             }
+            if (!authorizationModel.isConsentRequired()) {
+                return submitAuthorize(authorizationModel, authentication);
+            }
             model.addAttribute("model", authorizationModel);
             return "authorize";
         } else {

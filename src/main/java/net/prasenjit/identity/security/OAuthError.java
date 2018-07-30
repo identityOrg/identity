@@ -9,4 +9,5 @@ public interface OAuthError {
     String SERVER_ERROR = "server_error";
     String TEMPORARILY_UNAVAILABLE = "temporarily_unavailable";
     String LOGIN_REQUIRED = "login_required";
+    String INTERACTION_REQUIRED = "interaction_required";
 }

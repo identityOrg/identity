@@ -30,7 +30,7 @@ public class AuthorizationModel {
     private AuthorizationCode authorizationCode;
     private String idToken;
     private boolean loginRequired;
-    private boolean consentRequired;
+    private boolean consentRequired = true;
     private String nonce;
 
     public boolean requireCodeResponse() {

@@ -8,10 +8,7 @@ import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
-import net.prasenjit.identity.repository.AuthorizationCodeRepository;
-import net.prasenjit.identity.repository.ClientRepository;
-import net.prasenjit.identity.repository.RefreshTokenRepository;
-import net.prasenjit.identity.repository.UserRepository;
+import net.prasenjit.identity.repository.*;
 import net.prasenjit.identity.security.GrantType;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
@@ -40,6 +37,7 @@ public class OAuth2Service {
     private final AuthorizationCodeRepository codeRepository;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserConsentRepository userConsentRepository;
 
     public OAuthToken processPasswordGrant(Client client, String username, String password, String requestedScope) {
         if (!client.supportsGrant(GrantType.PASSWORD)) {
@@ -103,9 +101,22 @@ public class OAuth2Service {
                 authorizationModel.setErrorDescription("Redirect URL doesn't match");
                 return authorizationModel;
             }
-            Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(),
-                    request.getScope(), authorizationModel);
-            authorizationModel.setFilteredScopes(scopeToApprove);
+            filterScopeToMap(client.get().getApprovedScopes(), request.getScope(), authorizationModel);
+            if (principal != null) {
+                Optional<UserConsent> consent = userConsentRepository.findById(new UserConsent.UserConsentPK(
+                        principal.getUsername(), client.get().getClientId()));
+
+                if (consent.isPresent()) {
+                    String[] preApprovedScope = StringUtils.delimitedListToStringArray(consent.get().getScopes(), " ");
+                    String[] toBeApprovedScopes = authorizationModel.getFilteredScopes().entrySet().stream()
+                            .map(Map.Entry::getKey).collect(Collectors.toList()).toArray(new String[1]);
+                    Arrays.sort(preApprovedScope);
+                    Arrays.sort(toBeApprovedScopes);
+                    if (Arrays.deepEquals(preApprovedScope, toBeApprovedScopes)) {
+                        authorizationModel.setConsentRequired(false);
+                    }
+                }
+            }
 
             if (authorizationModel.isOpenid()) {
                 // handle prompt parameter for openid
@@ -121,18 +132,24 @@ public class OAuth2Service {
                         authorizationModel.setErrorDescription("Prompt none can not be combined with anything else");
                         return authorizationModel;
                     }
-                    if ((promptNone || (promptConsent && !promptLogin)) && principal == null) {
-                        authorizationModel.setRedirectUri(client.get().getRedirectUri());
-                        authorizationModel.setErrorCode(OAuthError.LOGIN_REQUIRED);
-                        authorizationModel.setErrorDescription("User not logged in and prompt none is requested");
-                        return authorizationModel;
+                    if (promptNone) {
+                        if (principal == null) {
+                            authorizationModel.setRedirectUri(client.get().getRedirectUri());
+                            authorizationModel.setErrorCode(OAuthError.LOGIN_REQUIRED);
+                            authorizationModel.setErrorDescription("User not logged in and prompt none is requested");
+                            return authorizationModel;
+                        }
+                        if (authorizationModel.isConsentRequired()) {
+                            authorizationModel.setErrorCode(OAuthError.INTERACTION_REQUIRED);
+                            authorizationModel.setErrorDescription("User consent required");
+                            return authorizationModel;
+                        }
                     }
                     authorizationModel.setLoginRequired(promptLogin);
                     authorizationModel.setConsentRequired(promptConsent);
                     // handle prompt redirect
                 } else if (principal == null) {
                     authorizationModel.setLoginRequired(true);
-                    authorizationModel.setConsentRequired(true);
                 }
                 // handle max_age parameter for openid
                 if (request.getMax_age() > 0) {
@@ -166,6 +183,15 @@ public class OAuth2Service {
                 if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
                     authorizationModel.setRedirectUri(client.get().getRedirectUri());
                 }
+
+                // Save consent
+                UserConsent userConsent = new UserConsent();
+                userConsent.setUsername(authorizationModel.getProfile().getUsername());
+                userConsent.setClientID(client.get().getClientId());
+                userConsent.setApprovalDate(LocalDateTime.now());
+                userConsent.setScopes(StringUtils.collectionToDelimitedString(approvedScope, " "));
+                userConsentRepository.save(userConsent);
+
                 if (authorizationModel.requireCodeResponse()) {
                     AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(
                             client.get().getClientId(), authorizationModel.getRedirectUri(),
@@ -307,28 +333,28 @@ public class OAuth2Service {
         return fragment;
     }
 
-    private Map<String, Boolean> filterScopeToMap(String approvedScopes, String requestedScope,
-                                                  AuthorizationModel authorizationModel) {
+    private void filterScopeToMap(String approvedScopes, String requestedScope,
+                                  AuthorizationModel authorizationModel) {
         String[] approved = StringUtils.delimitedListToStringArray(approvedScopes, " ");
         String[] requested = StringUtils.delimitedListToStringArray(requestedScope, " ");
         if (approved.length == 0) {
-            return new HashMap<>();
+            return;
         }
         if (requested.length == 0) {
-            return Stream.of(approved).collect(Collectors.toMap(o -> o, o -> Boolean.TRUE));
+            authorizationModel.setFilteredScopes(Stream.of(approved)
+                    .collect(Collectors.toMap(o -> o, o -> Boolean.TRUE)));
+            return;
         }
         Arrays.sort(approved);
         Arrays.sort(requested);
         if (Arrays.binarySearch(requested, "openid") > -1) {
             authorizationModel.setOpenid(true);
         }
-        Map<String, Boolean> filteredMap = new HashMap<>();
         for (String r : requested) {
             if (Arrays.binarySearch(approved, r) > -1) {
-                filteredMap.put(r, Boolean.TRUE);
+                authorizationModel.getFilteredScopes().put(r, Boolean.TRUE);
             }
         }
-        return filteredMap;
     }
 
     private String filterScope(String approvedScopes, String requestedScope) {

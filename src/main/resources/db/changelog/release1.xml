@@ -202,6 +202,53 @@
             </column>
         </createTable>
     </changeSet>
+    <changeSet author="prasenjit-net" id="03032018-9">
+        <createTable tableName="T_STANDARD_CLAIM">
+            <column name="SUBJECT" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR(255)"/>
+            <column name="GIVEN_NAME" type="VARCHAR(255)"/>
+            <column name="FAMILY_NAME" type="VARCHAR(255)"/>
+            <column name="MIDDLE_NAME" type="VARCHAR(255)"/>
+            <column name="NICKNAME" type="VARCHAR(50)"/>
+            <column name="PREFERRED_USERNAME" type="VARCHAR(50)"/>
+            <column name="PROFILE" type="VARCHAR(255)"/>
+            <column name="PICTURE" type="VARCHAR(255)"/>
+            <column name="WEBSITE" type="VARCHAR(255)"/>
+            <column name="EMAIL" type="VARCHAR(255)"/>
+            <column name="NAME_VERIFIED" type="BOOLEAN"/>
+            <column name="GENDER" type="VARCHAR(30)"/>
+            <column name="BIRTH_DATE" type="DATE"/>
+            <column name="ZONE_INFO" type="VARCHAR(100)"/>
+            <column name="LOCALE" type="VARCHAR(20)"/>
+            <column name="PHONE_NUMBER" type="VARCHAR(50)"/>
+            <column name="PHONE_NUMBER_VERIFIED" type="BOOLEAN"/>
+            <column name="ADDRESS_FORMATTED" type="VARCHAR(400)"/>
+            <column name="ADDRESS_STREET" type="VARCHAR(100)"/>
+            <column name="ADDRESS_LOCALITY" type="VARCHAR(100)"/>
+            <column name="ADDRESS_REGION" type="VARCHAR(100)"/>
+            <column name="ADDRESS_POSTAL_CODE" type="VARCHAR(15)"/>
+            <column name="ADDRESS_COUNTRY" type="VARCHAR(100)"/>
+            <column name="UPDATED_AT" type="TIMESTAMP"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="prasenjit-net" id="03032018-10">
+        <createTable tableName="T_USER_CONSENT">
+            <column name="USERNAME" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CLIENT_ID" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SCOPES" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="APPRIVAL_DATE" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
     <changeSet author="prasenjit-net" id="03032018-20">
         <addPrimaryKey columnNames="ACCESS_TOKEN"
                        constraintName="T_ACCESS_TOKENPK" tableName="T_ACCESS_TOKEN"/>
@@ -243,5 +290,11 @@
                                  constraintName="FK_CLIENT_SCOPE_SCOPE"
                                  referencedTableName="T_SCOPE"
                                  referencedColumnNames="SCOPE_ID"/>
+    </changeSet>
+    <changeSet id="30072018-01" author="prasenjit-net">
+        <addPrimaryKey tableName="T_STANDARD_CLAIM" columnNames="SUBJECT" constraintName="PK_T_STANDARD_CLAIM"/>
+    </changeSet>
+    <changeSet id="30072018-02" author="prasenjit-net">
+        <addPrimaryKey tableName="T_USER_CONSENT" columnNames="USERNAME, CLIENT_ID" constraintName="PK_T_USER_CONSENT"/>
     </changeSet>
 </databaseChangeLog>
