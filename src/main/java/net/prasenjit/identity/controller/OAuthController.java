@@ -35,7 +35,7 @@ import static net.prasenjit.identity.properties.ApplicationConstants.PREVIOUS_UR
 
 @Slf4j
 @Controller
-@RequestMapping("oauth")
+@RequestMapping("/oauth")
 @RequiredArgsConstructor
 public class OAuthController {
 
@@ -91,12 +91,12 @@ public class OAuthController {
         return oAuth2Service.processRefreshTokenGrantToken(client, refreshToken);
     }
 
-    @GetMapping("authorize")
-    public String oAuthAuthorize(AuthorizeRequest request, Authentication authentication, Model model,
-                                 AuthorizationModel authorizationModel, HttpServletRequest httpRequest)
+    @RequestMapping(value = "authorize", method = {RequestMethod.GET, RequestMethod.POST})
+    public String oAuthAuthorize(@ModelAttribute AuthorizeRequest request, Authentication authentication, Model model,
+                                 HttpServletRequest httpRequest)
             throws IOException, ServletException {
         log.info("Processing authorization code grant");
-        authorizationModel = oAuth2Service.validateAuthorizationGrant(authentication, request, authorizationModel);
+        AuthorizationModel authorizationModel = oAuth2Service.validateAuthorizationGrant(authentication, request);
         if (authorizationModel.isValid()) {
             if (authorizationModel.isLoginRequired() && !sessionContainer.isInteractiveLoginDone()) {
                 UriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentRequest();
@@ -113,7 +113,7 @@ public class OAuthController {
         }
     }
 
-    @PostMapping("authorize")
+    @PostMapping("authorized")
     public String submitAuthorize(@ModelAttribute AuthorizationModel authorizationModel,
                                   Authentication authentication, Model model) {
         Profile profile = extractPrincipal(authentication, Profile.class);
