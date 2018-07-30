@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "T_STANDARD_CLAIM")
-public class StandardClaim {
+public class UserProfile {
     /**
      * Subject - Identifier for the End-User at the Issuer.
      */
@@ -143,7 +143,7 @@ public class StandardClaim {
      * End-User's preferred postal address. The value of the address member is a JSON [RFC4627] structure
      * containing some or all of the members defined in Section 5.1.1.
      */
-    private AddressClaim address;
+    private UserAddress address;
     /**
      * Time the End-User's information was last updated. Its value is a JSON number representing the
      * number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time.

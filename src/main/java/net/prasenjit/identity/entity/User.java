@@ -50,7 +50,7 @@ public class User implements UserDetails {
 
     @OneToOne(fetch = FetchType.LAZY, orphanRemoval = true, cascade = {CascadeType.ALL})
     @JoinColumn(name = "USERNAME", referencedColumnName = "SUBJECT")
-    private StandardClaim standardClaim;
+    private UserProfile userProfile;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

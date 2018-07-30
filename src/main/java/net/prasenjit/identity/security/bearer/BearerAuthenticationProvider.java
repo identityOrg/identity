@@ -40,7 +40,7 @@ public class BearerAuthenticationProvider implements AuthenticationProvider {
     }
 
     private Authentication createSuccessAuthentication(AccessToken accessToken, Authentication authentication) {
-        String[] scopes = StringUtils.delimitedListToStringArray(accessToken.getScope(), "");
+        String[] scopes = StringUtils.delimitedListToStringArray(accessToken.getScope(), " ");
         List<Profile.SimpleGrantedAuthority> authorities = Stream.of(scopes)
                 .map(Profile.SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());

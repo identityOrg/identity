@@ -179,7 +179,9 @@ public class OAuth2Service {
             } else {
                 authorizationModel.setClient(client.get());
                 List<String> approvedScope = authorizationModel.getFilteredScopes().entrySet().stream()
-                        .filter(Map.Entry::getValue).map(Map.Entry::getKey).collect(Collectors.toList());
+                        .filter(e ->
+                                e.getValue() != null && e.getValue()
+                        ).map(Map.Entry::getKey).collect(Collectors.toList());
                 if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
                     authorizationModel.setRedirectUri(client.get().getRedirectUri());
                 }

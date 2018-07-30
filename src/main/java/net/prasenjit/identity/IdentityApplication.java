@@ -87,16 +87,16 @@ public class IdentityApplication implements ApplicationRunner {
         user.setActive(true);
         user.setLocked(false);
         user.setPasswordExpiryDate(LocalDateTime.now().plusDays(1));
-        user.setStandardClaim(createClaims(username));
+        user.setUserProfile(createClaims(username));
         return user;
     }
 
-    private StandardClaim createClaims(String username) {
-        StandardClaim standardClaim = new StandardClaim();
-        standardClaim.setSub(username);
-        standardClaim.setAddress(new AddressClaim());
-        standardClaim.getAddress().setCountry("India");
-        standardClaim.setBirthdate(LocalDate.of(0, 11, 9));
-        return standardClaim;
+    private UserProfile createClaims(String username) {
+        UserProfile userProfile = new UserProfile();
+        userProfile.setSub(username);
+        userProfile.setAddress(new UserAddress());
+        userProfile.getAddress().setCountry("India");
+        userProfile.setBirthdate(LocalDate.of(0, 11, 9));
+        return userProfile;
     }
 }

@@ -4,7 +4,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import net.prasenjit.identity.entity.StandardClaim;
+import net.prasenjit.identity.model.openid.StandardClaim;
 import org.springframework.security.core.Authentication;
 
 @Api(value = "ME", tags = "me", description = "A API which returns the user profile")
