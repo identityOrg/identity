@@ -41,7 +41,7 @@ public class PasswordGrantTest {
     public void testSuccess() throws Exception {
         String credentials = Base64Utils.encodeToString("client:client".getBytes(StandardCharsets.US_ASCII));
 
-        mockMvc.perform(post("/oauth/token")
+        mockMvc.perform(post("/security/token")
                 .param("grant_type", "client_credentials")
                 .param("scope", "openid")
                 .header("Authorization", "Basic " + credentials))

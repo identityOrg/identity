@@ -65,8 +65,10 @@ public class Profile implements UserDetails {
     public static Profile create(UserDetails userDetails) {
         if (userDetails instanceof User) {
             return new Profile((User) userDetails);
-        } else {
+        } else if (userDetails instanceof Client) {
             return new Profile((Client) userDetails);
+        } else {
+            return (Profile) userDetails;
         }
     }
 
@@ -103,7 +105,7 @@ public class Profile implements UserDetails {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class SimpleGrantedAuthority implements GrantedAuthority {
+    public static class SimpleGrantedAuthority implements GrantedAuthority {
         private String authority;
     }
 }

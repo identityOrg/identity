@@ -1,4 +1,4 @@
-package net.prasenjit.identity.crypto;
+package net.prasenjit.identity.security.crypto;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.TextEncryptor;

@@ -1,7 +1,7 @@
 package net.prasenjit.identity.controller.client;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.doc.SwaggerDocumented;
+import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.Client;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.model.api.client.*;

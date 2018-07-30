@@ -48,6 +48,10 @@ public class User implements UserDetails {
     @Column(name = "LAST_NAME")
     private String lastName;
 
+    @OneToOne(fetch = FetchType.LAZY, orphanRemoval = true, cascade = {CascadeType.ALL})
+    @JoinColumn(name = "USERNAME", referencedColumnName = "SUBJECT")
+    private UserProfile userProfile;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return admin ? AuthorityUtils.createAuthorityList("USER", "ADMIN") : AuthorityUtils.createAuthorityList("USER");

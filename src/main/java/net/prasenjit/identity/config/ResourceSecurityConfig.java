@@ -1,6 +1,6 @@
 package net.prasenjit.identity.config;
 
-import net.prasenjit.identity.oauth.BearerAuthenticationFilter;
+import net.prasenjit.identity.security.bearer.BearerAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -19,11 +19,13 @@ public class ResourceSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.antMatcher("/api/**")
-                .cors().and()
+        http.requestMatchers().antMatchers("/api/**", "/.well-known/**")
+                .and().cors().and()
                 .csrf().disable()
                 .addFilterBefore(createBearerFilter(), BasicAuthenticationFilter.class)
                 .authorizeRequests()
+                .antMatchers("/.well-known/**", "/api/keys")
+                .permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);

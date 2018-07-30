@@ -35,9 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class AuthorizationCodeGrantTest {
-    private static final String TOKEN_URL = "http://localhost/oauth/token";
+    private static final String TOKEN_URL = "http://localhost/security/token";
     private static final String REDIRECT_URL = "http://localhost:9090/login/oauth2/code/identity";
-    private static final String AUTHORIZE_URL = "http://localhost/oauth/authorize";
+    private static final String AUTHORIZE_URL = "http://localhost/security/authorize";
     @Autowired
     private WebApplicationContext context;
 

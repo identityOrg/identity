@@ -28,6 +28,9 @@ public class AccessToken {
     @Column(name = "SCOPE", length = 500, nullable = false)
     private String scope;
 
+    @Column(name = "LOGIN_DATE", nullable = false)
+    private LocalDateTime loginDate;
+
     @Column(name = "CREATION_DATE", nullable = false)
     private LocalDateTime creationDate;
 

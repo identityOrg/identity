@@ -6,23 +6,22 @@ import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
-import net.prasenjit.identity.oauth.GrantType;
-import net.prasenjit.identity.oauth.OAuthError;
-import net.prasenjit.identity.repository.AuthorizationCodeRepository;
-import net.prasenjit.identity.repository.ClientRepository;
-import net.prasenjit.identity.repository.RefreshTokenRepository;
-import net.prasenjit.identity.repository.UserRepository;
-import org.apache.commons.lang3.ArrayUtils;
+import net.prasenjit.identity.model.Profile;
+import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
+import net.prasenjit.identity.repository.*;
+import net.prasenjit.identity.security.GrantType;
+import net.prasenjit.identity.security.OAuthError;
+import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,6 +37,7 @@ public class OAuth2Service {
     private final AuthorizationCodeRepository codeRepository;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserConsentRepository userConsentRepository;
 
     public OAuthToken processPasswordGrant(Client client, String username, String password, String requestedScope) {
         if (!client.supportsGrant(GrantType.PASSWORD)) {
@@ -51,13 +51,13 @@ public class OAuth2Service {
         }
         String filteredScopes = filterScope(client.getApprovedScopes(), requestedScope);
         AccessToken accessToken = codeFactory.createAccessToken((User) authentication.getPrincipal(),
-                client.getClientId(), client.getAccessTokenValidity(), filteredScopes);
+                client.getClientId(), client.getAccessTokenValidity(), filteredScopes, LocalDateTime.now());
         RefreshToken refreshToken = null;
         if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
             refreshToken = codeFactory.createRefreshToken(client.getClientId(), username, filteredScopes,
-                    client.getRefreshTokenValidity());
+                    LocalDateTime.now(), client.getRefreshTokenValidity(), false);
         }
-        return codeFactory.createOAuthToken(accessToken, refreshToken);
+        return codeFactory.createOAuthToken(accessToken, refreshToken, null);
     }
 
     public OAuthToken processClientCredentialsGrant(Client client, String scope) {
@@ -66,26 +66,28 @@ public class OAuth2Service {
         }
         String filteredScope = filterScope(client.getApprovedScopes(), scope);
         AccessToken accessToken = codeFactory.createAccessToken(client, client.getClientId(),
-                client.getAccessTokenValidity(), filteredScope);
-        return codeFactory.createOAuthToken(accessToken, null);
+                client.getAccessTokenValidity(), filteredScope, LocalDateTime.now());
+        return codeFactory.createOAuthToken(accessToken, null, null);
     }
 
-    public AuthorizationModel validateAuthorizationGrant(String responseType, User principal, String clientId,
-                                                         String scope, String state, String redirectUri) {
+    public AuthorizationModel validateAuthorizationGrant(Authentication authentication, AuthorizeRequest request) {
+        Profile principal = extractPrincipal(authentication, Profile.class);
         AuthorizationModel authorizationModel = new AuthorizationModel();
-        authorizationModel.setState(state);
-        authorizationModel.setUser(principal);
+        authorizationModel.setState(request.getState());
+        authorizationModel.setProfile(principal);
         authorizationModel.setValid(false);
-        authorizationModel.setResponseType(responseType);
-        authorizationModel.setRedirectUri(redirectUri);
+        authorizationModel.setResponseType(request.getResponse_type());
+        authorizationModel.setRedirectUri(request.getRedirect_uri());
+        authorizationModel.setNonce(request.getNonce());
+        authorizationModel.setResponseMode(request.getResponse_mode());
 
-        if (clientId == null) {
+        if (request.getClient_id() == null) {
             authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
             authorizationModel.setErrorDescription("Client id not specified");
             return authorizationModel;
         }
 
-        Optional<Client> client = clientRepository.findById(clientId);
+        Optional<Client> client = clientRepository.findById(request.getClient_id());
 
         if (!client.isPresent()) {
             authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
@@ -93,44 +95,74 @@ public class OAuth2Service {
             return authorizationModel;
         } else {
             authorizationModel.setClient(client.get());
-            if (redirectUri != null && !client.get().getRedirectUri().equals(redirectUri)) {
+            if (request.getRedirect_uri() != null && !client.get().getRedirectUri().equals(request.getRedirect_uri())) {
                 authorizationModel.setRedirectUri(client.get().getRedirectUri());
                 authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
                 authorizationModel.setErrorDescription("Redirect URL doesn't match");
                 return authorizationModel;
             }
+            filterScopeToMap(client.get().getApprovedScopes(), request.getScope(), authorizationModel);
+            if (principal != null) {
+                Optional<UserConsent> consent = userConsentRepository.findById(new UserConsent.UserConsentPK(
+                        principal.getUsername(), client.get().getClientId()));
 
-            if ("code".equals(responseType)) {
-                if (!client.get().supportsGrant(GrantType.AUTHORIZATION_CODE)) {
-                    authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
-                    authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
-                    return authorizationModel;
+                if (consent.isPresent()) {
+                    String[] preApprovedScope = StringUtils.delimitedListToStringArray(consent.get().getScopes(), " ");
+                    String[] toBeApprovedScopes = authorizationModel.getFilteredScopes().entrySet().stream()
+                            .map(Map.Entry::getKey).collect(Collectors.toList()).toArray(new String[1]);
+                    Arrays.sort(preApprovedScope);
+                    Arrays.sort(toBeApprovedScopes);
+                    if (Arrays.deepEquals(preApprovedScope, toBeApprovedScopes)) {
+                        authorizationModel.setConsentRequired(false);
+                    }
                 }
-                Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(), scope);
-
-                authorizationModel.setClient(client.get());
-                authorizationModel.setUser(principal);
-                authorizationModel.setFilteredScopes(scopeToApprove);
-                authorizationModel.setValid(true);
-                return authorizationModel;
-            } else if ("token".equals(responseType)) {
-                if (!client.get().supportsGrant(GrantType.IMPLICIT)) {
-                    authorizationModel.setErrorCode(OAuthError.ACCESS_DENIED);
-                    authorizationModel.setErrorDescription("Client is not authorized for the specifies response type");
-                    return authorizationModel;
-                }
-                Map<String, Boolean> scopeToApprove = filterScopeToMap(client.get().getApprovedScopes(), scope);
-
-                authorizationModel.setClient(client.get());
-                authorizationModel.setUser(principal);
-                authorizationModel.setFilteredScopes(scopeToApprove);
-                authorizationModel.setValid(true);
-                return authorizationModel;
-            } else {
-                authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-                authorizationModel.setErrorDescription("Unsupported response type");
-                return authorizationModel;
             }
+
+            if (authorizationModel.isOpenid()) {
+                // handle prompt parameter for openid
+                if (StringUtils.hasText(request.getPrompt())) {
+                    String[] prompts = StringUtils.delimitedListToStringArray(request.getPrompt(), " ");
+                    Arrays.sort(prompts);
+                    boolean promptNone = Arrays.binarySearch(prompts, "none") > -1;
+                    boolean promptLogin = Arrays.binarySearch(prompts, "login") > -1;
+                    boolean promptConsent = Arrays.binarySearch(prompts, "consent") > -1;
+                    if (promptNone && (promptLogin || promptConsent)) {
+                        authorizationModel.setRedirectUri(client.get().getRedirectUri());
+                        authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
+                        authorizationModel.setErrorDescription("Prompt none can not be combined with anything else");
+                        return authorizationModel;
+                    }
+                    if (promptNone) {
+                        if (principal == null) {
+                            authorizationModel.setRedirectUri(client.get().getRedirectUri());
+                            authorizationModel.setErrorCode(OAuthError.LOGIN_REQUIRED);
+                            authorizationModel.setErrorDescription("User not logged in and prompt none is requested");
+                            return authorizationModel;
+                        }
+                        if (authorizationModel.isConsentRequired()) {
+                            authorizationModel.setErrorCode(OAuthError.INTERACTION_REQUIRED);
+                            authorizationModel.setErrorDescription("User consent required");
+                            return authorizationModel;
+                        }
+                    }
+                    authorizationModel.setLoginRequired(promptLogin);
+                    authorizationModel.setConsentRequired(promptConsent);
+                    // handle prompt redirect
+                } else if (principal == null) {
+                    authorizationModel.setLoginRequired(true);
+                }
+                // handle max_age parameter for openid
+                if (request.getMax_age() > 0) {
+                    UserAuthenticationToken userAuthentication = (UserAuthenticationToken) authentication;
+                    if (userAuthentication.getLoginTime().plusSeconds(request.getMax_age()).isBefore(LocalDateTime.now())) {
+                        // redirect for re-login
+                        authorizationModel.setLoginRequired(true);
+                    }
+                }
+            }
+
+            authorizationModel.setValid(true);
+            return authorizationModel;
 
         }
     }
@@ -147,30 +179,58 @@ public class OAuth2Service {
             } else {
                 authorizationModel.setClient(client.get());
                 List<String> approvedScope = authorizationModel.getFilteredScopes().entrySet().stream()
-                        .filter(Map.Entry::getValue).map(Map.Entry::getKey).collect(Collectors.toList());
-                if ("code".equals(authorizationModel.getResponseType())) {
+                        .filter(e ->
+                                e.getValue() != null && e.getValue()
+                        ).map(Map.Entry::getKey).collect(Collectors.toList());
+                if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
+                    authorizationModel.setRedirectUri(client.get().getRedirectUri());
+                }
+
+                // Save consent
+                UserConsent userConsent = new UserConsent();
+                userConsent.setUsername(authorizationModel.getProfile().getUsername());
+                userConsent.setClientID(client.get().getClientId());
+                userConsent.setApprovalDate(LocalDateTime.now());
+                userConsent.setScopes(StringUtils.collectionToDelimitedString(approvedScope, " "));
+                userConsentRepository.save(userConsent);
+
+                if (authorizationModel.requireCodeResponse()) {
                     AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(
                             client.get().getClientId(), authorizationModel.getRedirectUri(),
                             StringUtils.collectionToDelimitedString(approvedScope, " "),
-                            authorizationModel.getUser().getUsername(), authorizationModel.getState(),
-                            Duration.ofMinutes(10));
+                            authorizationModel.getProfile().getUsername(), authorizationModel.getState(),
+                            Duration.ofMinutes(10), authorizationModel.getLoginTime(), authorizationModel.isOpenid());
                     authorizationModel.setAuthorizationCode(authorizationCode);
-                    if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
-                        authorizationModel.setRedirectUri(client.get().getRedirectUri());
-                    }
-                    return authorizationModel;
-                } else if ("token".equals(authorizationModel.getResponseType())) {
-                    AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getUser(),
+                }
+                if (authorizationModel.requireTokenResponse()) {
+                    AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getProfile(),
                             client.get().getClientId(), client.get().getAccessTokenValidity(),
-                            StringUtils.collectionToDelimitedString(approvedScope, " "));
+                            StringUtils.collectionToDelimitedString(approvedScope, " "),
+                            authorizationModel.getLoginTime());
                     authorizationModel.setAccessToken(accessToken);
-                    return authorizationModel;
-                } else {
+                }
+                if (authorizationModel.requireIDTokenResponse()) {
+                    String accessToken = null;
+                    if (authorizationModel.getAccessToken() != null) {
+                        accessToken = authorizationModel.getAccessToken().getAssessToken();
+                    }
+                    String accessCode = null;
+                    if (authorizationModel.getAuthorizationCode() != null) {
+                        accessCode = authorizationModel.getAuthorizationCode().getAuthorizationCode();
+                    }
+                    String idToken = codeFactory.createIDToken(authorizationModel.getProfile(),
+                            authorizationModel.getLoginTime(), authorizationModel.getNonce(),
+                            client.get().getClientId(), client.get().getAccessTokenValidity(),
+                            approvedScope, accessToken, accessCode);
+                    authorizationModel.setIdToken(idToken);
+                }
+                if (!(authorizationModel.requireCodeResponse() || authorizationModel.requireTokenResponse()
+                        || authorizationModel.requireIDTokenResponse())) {
                     authorizationModel.setErrorCode(OAuthError.UNSUPPORTED_RESPONSE_TYPE);
                     authorizationModel.setErrorDescription("Invalid response type");
                     authorizationModel.setValid(false);
-                    return authorizationModel;
                 }
+                return authorizationModel;
             }
         }
         authorizationModel.setErrorCode(OAuthError.UNAUTHORIZED_REQUEST);
@@ -212,14 +272,26 @@ public class OAuth2Service {
                                 if (associatedUser.isPresent()) {
                                     AccessToken accessToken = codeFactory.createAccessToken(associatedUser.get(),
                                             client.getClientId(), client.getAccessTokenValidity(),
-                                            authorizationCode.get().getScope());
+                                            authorizationCode.get().getScope(),
+                                            authorizationCode.get().getLoginDate());
+                                    String idToken = null;
+                                    if (authorizationCode.get().isOpenId()) {
+                                        String[] strings = StringUtils.delimitedListToStringArray(
+                                                authorizationCode.get().getScope(), " ");
+                                        idToken = codeFactory.createIDToken(Profile.create(associatedUser.get()),
+                                                authorizationCode.get().getLoginDate(), null,
+                                                client.getClientId(), client.getAccessTokenValidity(),
+                                                CollectionUtils.arrayToList(strings), accessToken.getAssessToken(),
+                                                null);
+                                    }
                                     RefreshToken refreshToken = null;
                                     if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {
                                         refreshToken = codeFactory.createRefreshToken(client.getClientId(),
-                                                associatedUser.get().getUsername(), accessToken.getScope(),
-                                                client.getRefreshTokenValidity());
+                                                associatedUser.get().getUsername(),
+                                                accessToken.getScope(), authorizationCode.get().getLoginDate(),
+                                                client.getRefreshTokenValidity(), authorizationCode.get().isOpenId());
                                     }
-                                    return codeFactory.createOAuthToken(accessToken, refreshToken);
+                                    return codeFactory.createOAuthToken(accessToken, refreshToken, idToken);
                                 }
                             }
                         }
@@ -242,11 +314,13 @@ public class OAuth2Service {
                     if (userOptional.get().isValid()) {
                         tokenOptional.get().setUsed(true);
                         AccessToken accessToken = codeFactory.createAccessToken(userOptional.get(),
-                                client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope());
+                                client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope(),
+                                tokenOptional.get().getLoginDate());
                         RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),
                                 userOptional.get().getUsername(), tokenOptional.get().getScope(),
-                                client.getRefreshTokenValidity());
-                        return codeFactory.createOAuthToken(accessToken, refreshToken1);
+                                tokenOptional.get().getLoginDate(), client.getRefreshTokenValidity(),
+                                tokenOptional.get().isOpenId());
+                        return codeFactory.createOAuthToken(accessToken, refreshToken1, null); // TODO add id token from refresh token
                     } else {
                         throw new UnauthenticatedClientException("access_denied", "Invalid user");
                     }
@@ -260,33 +334,35 @@ public class OAuth2Service {
         throw new OAuthException("access_denied", "Invalid refresh token");
     }
 
-    public String createTokenResponseFragment(AccessToken accessToken, String state) {
-        StringBuilder builder = new StringBuilder();
-        long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
-        builder.append("access_token").append('=').append(accessToken.getAssessToken()).append("&")
-                .append("token_type").append('=').append("Bearer").append("&")
-                .append("expires_in").append('=').append(expIn).append("&")
-                .append("scope").append('=').append(accessToken.getScope()).append("&")
-                .append("state").append('=').append(state);
-        return builder.toString();
+    public String createTokenResponseFragment(Map<String, String> respMap) {
+        String fragment = respMap.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .reduce((s, s2) -> s + "&" + s2).orElse("");
+        return fragment;
     }
 
-    private Map<String, Boolean> filterScopeToMap(String approvedScopes, String requestedScope) {
+    private void filterScopeToMap(String approvedScopes, String requestedScope,
+                                  AuthorizationModel authorizationModel) {
         String[] approved = StringUtils.delimitedListToStringArray(approvedScopes, " ");
         String[] requested = StringUtils.delimitedListToStringArray(requestedScope, " ");
         if (approved.length == 0) {
-            return new HashMap<>();
+            return;
         }
         if (requested.length == 0) {
-            return Stream.of(approved).collect(Collectors.toMap(o -> o, o -> Boolean.TRUE));
+            authorizationModel.setFilteredScopes(Stream.of(approved)
+                    .collect(Collectors.toMap(o -> o, o -> Boolean.TRUE)));
+            return;
         }
-        Map<String, Boolean> filteredMap = new HashMap<>();
+        Arrays.sort(approved);
+        Arrays.sort(requested);
+        if (Arrays.binarySearch(requested, "openid") > -1) {
+            authorizationModel.setOpenid(true);
+        }
         for (String r : requested) {
-            if (ArrayUtils.contains(approved, r)) {
-                filteredMap.put(r, Boolean.TRUE);
+            if (Arrays.binarySearch(approved, r) > -1) {
+                authorizationModel.getFilteredScopes().put(r, Boolean.TRUE);
             }
         }
-        return filteredMap;
     }
 
     private String filterScope(String approvedScopes, String requestedScope) {
@@ -298,12 +374,25 @@ public class OAuth2Service {
         if (requested.length == 0) {
             return approvedScopes;
         }
+        Arrays.sort(approved);
+        Arrays.sort(requested);
         List<String> filtered = new ArrayList<>();
         for (String r : requested) {
-            if (ArrayUtils.contains(approved, r)) {
+            if (Arrays.binarySearch(approved, r) > -1) {
                 filtered.add(r);
             }
         }
         return StringUtils.collectionToDelimitedString(filtered, " ");
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T extractPrincipal(Authentication authentication, Class<T> userClass) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            if (principal != null && userClass.isInstance(principal)) {
+                return (T) principal;
+            }
+        }
+        return null;
     }
 }

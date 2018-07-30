@@ -1,7 +1,7 @@
 package net.prasenjit.identity.controller.audit;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.doc.SwaggerDocumented;
+import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.AuditEvent;
 import net.prasenjit.identity.model.api.audit.SearchAuditRequest;
 import net.prasenjit.identity.repository.AuditEventRepository;

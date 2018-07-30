@@ -16,4 +16,5 @@ public class IdentityProperties {
     private Duration e2eKeyValidity = Duration.ofHours(6);
     private int lockUserOnErrorCount = 3;
     private int lockUserOn7DayErrorCount = 10;
+    private int rememberLoginDays = 30;
 }

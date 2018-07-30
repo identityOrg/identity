@@ -56,7 +56,7 @@
                         <div class="col-md-12 control">
                             <div style="border-top: 1px solid#888; padding-top:15px; font-size:85%">
                                 <div class="text text-danger" th:if="${param.error}"
-                                     th:with="errorMsg=${session['SPRING_SECURITY_LAST_EXCEPTION'].message}">
+                                     th:with="errorMsg=${session['SPRING_SECURITY_LAST_EXCEPTION']?.message}">
                                     Error: <span th:text="${errorMsg}">Wrong input!</span>
                                 </div>
                             </div>

@@ -14,8 +14,10 @@ public class CryptoProperties {
     private String keyStorePassword;
     private String keyStoreProvider;
     private String keyStoreType;
-    private String mainKeyPassword;
+    private String mainKeyPassword = "main";
     private String clientKeyPassword;
 
     private List<String> cyclePassword;
+
+    private int jwkKeySize = 2048;
 }

@@ -1,10 +1,7 @@
 package net.prasenjit.identity;
 
 import net.prasenjit.crypto.TextEncryptor;
-import net.prasenjit.identity.entity.Client;
-import net.prasenjit.identity.entity.Scope;
-import net.prasenjit.identity.entity.Status;
-import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.entity.*;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
 import net.prasenjit.identity.repository.UserRepository;
@@ -19,7 +16,9 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 
 @EnableAsync
 @SpringBootApplication
@@ -45,6 +44,10 @@ public class IdentityApplication implements ApplicationRunner {
 
         scopeRepository.save(new Scope("scope1", "Scope 1"));
         scopeRepository.save(new Scope("scope2", "Scope 2"));
+        scopeRepository.save(new Scope("openid", "OpenID Scope"));
+        scopeRepository.save(new Scope("profile", "OpenID Profile"));
+        scopeRepository.save(new Scope("email", "OpenID Email"));
+        scopeRepository.save(new Scope("address", "OpenID Address"));
 
         User admin = createAdmin("admin");
         userRepository.saveAndFlush(admin);
@@ -68,7 +71,7 @@ public class IdentityApplication implements ApplicationRunner {
         client.setCreationDate(LocalDateTime.now());
         client.setStatus(Status.ACTIVE);
         client.setClientName("Test Client");
-        client.setApprovedScopes("scope1");
+        client.setScopes(new HashSet<>(scopeRepository.findAll()));
         client.setRedirectUri("http://localhost:4200/callback");
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
@@ -84,6 +87,16 @@ public class IdentityApplication implements ApplicationRunner {
         user.setActive(true);
         user.setLocked(false);
         user.setPasswordExpiryDate(LocalDateTime.now().plusDays(1));
+        user.setUserProfile(createClaims(username));
         return user;
+    }
+
+    private UserProfile createClaims(String username) {
+        UserProfile userProfile = new UserProfile();
+        userProfile.setSub(username);
+        userProfile.setAddress(new UserAddress());
+        userProfile.getAddress().setCountry("India");
+        userProfile.setBirthdate(LocalDate.of(0, 11, 9));
+        return userProfile;
     }
 }

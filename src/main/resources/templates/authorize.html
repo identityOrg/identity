@@ -11,7 +11,7 @@
 <h2>If you recognise the activity please approve</h2>
 <span th:text="${model.client.clientName}"></span>
 will get access to.
-<form th:action="@{/oauth/authorize}" th:object="${model}" method="post" name="auth">
+<form th:action="${#mvc.url('OAC#submitAuthorize').build()}" th:object="${model}" method="post" name="auth">
     <div th:each="s : *{filteredScopes}">
         <label th:for="${#ids.next('scope')}" th:text="${s.key}"></label>
         <input th:id="${#ids.seq('scope')}" type="checkbox" th:field="*{filteredScopes[__${s.key}__]}">
@@ -24,6 +24,8 @@ will get access to.
     <input type="hidden" th:field="*{state}">
     <input type="hidden" th:field="*{client.clientId}">
     <input type="hidden" th:field="*{responseType}">
+    <input type="hidden" th:field="*{nonce}">
+    <input type="hidden" th:field="*{responseMode}">
 </form>
 </body>
 </html>

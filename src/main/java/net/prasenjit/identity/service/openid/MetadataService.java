@@ -1,13 +1,14 @@
-package net.prasenjit.identity.service;
+package net.prasenjit.identity.service.openid;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.Scope;
-import net.prasenjit.identity.model.api.discovery.DiscoveryResponse;
+import net.prasenjit.identity.model.openid.discovery.DiscoveryResponse;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.properties.ServerMetadata;
 import net.prasenjit.identity.repository.ScopeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.stream.Collectors;
@@ -21,8 +22,11 @@ public class MetadataService {
     private final IdentityProperties identityProperties;
     private final ScopeRepository scopeRepository;
     private boolean initialized = false;
+    //@Value("local.server.port")
+    private int serverPort;
 
-    public ServerMetadata findMetadata(UriComponentsBuilder builder) {
+    public ServerMetadata findMetadata() {
+        UriComponentsBuilder builder = ServletUriComponentsBuilder.fromHttpUrl("http://localhost:8080");
         ServerMetadata metadata = identityProperties.getServerMetadata();
         if (!initialized) {
             if (!StringUtils.hasText(metadata.getIssuer())) {
@@ -34,7 +38,7 @@ public class MetadataService {
                 builder1 = builder.cloneBuilder();
                 metadata.setUserinfoEndpoint(builder1.pathSegment("api", "me").toUriString());
                 builder1 = builder.cloneBuilder();
-                metadata.setJwksURI(builder1.pathSegment("api", "jwks").toUriString());
+                metadata.setJwksURI(builder1.pathSegment("api", "keys").toUriString());
             }
             metadata.setScopesSupported(scopeRepository.findAll().stream().map(Scope::getScopeId).collect(Collectors.toList()));
             metadata.setResponseTypesSupported(new String[]{"code", "code id_token", "id_token", "token id_token"});
@@ -58,11 +62,11 @@ public class MetadataService {
         return metadata;
     }
 
-    public DiscoveryResponse findWebFinder(String rel, String resource, UriComponentsBuilder builder) {
+    public DiscoveryResponse findWebFinder(String rel, String resource) {
         DiscoveryResponse discoveryResponse = new DiscoveryResponse();
         discoveryResponse.setSubject(resource);
         discoveryResponse.getLinks().add(new DiscoveryResponse.Link(IDENTITY_PROVIDER_REL,
-                findMetadata(builder).getIssuer()));
+                findMetadata().getIssuer()));
         return discoveryResponse;
 
     }

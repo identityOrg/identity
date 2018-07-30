@@ -2,8 +2,10 @@ package net.prasenjit.identity.config;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.TextEncryptor;
-import net.prasenjit.identity.oauth.BasicAuthenticationProvider;
-import net.prasenjit.identity.oauth.BearerAuthenticationProvider;
+import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
+import net.prasenjit.identity.security.basic.BasicAuthenticationProvider;
+import net.prasenjit.identity.security.bearer.BearerAuthenticationProvider;
+import net.prasenjit.identity.security.user.UserAuthenticationProvider;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.service.ClientService;
 import net.prasenjit.identity.service.UserService;
@@ -12,7 +14,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.*;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -31,9 +32,10 @@ public class AuthManagerConfig {
     public TextEncryptor textEncryptor;
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationEventPublisher eventPublisher) {
+    public AuthenticationManager authenticationManager(AuthenticationEventPublisher eventPublisher,
+                                                       OpenIDSessionContainer sessionContainer) {
         List<AuthenticationProvider> providers = new ArrayList<>();
-        providers.add(userAuthProvider());
+        providers.add(userAuthProvider(sessionContainer));
         providers.add(bearerAuthProvider());
         providers.add(clientAuthProvider());
         ProviderManager providerManager = new ProviderManager(providers);
@@ -47,10 +49,11 @@ public class AuthManagerConfig {
         return new DefaultAuthenticationEventPublisher();
     }
 
-    private AuthenticationProvider userAuthProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+    private AuthenticationProvider userAuthProvider(OpenIDSessionContainer sessionContainer) {
+        UserAuthenticationProvider provider = new UserAuthenticationProvider();
         provider.setPasswordEncoder(PasswordEncoderFactories.createDelegatingPasswordEncoder());
         provider.setUserDetailsService(userService);
+        provider.setSessionContainer(sessionContainer);
         return provider;
     }
 

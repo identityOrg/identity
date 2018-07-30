@@ -39,7 +39,7 @@ public class IdentityApplicationTests {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-        ResponseEntity<OAuthToken> tokenResponseEntity = restTemplate.postForEntity("/oauth/token",
+        ResponseEntity<OAuthToken> tokenResponseEntity = restTemplate.postForEntity("/security/token",
                 request, OAuthToken.class);
         System.out.println(tokenResponseEntity.getBody());
     }

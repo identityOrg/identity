@@ -1,4 +1,4 @@
-package net.prasenjit.identity.model.api.discovery;
+package net.prasenjit.identity.model.openid.discovery;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
