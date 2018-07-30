@@ -21,6 +21,7 @@ public class AuthorizationModel {
     private Profile profile;
     private LocalDateTime loginTime;
     private String responseType;
+    private String responseMode;
     private String state;
     private String errorCode;
     private String errorDescription;

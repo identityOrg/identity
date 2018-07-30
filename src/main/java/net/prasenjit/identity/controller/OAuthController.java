@@ -104,7 +104,7 @@ public class OAuthController {
                 return "redirect:/login";
             }
             if (!authorizationModel.isConsentRequired()) {
-                return submitAuthorize(authorizationModel, authentication);
+                return submitAuthorize(authorizationModel, authentication, model);
             }
             model.addAttribute("model", authorizationModel);
             return "authorize";
@@ -115,7 +115,7 @@ public class OAuthController {
 
     @PostMapping("authorize")
     public String submitAuthorize(@ModelAttribute AuthorizationModel authorizationModel,
-                                  Authentication authentication) {
+                                  Authentication authentication, Model model) {
         Profile profile = extractPrincipal(authentication, Profile.class);
         authorizationModel.setProfile(profile);
         authorizationModel.setLoginTime(((UserAuthenticationToken) authentication).getLoginTime());
@@ -142,16 +142,30 @@ public class OAuthController {
             if (authorizationModel.requireCodeResponse()) {
                 responseMap.put("code", authorizationModel.getAuthorizationCode().getAuthorizationCode());
             }
-            if (responseAsFragment) {
-                String tokenFragment = oAuth2Service.createTokenResponseFragment(responseMap);
-                UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
-                        .fragment(tokenFragment).build();
+            // handle response_mode
+            String tokenFragment = oAuth2Service.createTokenResponseFragment(responseMap);
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri());
+            if ("query".equals(authorizationModel.getResponseMode())) {
+                UriComponents uri = uriBuilder.query(tokenFragment).build();
                 return "redirect:" + uri;
+            } else if ("fragment".equals(authorizationModel.getResponseMode())) {
+                UriComponents uri = uriBuilder.fragment(tokenFragment).build();
+                return "redirect:" + uri;
+            } else if ("form".equals(authorizationModel.getResponseMode())) {
+                responseMap.put("redirect_uri", authorizationModel.getRedirectUri());
+                model.addAttribute("map", responseMap);
+                return "post_response";
             } else {
-                String queryFragment = oAuth2Service.createTokenResponseFragment(responseMap);
-                UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
-                        .query(queryFragment).build();
-                return "redirect:" + uri;
+                if (responseAsFragment) {
+                    UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
+                            .fragment(tokenFragment).build();
+                    return "redirect:" + uri;
+                } else {
+                    String queryFragment = oAuth2Service.createTokenResponseFragment(responseMap);
+                    UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
+                            .query(queryFragment).build();
+                    return "redirect:" + uri;
+                }
             }
         }
         authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
