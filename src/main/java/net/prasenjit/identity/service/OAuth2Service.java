@@ -216,7 +216,7 @@ public class OAuth2Service {
                     }
                     String accessCode = null;
                     if (authorizationModel.getAuthorizationCode() != null) {
-                        accessToken = authorizationModel.getAuthorizationCode().getAuthorizationCode();
+                        accessCode = authorizationModel.getAuthorizationCode().getAuthorizationCode();
                     }
                     String idToken = codeFactory.createIDToken(authorizationModel.getProfile(),
                             authorizationModel.getLoginTime(), authorizationModel.getNonce(),
