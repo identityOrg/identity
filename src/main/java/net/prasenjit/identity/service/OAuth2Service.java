@@ -214,10 +214,14 @@ public class OAuth2Service {
                     if (authorizationModel.getAccessToken() != null) {
                         accessToken = authorizationModel.getAccessToken().getAssessToken();
                     }
+                    String accessCode = null;
+                    if (authorizationModel.getAuthorizationCode() != null) {
+                        accessToken = authorizationModel.getAuthorizationCode().getAuthorizationCode();
+                    }
                     String idToken = codeFactory.createIDToken(authorizationModel.getProfile(),
                             authorizationModel.getLoginTime(), authorizationModel.getNonce(),
                             client.get().getClientId(), client.get().getAccessTokenValidity(),
-                            approvedScope, accessToken);
+                            approvedScope, accessToken, accessCode);
                     authorizationModel.setIdToken(idToken);
                 }
                 if (!(authorizationModel.requireCodeResponse() || authorizationModel.requireTokenResponse()
@@ -272,11 +276,13 @@ public class OAuth2Service {
                                             authorizationCode.get().getLoginDate());
                                     String idToken = null;
                                     if (authorizationCode.get().isOpenId()) {
-                                        String[] strings = StringUtils.delimitedListToStringArray(authorizationCode.get().getScope(), " ");
+                                        String[] strings = StringUtils.delimitedListToStringArray(
+                                                authorizationCode.get().getScope(), " ");
                                         idToken = codeFactory.createIDToken(Profile.create(associatedUser.get()),
-                                                authorizationCode.get().getLoginDate(),
-                                                null, client.getClientId(), client.getAccessTokenValidity(),
-                                                CollectionUtils.arrayToList(strings), accessToken.getAssessToken());
+                                                authorizationCode.get().getLoginDate(), null,
+                                                client.getClientId(), client.getAccessTokenValidity(),
+                                                CollectionUtils.arrayToList(strings), accessToken.getAssessToken(),
+                                                null);
                                     }
                                     RefreshToken refreshToken = null;
                                     if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {

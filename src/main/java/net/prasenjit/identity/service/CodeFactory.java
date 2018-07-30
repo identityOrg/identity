@@ -177,7 +177,7 @@ public class CodeFactory {
     }
 
     public String createIDToken(Profile profile, LocalDateTime loginTime, String nonce, String clientId,
-                                Duration idTokenValidity, List<String> scope, String accessToken) {
+                                Duration idTokenValidity, List<String> scope, String accessToken, String accessCode) {
         try {
             LocalDateTime issueTime = LocalDateTime.now();
             JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder()
@@ -190,13 +190,12 @@ public class CodeFactory {
                     .claim("nonce", nonce)
                     .claim("azp", clientId);
             if (StringUtils.hasText(accessToken)) {
-                MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-                sha256.update(accessToken.getBytes(StandardCharsets.US_ASCII));
-                byte[] digest = sha256.digest();
-                byte[] octate = new byte[16];
-                System.arraycopy(digest, 0, octate, 0, 16);
-                String atHash = Base64Utils.encodeToUrlSafeString(octate);
+                String atHash = generateHash(accessToken);
                 claimsSetBuilder.claim("at_hash", atHash);
+            }
+            if (StringUtils.hasText(accessCode)) {
+                String cHash = generateHash(accessCode);
+                claimsSetBuilder.claim("c_hash", cHash);
             }
             if (scope.contains("profile")) {
                 claimsSetBuilder.claim("given_name", profile.getFirstName())
@@ -204,7 +203,6 @@ public class CodeFactory {
             }
             JWKKey latestKey = cryptographyService.getOrGenerateJwkKeys().get(0);
             PrivateKey signingKey = cryptographyService.getSigningKey(latestKey);
-            claimsSetBuilder.claim("kid", latestKey.getId());
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
                     .keyID("" + latestKey.getId()).build();
 
@@ -215,6 +213,15 @@ public class CodeFactory {
         } catch (JOSEException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String generateHash(String accessToken) throws NoSuchAlgorithmException {
+        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+        sha256.update(accessToken.getBytes(StandardCharsets.US_ASCII));
+        byte[] digest = sha256.digest();
+        byte[] octate = new byte[16];
+        System.arraycopy(digest, 0, octate, 0, 16);
+        return Base64Utils.encodeToUrlSafeString(octate);
     }
 
     private Date convertToDate(LocalDateTime tdt) {
