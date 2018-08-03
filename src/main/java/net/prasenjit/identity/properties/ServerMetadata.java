@@ -2,6 +2,9 @@ package net.prasenjit.identity.properties;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import net.prasenjit.identity.model.openid.EncryptionAlgorithm;
+import net.prasenjit.identity.model.openid.EncryptionEnc;
+import net.prasenjit.identity.model.openid.SignatureAlgorithm;
 
 import java.util.List;
 
@@ -105,19 +108,19 @@ public class ServerMetadata {
      * UserInfo Endpoint to encode the Claims in a JWT [JWT]. The value none MAY be included.
      */
     @JsonProperty("userinfo_signing_alg_values_supported")
-    private String[] userinfoSigningAlgValuesSupported;
+    private SignatureAlgorithm[] userinfoSigningAlgValuesSupported = SignatureAlgorithm.values();
     /**
      * OPTIONAL. JSON array containing a list of the JWE [JWE] encryption algorithms (alg values) [JWA] supported
      * by the UserInfo Endpoint to encode the Claims in a JWT [JWT].
      */
     @JsonProperty("userinfo_encryption_alg_values_supported")
-    private String[] userinfoEncryptionAlgValuesSupported;
+    private EncryptionAlgorithm[] userinfoEncryptionAlgValuesSupported = EncryptionAlgorithm.values();
     /**
      * OPTIONAL. JSON array containing a list of the JWE encryption algorithms (enc values) [JWA] supported by the
      * UserInfo Endpoint to encode the Claims in a JWT [JWT].
      */
     @JsonProperty("userinfo_encryption_enc_values_supported")
-    private String[] userinfoEncryptionEncValuesSupported;
+    private EncryptionEnc[] userinfoEncryptionEncValuesSupported = EncryptionEnc.values();
     /**
      * REQUIRED. JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for the
      * ID Token to encode the Claims in a JWT [JWT]. The algorithm RS256 MUST be included. The value none MAY be
@@ -125,19 +128,19 @@ public class ServerMetadata {
      * Endpoint (such as when using the Authorization Code Flow).
      */
     @JsonProperty("id_token_signing_alg_values_supported")
-    private String[] idTokenSigningAlgValuesSupported;
+    private SignatureAlgorithm[] idTokenSigningAlgValuesSupported = SignatureAlgorithm.values();
     /**
      * OPTIONAL. JSON array containing a list of the JWE encryption algorithms (alg values) supported by the OP for
      * the ID Token to encode the Claims in a JWT [JWT].
      */
     @JsonProperty("id_token_encryption_alg_values_supported")
-    private String[] idTokenEncryptionAlgValuesSupported;
+    private EncryptionAlgorithm[] idTokenEncryptionAlgValuesSupported = EncryptionAlgorithm.values();
     /**
      * OPTIONAL. JSON array containing a list of the JWE encryption algorithms (enc values) supported by the OP for
      * the ID Token to encode the Claims in a JWT [JWT].
      */
     @JsonProperty("id_token_encryption_enc_values_supported")
-    private String[] idTokenEncryptionEncValuesSupported;
+    private EncryptionEnc[] idTokenEncryptionEncValuesSupported = EncryptionEnc.values();
     /**
      * OPTIONAL. JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for
      * Request Objects, which are described in Section 6.1 of OpenID Connect Core 1.0 [OpenID.Core]. These algorithms
@@ -145,21 +148,21 @@ public class ServerMetadata {
      * by reference (using the request_uri parameter). Servers SHOULD support none and RS256.
      */
     @JsonProperty("request_object_signing_alg_values_supported")
-    private String[] requestObjectSigningAlgValuesSupported;
+    private SignatureAlgorithm[] requestObjectSigningAlgValuesSupported = SignatureAlgorithm.values();
     /**
      * OPTIONAL. JSON array containing a list of the JWE encryption algorithms (alg values) supported by the OP for
      * Request Objects. These algorithms are used both when the Request Object is passed by value and when it is
      * passed by reference.
      */
     @JsonProperty("request_object_encryption_alg_values_supported")
-    private String[] requestObjectEncryptionAlgValuesSupported;
+    private EncryptionAlgorithm[] requestObjectEncryptionAlgValuesSupported = EncryptionAlgorithm.values();
     /**
      * OPTIONAL. JSON array containing a list of the JWE encryption algorithms (enc values) supported by the OP for
      * Request Objects. These algorithms are used both when the Request Object is passed by value and when it is
      * passed by reference.
      */
     @JsonProperty("request_object_encryption_enc_values_supported")
-    private String[] requestObjectEncryptionEncValuesSupported;
+    private EncryptionEnc[] requestObjectEncryptionEncValuesSupported = EncryptionEnc.values();
     /**
      * OPTIONAL. JSON array containing a list of the display parameter values that the OpenID Provider supports.
      * These values are described in Section 3.1.2.1 of OpenID Connect Core 1.0 [OpenID.Core].
@@ -191,7 +194,7 @@ public class ServerMetadata {
      * the default value is false.
      */
     @JsonProperty("require_request_uri_registration")
-    private boolean requireRequestURIRegistration;
+    private boolean requireRequestURIRegistration = true;
     /**
      * OPTIONAL. URL of a page containing human-readable information that developers might want or need to know when
      * using the OpenID Provider. In particular, if the OpenID Provider does not support Dynamic Client Registration,

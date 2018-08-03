@@ -44,15 +44,15 @@ public class MetadataService {
             metadata.setResponseTypesSupported(new String[]{"code", "code id_token", "id_token", "token id_token"});
             metadata.setGrantTypesSupported(new String[]{"authorization_code", "implicit"});
             metadata.setSubjectTypesSupported(new String[]{"public", "pairwise"});
-            metadata.setIdTokenSigningAlgValuesSupported(new String[]{"RS256", "ES256", "HS256"});
-            metadata.setIdTokenEncryptionAlgValuesSupported(new String[]{"RSA1_5", "A128KW"});
-            metadata.setIdTokenEncryptionEncValuesSupported(new String[]{"A128CBC-HS256", "A128GCM"});
-            metadata.setUserinfoSigningAlgValuesSupported(new String[]{"RS256", "ES256", "HS256"});
-            metadata.setUserinfoEncryptionAlgValuesSupported(new String[]{"RSA1_5", "A128KW"});
-            metadata.setUserinfoEncryptionEncValuesSupported(new String[]{"A128CBC-HS256", "A128GCM"});
-            metadata.setRequestObjectSigningAlgValuesSupported(new String[]{"none", "RS256", "ES256"});
+            // metadata.setIdTokenSigningAlgValuesSupported(new String[]{"RS256", "ES256", "HS256"});
+            // metadata.setIdTokenEncryptionAlgValuesSupported(new String[]{"RSA1_5", "A128KW"});
+            // metadata.setIdTokenEncryptionEncValuesSupported(new String[]{"A128CBC-HS256", "A128GCM"});
+            // metadata.setUserinfoSigningAlgValuesSupported(new String[]{"RS256", "ES256", "HS256"});
+            // metadata.setUserinfoEncryptionAlgValuesSupported(new String[]{"RSA1_5", "A128KW"});
+            // metadata.setUserinfoEncryptionEncValuesSupported(new String[]{"A128CBC-HS256", "A128GCM"});
+            // metadata.setRequestObjectSigningAlgValuesSupported(new String[]{"none", "RS256", "ES256"});
             metadata.setTokenEndpointAuthMethodsSupported(new String[]{"client_secret_basic"});
-            metadata.setTokenEndpointAuthSigningAlgValuesSupported(new String[]{"RS256", "ES256"});
+            // metadata.setTokenEndpointAuthSigningAlgValuesSupported(new String[]{"RS256", "ES256"});
             metadata.setClaimsSupported(new String[]{"sub", "iss", "auth_time", "acr", "name",
                     "given_name", "family_name", "nickname", "profile", "picture", "website",
                     "email", "email_verified", "locale", "zoneinfo", "http://example.info/claims/groups"});
