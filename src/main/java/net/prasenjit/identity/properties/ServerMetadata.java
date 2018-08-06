@@ -5,6 +5,7 @@ import lombok.Data;
 import net.prasenjit.identity.model.openid.EncryptionAlgorithm;
 import net.prasenjit.identity.model.openid.EncryptionEnc;
 import net.prasenjit.identity.model.openid.SignatureAlgorithm;
+import net.prasenjit.identity.security.TokenEPAuthMethod;
 
 import java.util.List;
 
@@ -208,4 +209,14 @@ public class ServerMetadata {
      */
     @JsonProperty("ui_locales_supported")
     private String[] uiLocalesSupported;
+
+    /**
+     * OPTIONAL. JSON array containing a list of Client Authentication methods supported by this Token Endpoint.
+     * The options are client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt,
+     * as described in Section 9 of OpenID Connect Core 1.0 [OpenID.Core]. Other authentication methods MAY be
+     * defined by extensions. If omitted, the default is client_secret_basic -- the HTTP Basic Authentication
+     * Scheme specified in Section 2.3.1 of OAuth 2.0 [RFC6749].
+     */
+    @JsonProperty("token_endpoint_auth_methods_supported")
+    private TokenEPAuthMethod[] tokenEPAuthMethodSupported = TokenEPAuthMethod.values();
 }

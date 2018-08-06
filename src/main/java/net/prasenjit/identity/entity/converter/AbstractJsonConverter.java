@@ -6,7 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
+import net.prasenjit.identity.entity.client.URIInfoContainer;
 import net.prasenjit.identity.model.Profile;
+import net.prasenjit.identity.security.GrantType;
+import net.prasenjit.identity.security.ResponseType;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
@@ -18,7 +21,7 @@ public abstract class AbstractJsonConverter<T> implements AttributeConverter<T, 
 
     private ObjectMapper objectMapper;
 
-    AbstractJsonConverter() {
+    private AbstractJsonConverter() {
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         VisibilityChecker<?> visibility = objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
                 .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
@@ -31,6 +34,9 @@ public abstract class AbstractJsonConverter<T> implements AttributeConverter<T, 
 
     @Override
     public String convertToDatabaseColumn(T attribute) {
+        if (attribute == null) {
+            return null;
+        }
         try {
             return objectMapper.writeValueAsString(attribute);
         } catch (JsonProcessingException e) {
@@ -41,6 +47,9 @@ public abstract class AbstractJsonConverter<T> implements AttributeConverter<T, 
 
     @Override
     public T convertToEntityAttribute(String dbData) {
+        if (dbData == null) {
+            return null;
+        }
         ParameterizedType parameterizedType = (ParameterizedType) getClass().getGenericSuperclass();
 
         @SuppressWarnings("unchecked")
@@ -54,10 +63,26 @@ public abstract class AbstractJsonConverter<T> implements AttributeConverter<T, 
     }
 
     @Converter(autoApply = true)
-    public class ProfileConverter extends AbstractJsonConverter<Profile> {
+    static public class ProfileConverter extends AbstractJsonConverter<Profile> {
     }
 
     @Converter
-    public class StringArrayConverter extends AbstractJsonConverter<String[]> {
+    static public class StringArrayConverter extends AbstractJsonConverter<String[]> {
+    }
+
+    @Converter
+    static public class URIInfoConverter extends AbstractJsonConverter<URIInfoContainer> {
+    }
+
+    @Converter
+    static public class GrantTypeArrayConverter extends AbstractJsonConverter<GrantType[]> {
+    }
+
+    @Converter
+    static public class ResponseTypeArrayConverter extends AbstractJsonConverter<ResponseType[]> {
+    }
+
+    @Converter
+    static public class SecurityInfoConverter extends AbstractJsonConverter<SecurityInfoConverter> {
     }
 }

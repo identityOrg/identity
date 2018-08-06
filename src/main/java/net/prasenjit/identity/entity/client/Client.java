@@ -5,27 +5,22 @@ import lombok.Data;
 import net.prasenjit.identity.entity.Scope;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.converter.AbstractJsonConverter;
+import net.prasenjit.identity.model.openid.registration.ApplicationType;
 import net.prasenjit.identity.security.GrantType;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.userdetails.UserDetails;
+import net.prasenjit.identity.security.ResponseType;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import javax.persistence.*;
+import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Data
 @Entity
 @Table(name = "T_CLIENT")
-public class Client implements UserDetails {
-    private static final long serialVersionUID = 4183078040533025925L;
+public class Client {
 
     @Id
     @Column(name = "CLIENT_ID", length = 50, nullable = false, unique = true)
@@ -64,78 +59,39 @@ public class Client implements UserDetails {
     @Column(name = "REFRESH_TOKEN_VALIDITY", nullable = false)
     private Duration refreshTokenValidity;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (CollectionUtils.isEmpty(scopes)) {
-            return AuthorityUtils.createAuthorityList("CLIENT");
-        } else {
-            List<String> scopeList = scopes.stream()
-                    .map(s -> s.getScopeId().toUpperCase())
-                    .map(s -> "SCOPE_" + s).collect(Collectors.toList());
-            scopeList.add("CLIENT");
-            return AuthorityUtils.createAuthorityList(scopeList.toArray(new String[0]));
-        }
-    }
+    @Column(name = "APPROVED_GRANTS", nullable = false)
+    @Convert(converter = AbstractJsonConverter.GrantTypeArrayConverter.class)
+    private GrantType[] approvedGrants;
 
-    @Override
-    @JsonIgnore
-    public String getPassword() {
-        return clientSecret;
-    }
+    @Column(name = "APPROVED_RESPONSE_TYPE", nullable = false)
+    @Convert(converter = AbstractJsonConverter.ResponseTypeArrayConverter.class)
+    private ResponseType[] approvedResponseTypes;
 
-    @Override
-    public String getUsername() {
-        return clientId;
-    }
+    @Column(name = "APPLICATION_TYPE", length = 50, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ApplicationType applicationType;
 
-    @Override
-    @JsonIgnore
-    public boolean isAccountNonExpired() {
-        LocalDateTime now = LocalDateTime.now();
-        if (expiryDate != null) {
-            return now.isAfter(creationDate) && now.isBefore(expiryDate);
-        } else {
-            return now.isAfter(creationDate);
-        }
-    }
+    @Column(name = "CONTACTS")
+    @Convert(converter = AbstractJsonConverter.StringArrayConverter.class)
+    private String[] contacts;
 
+    @Column(name = "URI_CONTAINER")
+    @Convert(converter = AbstractJsonConverter.URIInfoConverter.class)
+    private URIInfoContainer uriContainer;
 
-    @Override
-    @JsonIgnore
-    public boolean isAccountNonLocked() {
-        return status != Status.LOCKED;
-    }
+    @Column(name = "JWKS_URI")
+    private URL jwksUri;
 
-    @Override
-    @JsonIgnore
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    @Lob
+    @Column(name = "JWKS")
+    private String jwks;
 
-    @Override
-    @JsonIgnore
-    public boolean isEnabled() {
-        return status == Status.ACTIVE;
-    }
+    @Column(name = "SECURITY_CONTAINER")
+    @Convert(converter = AbstractJsonConverter.SecurityInfoConverter.class)
+    private SecurityInfoContainer securityContainer;
 
     public boolean supportsGrant(GrantType grant) {
-        switch (grant) {
-            case IMPLICIT:
-                return !isSecureClient();
-            case PASSWORD:
-            case REFRESH_TOKEN:
-            case CLIENT_CREDENTIALS:
-                return isSecureClient();
-            case AUTHORIZATION_CODE:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    @JsonIgnore
-    public boolean isSecureClient() {
-        return StringUtils.hasText(clientSecret);
+        return approvedGrants != null && ArrayUtils.contains(approvedGrants, grant);
     }
 
     public String getApprovedScopes() {
@@ -143,14 +99,5 @@ public class Client implements UserDetails {
             return this.scopes.stream().map(Scope::getScopeId).reduce((x, y) -> x + " " + y).orElse(null);
         }
         return null;
-    }
-
-    public void setApprovedScopes(String approvedScopes) {
-        if (StringUtils.hasText(approvedScopes)) {
-            String[] scopes = StringUtils.delimitedListToStringArray(approvedScopes, " ");
-            this.scopes = Stream.of(scopes).map(s -> new Scope(s, null)).collect(Collectors.toSet());
-        } else {
-            this.scopes = null;
-        }
     }
 }

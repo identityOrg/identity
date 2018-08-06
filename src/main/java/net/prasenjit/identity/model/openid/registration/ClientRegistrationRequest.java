@@ -5,6 +5,8 @@ import net.prasenjit.identity.model.openid.EncryptionAlgorithm;
 import net.prasenjit.identity.model.openid.EncryptionEnc;
 import net.prasenjit.identity.model.openid.SignatureAlgorithm;
 import net.prasenjit.identity.security.GrantType;
+import net.prasenjit.identity.security.ResponseType;
+import net.prasenjit.identity.security.TokenEPAuthMethod;
 
 import java.net.URL;
 
@@ -21,7 +23,7 @@ public class ClientRegistrationRequest {
      * that it will restrict itself to using. If omitted, the default is that the Client will use only the
      * code Response Type.
      */
-    private String[] response_types;
+    private ResponseType[] response_types;
     /**
      * OPTIONAL. JSON array containing a list of the OAuth 2.0 Grant Types that the Client is declaring that it will
      * restrict itself to using. The Grant Type values used by OpenID Connect are:<br>
@@ -179,7 +181,7 @@ public class ClientRegistrationRequest {
      * If omitted, the default is client_secret_basic -- the HTTP Basic Authentication Scheme specified in
      * Section 2.3.1 of OAuth 2.0 [RFC6749].
      */
-    private String token_endpoint_auth_method;
+    private TokenEPAuthMethod token_endpoint_auth_method;
     /**
      * OPTIONAL. JWS [JWS] alg algorithm [JWA] that MUST be used for signing the JWT [JWT] used to authenticate
      * the Client at the Token Endpoint for the private_key_jwt and client_secret_jwt authentication methods.
@@ -187,7 +189,7 @@ public class ClientRegistrationRequest {
      * not signed with this algorithm. Servers SHOULD support RS256. The value none MUST NOT be used. The default,
      * if omitted, is that any algorithm supported by the OP and the RP MAY be used.
      */
-    private String token_endpoint_auth_signing_alg;
+    private SignatureAlgorithm token_endpoint_auth_signing_alg;
     /**
      * OPTIONAL. Default Maximum Authentication Age. Specifies that the End-User MUST be actively authenticated
      * if the End-User was authenticated longer ago than the specified number of seconds. The max_age request

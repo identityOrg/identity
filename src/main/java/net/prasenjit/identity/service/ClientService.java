@@ -9,6 +9,7 @@ import net.prasenjit.identity.events.*;
 import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.exception.OperationIgnoredException;
+import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.api.client.ClientSecretResponse;
 import net.prasenjit.identity.model.api.client.CreateClientRequest;
 import net.prasenjit.identity.model.api.client.UpdateClientRequest;
@@ -41,7 +42,7 @@ public class ClientService implements UserDetailsService {
     public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
         Optional<Client> client = clientRepository.findById(s);
         if (client.isPresent()) {
-            return client.get();
+            return Profile.create(client.get());
         } else {
             throw new UsernameNotFoundException("client not found");
         }

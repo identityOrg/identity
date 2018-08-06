@@ -3,9 +3,12 @@ package net.prasenjit.identity;
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.*;
 import net.prasenjit.identity.entity.client.Client;
+import net.prasenjit.identity.model.openid.registration.ApplicationType;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
 import net.prasenjit.identity.repository.UserRepository;
+import net.prasenjit.identity.security.GrantType;
+import net.prasenjit.identity.security.ResponseType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.ApplicationArguments;
@@ -76,6 +79,9 @@ public class IdentityApplication implements ApplicationRunner {
         client.setRedirectUris(new String[]{"http://localhost:4200/callback"});
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
+        client.setApplicationType(ApplicationType.WEB);
+        client.setApprovedGrants(GrantType.values());
+        client.setApprovedResponseTypes(ResponseType.values());
         return client;
     }
 

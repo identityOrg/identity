@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.entity.client.Client;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -50,16 +50,18 @@ public class Profile implements UserDetails {
     }
 
     private Profile(Client client) {
-        this.username = client.getUsername();
+        this.username = client.getClientId();
         this.firstName = client.getClientName();
         this.creationDate = client.getCreationDate();
         this.expiryDate = client.getExpiryDate();
         this.authorities = new ArrayList<>();
-        client.getAuthorities().stream()
-                .map(a -> new SimpleGrantedAuthority(a.getAuthority()))
-                .forEach(a -> this.authorities.add(a));
+        authorities.add(new SimpleGrantedAuthority("CLIENT"));
         this.status = client.getStatus();
         this.client = true;
+    }
+
+    public static Profile create(Client client) {
+        return new Profile(client);
     }
 
     public static Profile create(UserDetails userDetails) {

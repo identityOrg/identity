@@ -52,7 +52,7 @@ public class OAuth2Service {
             throw new OAuthException("access_denied", "user authentication failed", e);
         }
         String filteredScopes = filterScope(client.getApprovedScopes(), requestedScope);
-        AccessToken accessToken = codeFactory.createAccessToken((User) authentication.getPrincipal(),
+        AccessToken accessToken = codeFactory.createAccessToken((Profile) authentication.getPrincipal(),
                 client.getClientId(), client.getAccessTokenValidity(), filteredScopes, LocalDateTime.now());
         RefreshToken refreshToken = null;
         if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
@@ -67,7 +67,7 @@ public class OAuth2Service {
             throw new OAuthException("invalid_grant", "Unsupported grant");
         }
         String filteredScope = filterScope(client.getApprovedScopes(), scope);
-        AccessToken accessToken = codeFactory.createAccessToken(client, client.getClientId(),
+        AccessToken accessToken = codeFactory.createAccessToken(Profile.create(client), client.getClientId(),
                 client.getAccessTokenValidity(), filteredScope, LocalDateTime.now());
         return codeFactory.createOAuthToken(accessToken, null, null);
     }
@@ -247,7 +247,7 @@ public class OAuth2Service {
             }
             Optional<Client> optionalClient = clientRepository.findById(clientId);
             if (optionalClient.isPresent()) {
-                if (optionalClient.get().isSecureClient()) {
+                if (optionalClient.get().supportsGrant(GrantType.AUTHORIZATION_CODE)) {
                     throw new UnauthenticatedClientException("unauthorized_client", "Secure client must be authenticated");
                 } else {
                     client = optionalClient.get();
@@ -270,7 +270,8 @@ public class OAuth2Service {
                                 Optional<User> associatedUser = userRepository
                                         .findById(authorizationCode.get().getUsername());
                                 if (associatedUser.isPresent()) {
-                                    AccessToken accessToken = codeFactory.createAccessToken(associatedUser.get(),
+                                    AccessToken accessToken = codeFactory.createAccessToken(
+                                            Profile.create(associatedUser.get()),
                                             client.getClientId(), client.getAccessTokenValidity(),
                                             authorizationCode.get().getScope(),
                                             authorizationCode.get().getLoginDate());
@@ -313,7 +314,7 @@ public class OAuth2Service {
                 if (userOptional.isPresent()) {
                     if (userOptional.get().isValid()) {
                         tokenOptional.get().setUsed(true);
-                        AccessToken accessToken = codeFactory.createAccessToken(userOptional.get(),
+                        AccessToken accessToken = codeFactory.createAccessToken(Profile.create(userOptional.get()),
                                 client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope(),
                                 tokenOptional.get().getLoginDate());
                         RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),

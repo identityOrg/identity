@@ -1,6 +1,7 @@
 package net.prasenjit.identity;
 
 import net.prasenjit.identity.entity.AccessToken;
+import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.service.ClientService;
 import net.prasenjit.identity.service.CodeFactory;
 import org.junit.Before;
@@ -45,7 +46,7 @@ public class E2eTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
 
         UserDetails client = clientService.loadUserByUsername("client");
-        createAccessToken = codeFactory.createAccessToken(client, "client", Duration.ofMinutes(1),
+        createAccessToken = codeFactory.createAccessToken(Profile.create(client), "client", Duration.ofMinutes(1),
                 "openid", LocalDateTime.now());
     }
 
