@@ -79,7 +79,7 @@
                 <constraints nullable="false"/>
             </column>
             <column name="EXPIRY_DATE" type="TIMESTAMP"/>
-            <column name="REDIRECT_URI" type="VARCHAR(500)">
+            <column name="REDIRECT_URI" type="VARCHAR(4000)">
                 <constraints nullable="false"/>
             </column>
             <column name="REFRESH_TOKEN_VALIDITY" type="BIGINT">

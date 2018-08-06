@@ -1,4 +1,4 @@
-package net.prasenjit.identity.entity;
+package net.prasenjit.identity.entity.converter;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -11,14 +11,14 @@ import net.prasenjit.identity.model.Profile;
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
 
 @Slf4j
-@Converter(autoApply = true)
-public class ProfileConverter implements AttributeConverter<Profile, String> {
+public abstract class AbstractJsonConverter<T> implements AttributeConverter<T, String> {
 
     private ObjectMapper objectMapper;
 
-    public ProfileConverter() {
+    AbstractJsonConverter() {
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         VisibilityChecker<?> visibility = objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
                 .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
@@ -30,9 +30,9 @@ public class ProfileConverter implements AttributeConverter<Profile, String> {
     }
 
     @Override
-    public String convertToDatabaseColumn(Profile userDetails) {
+    public String convertToDatabaseColumn(T attribute) {
         try {
-            return objectMapper.writeValueAsString(userDetails);
+            return objectMapper.writeValueAsString(attribute);
         } catch (JsonProcessingException e) {
             log.error("Failed to JSON convert user detail in JPA converter");
             throw new RuntimeException(e);
@@ -40,12 +40,24 @@ public class ProfileConverter implements AttributeConverter<Profile, String> {
     }
 
     @Override
-    public Profile convertToEntityAttribute(String s) {
+    public T convertToEntityAttribute(String dbData) {
+        ParameterizedType parameterizedType = (ParameterizedType) getClass().getGenericSuperclass();
+
+        @SuppressWarnings("unchecked")
+        Class<T> returnType = (Class<T>) parameterizedType.getActualTypeArguments()[0];
         try {
-            return objectMapper.readValue(s, Profile.class);
+            return objectMapper.readValue(dbData, returnType);
         } catch (IOException e) {
             log.error("Error reading JSON to object in JPA converter");
             throw new RuntimeException(e);
         }
+    }
+
+    @Converter(autoApply = true)
+    public class ProfileConverter extends AbstractJsonConverter<Profile> {
+    }
+
+    @Converter
+    public class StringArrayConverter extends AbstractJsonConverter<String[]> {
     }
 }

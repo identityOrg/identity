@@ -1,7 +1,10 @@
-package net.prasenjit.identity.entity;
+package net.prasenjit.identity.entity.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import net.prasenjit.identity.entity.Scope;
+import net.prasenjit.identity.entity.Status;
+import net.prasenjit.identity.entity.converter.AbstractJsonConverter;
 import net.prasenjit.identity.security.GrantType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -52,7 +55,8 @@ public class Client implements UserDetails {
     private Set<Scope> scopes;
 
     @Column(name = "REDIRECT_URI", length = 500, nullable = false)
-    private String redirectUri;
+    @Convert(converter = AbstractJsonConverter.StringArrayConverter.class)
+    private String[] redirectUris;
 
     @Column(name = "ACCESS_TOKEN_VALIDITY", nullable = false)
     private Duration accessTokenValidity;

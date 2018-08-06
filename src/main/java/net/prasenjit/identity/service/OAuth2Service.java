@@ -2,6 +2,7 @@ package net.prasenjit.identity.service;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.*;
+import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
@@ -12,6 +13,7 @@ import net.prasenjit.identity.repository.*;
 import net.prasenjit.identity.security.GrantType;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -95,8 +97,8 @@ public class OAuth2Service {
             return authorizationModel;
         } else {
             authorizationModel.setClient(client.get());
-            if (request.getRedirect_uri() != null && !client.get().getRedirectUri().equals(request.getRedirect_uri())) {
-                authorizationModel.setRedirectUri(client.get().getRedirectUri());
+            String[] redirectUris = client.get().getRedirectUris();
+            if (request.getRedirect_uri() != null && !ArrayUtils.contains(redirectUris, request.getRedirect_uri())) {
                 authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
                 authorizationModel.setErrorDescription("Redirect URL doesn't match");
                 return authorizationModel;
@@ -127,14 +129,12 @@ public class OAuth2Service {
                     boolean promptLogin = Arrays.binarySearch(prompts, "login") > -1;
                     boolean promptConsent = Arrays.binarySearch(prompts, "consent") > -1;
                     if (promptNone && (promptLogin || promptConsent)) {
-                        authorizationModel.setRedirectUri(client.get().getRedirectUri());
                         authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
                         authorizationModel.setErrorDescription("Prompt none can not be combined with anything else");
                         return authorizationModel;
                     }
                     if (promptNone) {
                         if (principal == null) {
-                            authorizationModel.setRedirectUri(client.get().getRedirectUri());
                             authorizationModel.setErrorCode(OAuthError.LOGIN_REQUIRED);
                             authorizationModel.setErrorDescription("User not logged in and prompt none is requested");
                             return authorizationModel;
@@ -183,7 +183,7 @@ public class OAuth2Service {
                                 e.getValue() != null && e.getValue()
                         ).map(Map.Entry::getKey).collect(Collectors.toList());
                 if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
-                    authorizationModel.setRedirectUri(client.get().getRedirectUri());
+                    authorizationModel.setRedirectUri(client.get().getRedirectUris()[0]);
                 }
 
                 // Save consent

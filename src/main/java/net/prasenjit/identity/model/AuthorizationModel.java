@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.AuthorizationCode;
-import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.client.Client;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;

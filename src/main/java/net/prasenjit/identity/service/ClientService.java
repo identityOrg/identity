@@ -2,7 +2,7 @@ package net.prasenjit.identity.service;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.TextEncryptor;
-import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.events.*;
@@ -66,7 +66,7 @@ public class ClientService implements UserDetailsService {
         LocalDateTime now = LocalDateTime.now();
         client.setCreationDate(now);
         client.setClientSecret(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled user
-        client.setRedirectUri(request.getRedirectUri().toString());
+        //client.setRedirectUri(request.getRedirectUri().toString());
         client.setClientName(request.getClientName());
         client.setExpiryDate(request.getExpiryDate());
         client.setAccessTokenValidity(request.getAccessTokenValidity());
@@ -88,7 +88,7 @@ public class ClientService implements UserDetailsService {
             throw new ItemNotFoundException("Client not found.");
         }
         Client savedClient = optionalClient.get();
-        savedClient.setRedirectUri(request.getRedirectUri().toString());
+        //savedClient.setRedirectUri(request.getRedirectUri().toString());
         savedClient.setClientName(request.getClientName());
         savedClient.setRefreshTokenValidity(request.getRefreshTokenValidity());
         savedClient.setAccessTokenValidity(request.getAccessTokenValidity());

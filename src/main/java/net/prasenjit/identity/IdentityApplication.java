@@ -2,6 +2,7 @@ package net.prasenjit.identity;
 
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.*;
+import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
 import net.prasenjit.identity.repository.UserRepository;
@@ -72,7 +73,7 @@ public class IdentityApplication implements ApplicationRunner {
         client.setStatus(Status.ACTIVE);
         client.setClientName("Test Client");
         client.setScopes(new HashSet<>(scopeRepository.findAll()));
-        client.setRedirectUri("http://localhost:4200/callback");
+        client.setRedirectUris(new String[]{"http://localhost:4200/callback"});
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
         return client;

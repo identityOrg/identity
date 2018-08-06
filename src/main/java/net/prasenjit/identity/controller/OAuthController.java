@@ -3,7 +3,7 @@ package net.prasenjit.identity.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.AccessToken;
-import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;

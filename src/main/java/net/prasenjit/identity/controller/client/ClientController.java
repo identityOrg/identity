@@ -2,7 +2,7 @@ package net.prasenjit.identity.controller.client;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.config.doc.SwaggerDocumented;
-import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.model.api.client.*;
 import net.prasenjit.identity.repository.ClientRepository;
@@ -31,7 +31,6 @@ public class ClientController implements ClientApi {
         Client client = new Client();
         client.setClientName(request.getClientName());
         client.setStatus(request.getStatus());
-        client.setRedirectUri(request.getRedirectUri());
 
         Example<Client> clientExample = Example.of(client);
         return clientRepository.findAll(clientExample);

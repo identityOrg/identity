@@ -2,7 +2,7 @@ package net.prasenjit.identity.controller.client;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.api.client.*;
 
 import java.util.List;

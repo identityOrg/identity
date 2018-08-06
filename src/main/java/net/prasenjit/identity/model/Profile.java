@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.User;
 import org.springframework.security.core.GrantedAuthority;

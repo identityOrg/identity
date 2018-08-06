@@ -5,7 +5,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.endtoend.RsaEncryptorBuilder;
 import net.prasenjit.identity.security.crypto.CyclicEncryptorFactory;
-import net.prasenjit.identity.entity.Client;
+import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.E2EKey;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.model.Profile;

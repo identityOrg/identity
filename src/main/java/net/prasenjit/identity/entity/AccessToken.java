@@ -1,6 +1,7 @@
 package net.prasenjit.identity.entity;
 
 import lombok.Data;
+import net.prasenjit.identity.entity.converter.AbstractJsonConverter;
 import net.prasenjit.identity.model.Profile;
 
 import javax.persistence.*;
@@ -19,7 +20,7 @@ public class AccessToken {
 
     @Lob
     @Column(name = "USER_PROFILE", nullable = false)
-    @Convert(converter = ProfileConverter.class)
+    @Convert(converter = AbstractJsonConverter.ProfileConverter.class)
     private Profile userProfile;
 
     @Column(name = "CLIENT_ID", length = 50, nullable = false)
