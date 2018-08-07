@@ -1,4 +1,4 @@
-package net.prasenjit.identity;
+package net.prasenjit.identity.oauth;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.Page;

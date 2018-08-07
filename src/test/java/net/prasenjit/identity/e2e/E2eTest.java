@@ -1,4 +1,4 @@
-package net.prasenjit.identity;
+package net.prasenjit.identity.e2e;
 
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.model.Profile;

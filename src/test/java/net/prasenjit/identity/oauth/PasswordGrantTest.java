@@ -1,4 +1,4 @@
-package net.prasenjit.identity;
+package net.prasenjit.identity.oauth;
 
 import org.junit.Before;
 import org.junit.Test;

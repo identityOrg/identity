@@ -1,4 +1,4 @@
-package net.prasenjit.identity;
+package net.prasenjit.identity.oauth;
 
 import net.prasenjit.identity.model.OAuthToken;
 import org.junit.Test;
@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class IdentityApplicationTests {
+public class ClientCredentialTestTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
