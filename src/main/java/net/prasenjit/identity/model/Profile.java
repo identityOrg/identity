@@ -1,6 +1,7 @@
 package net.prasenjit.identity.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,8 @@ public class Profile implements UserDetails {
     private LocalDateTime creationDate;
     private String username;
     private String firstName;
+    @JsonIgnore
+    private String password;
     private String lastName;
     private Status status;
     private Boolean locked;
@@ -61,7 +64,15 @@ public class Profile implements UserDetails {
     }
 
     public static Profile create(Client client) {
-        return new Profile(client);
+        return create(client, false);
+    }
+
+    public static Profile create(Client client, boolean includePassword) {
+        Profile profile = new Profile(client);
+        if (includePassword) {
+            profile.setPassword(client.getClientSecret());
+        }
+        return profile;
     }
 
     public static Profile create(UserDetails userDetails) {
@@ -72,11 +83,6 @@ public class Profile implements UserDetails {
         } else {
             return (Profile) userDetails;
         }
-    }
-
-    @Override
-    public String getPassword() {
-        return null;
     }
 
     @Override

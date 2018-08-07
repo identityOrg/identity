@@ -62,7 +62,7 @@ public class OAuthController {
     public OAuthToken clientCredentialGrantToken(@RequestParam(value = "scope", defaultValue = "") String scope,
                                                  Authentication clientAuth) {
         log.info("Processing password grant");
-        Client client = extractPrincipal(clientAuth, Client.class);
+        Profile client = extractPrincipal(clientAuth, Profile.class);
         if (client != null) {
             return oAuth2Service.processClientCredentialsGrant(client, scope);
         } else {
@@ -77,7 +77,7 @@ public class OAuthController {
                                                   @RequestParam(value = "client_id", required = false) String clientId,
                                                   Authentication authentication) {
         log.info("Processing password grant");
-        Client client = extractPrincipal(authentication, Client.class);
+        Profile client = extractPrincipal(authentication, Profile.class);
         return oAuth2Service.processAuthorizationCodeGrantToken(client, code, redirectUri, clientId);
     }
 

@@ -19,6 +19,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -41,10 +42,11 @@ public class PasswordGrantTest {
     public void testSuccess() throws Exception {
         String credentials = Base64Utils.encodeToString("client:client".getBytes(StandardCharsets.US_ASCII));
 
-        mockMvc.perform(post("/security/token")
+        mockMvc.perform(post("/oauth/token")
                 .param("grant_type", "client_credentials")
                 .param("scope", "openid")
                 .header("Authorization", "Basic " + credentials))
+                .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
                 .andExpect(jsonPath("$.access_token", notNullValue()));
     }

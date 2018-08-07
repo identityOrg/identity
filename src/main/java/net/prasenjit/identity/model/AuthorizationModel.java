@@ -26,6 +26,7 @@ public class AuthorizationModel {
     private String errorCode;
     private String errorDescription;
     private String redirectUri;
+    private boolean redirectUriSet = false;
     private Map<String, Boolean> filteredScopes = new HashMap<>();
     private AccessToken accessToken;
     private AuthorizationCode authorizationCode;

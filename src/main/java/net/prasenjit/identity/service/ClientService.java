@@ -42,7 +42,7 @@ public class ClientService implements UserDetailsService {
     public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
         Optional<Client> client = clientRepository.findById(s);
         if (client.isPresent()) {
-            return Profile.create(client.get());
+            return Profile.create(client.get(), true);
         } else {
             throw new UsernameNotFoundException("client not found");
         }

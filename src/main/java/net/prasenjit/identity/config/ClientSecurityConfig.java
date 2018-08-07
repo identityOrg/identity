@@ -21,7 +21,7 @@ public class ClientSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.requestMatchers().mvcMatchers("/security/token")
+        http.requestMatchers().mvcMatchers("/oauth/token")
                 .and()
                 .csrf().disable()
                 .authorizeRequests().anyRequest().permitAll()

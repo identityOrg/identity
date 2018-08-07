@@ -22,4 +22,6 @@ public class SecurityInfoContainer {
 
     private TokenEPAuthMethod tokenEPAuthMethod;
     private SignatureAlgorithm tokenEPSigningAlgo;
+
+    private Integer defaultMaxAge;
 }

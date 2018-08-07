@@ -62,7 +62,12 @@ public class OAuth2Service {
         return codeFactory.createOAuthToken(accessToken, refreshToken, null);
     }
 
-    public OAuthToken processClientCredentialsGrant(Client client, String scope) {
+    public OAuthToken processClientCredentialsGrant(Profile profile, String scope) {
+        Optional<Client> clientOptional = clientRepository.findById(profile.getUsername());
+        if (!clientOptional.isPresent()) {
+            throw new OAuthException(OAuthError.INVALID_REQUEST, "Client not found");
+        }
+        Client client = clientOptional.get();
         if (!client.supportsGrant(GrantType.CLIENT_CREDENTIALS)) {
             throw new OAuthException("invalid_grant", "Unsupported grant");
         }
@@ -80,6 +85,7 @@ public class OAuth2Service {
         authorizationModel.setValid(false);
         authorizationModel.setResponseType(request.getResponse_type());
         authorizationModel.setRedirectUri(request.getRedirect_uri());
+        authorizationModel.setRedirectUriSet(StringUtils.hasText(request.getRedirect_uri()));
         authorizationModel.setNonce(request.getNonce());
         authorizationModel.setResponseMode(request.getResponse_mode());
 
@@ -182,7 +188,7 @@ public class OAuth2Service {
                         .filter(e ->
                                 e.getValue() != null && e.getValue()
                         ).map(Map.Entry::getKey).collect(Collectors.toList());
-                if (!StringUtils.hasText(authorizationModel.getRedirectUri())) {
+                if (!authorizationModel.isRedirectUriSet()) {
                     authorizationModel.setRedirectUri(client.get().getRedirectUris()[0]);
                 }
 
@@ -195,21 +201,23 @@ public class OAuth2Service {
                 userConsentRepository.save(userConsent);
 
                 if (authorizationModel.requireCodeResponse()) {
+                    String redirectUri = authorizationModel.isRedirectUriSet() ?
+                            authorizationModel.getRedirectUri() : null;
                     AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(
-                            client.get().getClientId(), authorizationModel.getRedirectUri(),
+                            client.get().getClientId(), redirectUri,
                             StringUtils.collectionToDelimitedString(approvedScope, " "),
                             authorizationModel.getProfile().getUsername(), authorizationModel.getState(),
                             Duration.ofMinutes(10), authorizationModel.getLoginTime(), authorizationModel.isOpenid());
                     authorizationModel.setAuthorizationCode(authorizationCode);
                 }
-                if (authorizationModel.requireTokenResponse()) {
+                if (authorizationModel.isOpenid() && authorizationModel.requireTokenResponse()) {
                     AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getProfile(),
                             client.get().getClientId(), client.get().getAccessTokenValidity(),
                             StringUtils.collectionToDelimitedString(approvedScope, " "),
                             authorizationModel.getLoginTime());
                     authorizationModel.setAccessToken(accessToken);
                 }
-                if (authorizationModel.requireIDTokenResponse()) {
+                if (authorizationModel.isOpenid() && authorizationModel.requireIDTokenResponse()) {
                     String accessToken = null;
                     if (authorizationModel.getAccessToken() != null) {
                         accessToken = authorizationModel.getAccessToken().getAssessToken();
@@ -239,9 +247,10 @@ public class OAuth2Service {
         return authorizationModel;
     }
 
-    public OAuthToken processAuthorizationCodeGrantToken(Client client, String code, String redirectUri,
+    public OAuthToken processAuthorizationCodeGrantToken(Profile profile, String code, String redirectUri,
                                                          String clientId) {
-        if (client == null) {
+        Client client = null;
+        if (profile == null) {
             if (clientId == null) {
                 throw new OAuthException("invalid_request", "non secure client must specify client_id parameter");
             }
@@ -255,6 +264,8 @@ public class OAuth2Service {
             } else {
                 throw new OAuthException("invalid_request", "Client not found for client_id " + clientId);
             }
+        } else {
+            client = clientRepository.findById(profile.getUsername()).get();
         }
         if (null == code) {
             throw new OAuthException("invalid_request", "authorization code must be provided");

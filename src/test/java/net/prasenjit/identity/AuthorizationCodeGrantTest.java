@@ -6,6 +6,7 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import net.prasenjit.identity.repository.UserConsentRepository;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,14 +36,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class AuthorizationCodeGrantTest {
-    private static final String TOKEN_URL = "http://localhost/security/token";
-    private static final String REDIRECT_URL = "http://localhost:9090/login/oauth2/code/identity";
-    private static final String AUTHORIZE_URL = "http://localhost/security/authorize";
+    private static final String TOKEN_URL = "http://localhost/oauth/token";
+    private static final String REDIRECT_URL = "http://localhost:4200/callback";
+    private static final String AUTHORIZE_URL = "http://localhost/oauth/authorize";
     @Autowired
     private WebApplicationContext context;
 
     private WebClient webClient;
     private MockMvc mockMvc;
+
+    @Autowired
+    private UserConsentRepository userConsentRepository;
 
     @Before
     public void setup() {
@@ -67,6 +71,10 @@ public class AuthorizationCodeGrantTest {
                 .queryParam("response_type", "code")
                 .queryParam("client_id", "client")
                 .build();
+        // clear cookie and saved consent
+        webClient.getCookieManager().clearCookies();
+        userConsentRepository.deleteAll();
+
         Page page = webClient.getPage(startUrl.toString());
         assertTrue(page.isHtmlPage());
         HtmlPage loginPage = (HtmlPage) page;
@@ -113,6 +121,10 @@ public class AuthorizationCodeGrantTest {
                 .queryParam("client_id", "client")
                 .queryParam("redirect_uri", REDIRECT_URL)
                 .build();
+        // clear cookie and saved consent
+        webClient.getCookieManager().clearCookies();
+        userConsentRepository.deleteAll();
+
         Page page = webClient.getPage(startUrl.toString());
         assertTrue(page.isHtmlPage());
         HtmlPage loginPage = (HtmlPage) page;
@@ -164,6 +176,10 @@ public class AuthorizationCodeGrantTest {
                 .queryParam("state", state)
                 .queryParam("redirect_uri", REDIRECT_URL)
                 .build();
+        // clear cookie and saved consent
+        webClient.getCookieManager().clearCookies();
+        userConsentRepository.deleteAll();
+
         Page page = webClient.getPage(startUrl.toString());
         assertTrue(page.isHtmlPage());
         HtmlPage loginPage = (HtmlPage) page;
