@@ -15,8 +15,11 @@ import com.nimbusds.openid.connect.sdk.AuthenticationResponse;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
 import net.prasenjit.identity.repository.UserConsentRepository;
 import org.junit.Before;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.htmlunit.MockMvcWebClientBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -32,11 +35,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
+@RunWith(SpringRunner.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class HtmlPageTestBase {
 
     private static final String TOKEN_URL = "http://localhost/oauth/token";
     private static final String REDIRECT_URL = "http://localhost:4200/callback";
     private static final String AUTHORIZE_URL = "http://localhost/oauth/authorize";
+    private static final String ISSUER_URL = "http://localhost";
     @Autowired
     protected WebApplicationContext context;
     protected WebClient webClient;
@@ -45,6 +51,9 @@ public abstract class HtmlPageTestBase {
     protected UserConsentRepository userConsentRepository;
     @LocalServerPort
     protected int port;
+    // The client identifier provisioned by the server
+    protected ClientID clientID = new ClientID("client");
+    protected Secret clientSecret = new Secret("client");
 
     @Before
     public void setup() {
@@ -133,6 +142,12 @@ public abstract class HtmlPageTestBase {
 
     protected URI getRedirectURI() {
         return UriComponentsBuilder.fromHttpUrl(REDIRECT_URL)
+                .build().toUri();
+    }
+
+    protected URI getIssuerURI() {
+        return UriComponentsBuilder.fromHttpUrl(ISSUER_URL)
+                .port(this.port)
                 .build().toUri();
     }
 }

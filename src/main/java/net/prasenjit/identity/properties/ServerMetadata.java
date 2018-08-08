@@ -28,15 +28,6 @@ public class ServerMetadata {
     @JsonProperty("token_endpoint")
     private String tokenEndpoint;
     /**
-     * OPTIONAL. JSON array containing a list of Client Authentication methods supported by this Token Endpoint.
-     * The options are client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described
-     * in Section 9 of OpenID Connect Core 1.0 [OpenID.Core]. Other authentication methods MAY be defined by
-     * extensions. If omitted, the default is client_secret_basic -- the HTTP Basic Authentication Scheme specified
-     * in Section 2.3.1 of OAuth 2.0 [RFC6749].
-     */
-    @JsonProperty("token_endpoint_auth_methods_supported")
-    private String[] tokenEndpointAuthMethodsSupported;
-    /**
      * OPTIONAL. JSON array containing a list of the JWS signing algorithms (alg values) supported by the Token
      * Endpoint for the signature on the JWT [JWT] used to authenticate the Client at the Token Endpoint for the
      * private_key_jwt and client_secret_jwt authentication methods. Servers SHOULD support RS256. The value none
