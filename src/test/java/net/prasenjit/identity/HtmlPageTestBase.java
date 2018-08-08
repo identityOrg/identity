@@ -6,6 +6,13 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.oauth2.sdk.auth.Secret;
+import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.openid.connect.sdk.AuthenticationResponse;
+import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
 import net.prasenjit.identity.repository.UserConsentRepository;
 import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +91,22 @@ public abstract class HtmlPageTestBase {
         Page nextPage = loginForm.getButtonByName("submit").click();
         assertTrue(nextPage.isHtmlPage());
         return (HtmlPage) nextPage;
+    }
+
+    protected TokenResponse executeTokenResponse(ClientID clientID, Secret clientSecret, AuthenticationResponse response) throws ParseException, IOException {
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(response.toSuccessResponse()
+                .getAuthorizationCode(), getRedirectURI());
+
+
+        ClientAuthentication clientAuth = new ClientSecretBasic(clientID, clientSecret);
+
+        // The token endpoint
+        URI tokenEndpoint = getTokenURI();
+
+        // Make the token request
+        TokenRequest request = new TokenRequest(tokenEndpoint, clientAuth, codeGrant);
+
+        return OIDCTokenResponseParser.parse(request.toHTTPRequest().send());
     }
 
     protected void clearContext(boolean clearCookie, boolean clearConsent) {

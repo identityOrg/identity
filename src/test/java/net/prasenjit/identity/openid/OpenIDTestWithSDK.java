@@ -1,13 +1,16 @@
 package net.prasenjit.identity.openid;
 
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.nimbusds.oauth2.sdk.*;
-import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
-import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.TokenResponse;
 import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.State;
-import com.nimbusds.openid.connect.sdk.*;
+import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.AuthenticationResponse;
+import com.nimbusds.openid.connect.sdk.AuthenticationResponseParser;
+import com.nimbusds.openid.connect.sdk.Nonce;
 import net.prasenjit.identity.HtmlPageTestBase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,19 +60,7 @@ public class OpenIDTestWithSDK extends HtmlPageTestBase {
         assertTrue(state.equals(response.toSuccessResponse().getState()));
 
 
-        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(response.toSuccessResponse()
-                .getAuthorizationCode(), getRedirectURI());
-
-
-        ClientAuthentication clientAuth = new ClientSecretBasic(clientID, clientSecret);
-
-        // The token endpoint
-        URI tokenEndpoint = getTokenURI();
-
-        // Make the token request
-        TokenRequest request = new TokenRequest(tokenEndpoint, clientAuth, codeGrant);
-
-        TokenResponse tokenResponse = OIDCTokenResponseParser.parse(request.toHTTPRequest().send());
+        TokenResponse tokenResponse = executeTokenResponse(clientID, clientSecret, response);
 
         assertTrue(tokenResponse.indicatesSuccess());
         assertNotNull(tokenResponse.toSuccessResponse().getTokens().getAccessToken());
