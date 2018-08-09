@@ -1,5 +1,6 @@
 package net.prasenjit.identity.oauth;
 
+import net.prasenjit.identity.HtmlPageTestBase;
 import net.prasenjit.identity.model.OAuthToken;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,9 +18,8 @@ import org.springframework.util.MultiValueMap;
 
 import java.nio.charset.StandardCharsets;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class ClientCredentialTestTests {
+
+public class ClientCredentialTestTests extends HtmlPageTestBase {
 
     @Autowired
     private TestRestTemplate restTemplate;

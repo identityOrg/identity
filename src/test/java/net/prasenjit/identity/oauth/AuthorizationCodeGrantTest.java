@@ -1,213 +1,122 @@
 package net.prasenjit.identity.oauth;
 
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
-import com.gargoylesoftware.htmlunit.Page;
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlButton;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import net.prasenjit.identity.repository.UserConsentRepository;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Before;
+import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.oauth2.sdk.id.State;
+import net.prasenjit.identity.HtmlPageTestBase;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.htmlunit.MockMvcWebClientBuilder;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.util.Base64Utils;
-import org.springframework.web.context.WebApplicationContext;
-import org.springframework.web.util.UriComponents;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-public class AuthorizationCodeGrantTest {
-    private static final String TOKEN_URL = "http://localhost/oauth/token";
-    private static final String REDIRECT_URL = "http://localhost:4200/callback";
-    private static final String AUTHORIZE_URL = "http://localhost/oauth/authorize";
-    @Autowired
-    private WebApplicationContext context;
-
-    private WebClient webClient;
-    private MockMvc mockMvc;
-
-    @Autowired
-    private UserConsentRepository userConsentRepository;
-
-    @Before
-    public void setup() {
-        mockMvc = MockMvcBuilders
-                .webAppContextSetup(context)
-                .apply(springSecurity())
-                .build();
-
-        webClient = MockMvcWebClientBuilder
-                .mockMvcSetup(mockMvc)
-                // for illustration only - defaults to ""
-                .contextPath("")
-                // By default MockMvc is used for localhost only;
-                // the following will use MockMvc for example.com and example.org as well
-                // .useMockMvcForHosts("example.com","example.org")
-                .build();
-    }
+public class AuthorizationCodeGrantTest extends HtmlPageTestBase {
 
     @Test
     public void testSuccess() throws Exception {
-        UriComponents startUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-                .queryParam("response_type", "code")
-                .queryParam("client_id", "client")
+
+        // The requested scope values for the token
+        Scope scope = new Scope("scope1", "scope2");
+
+        // Generate random state string for pairing the response to the request
+        State state = new State();
+
+        // Build the request
+        AuthorizationRequest request = new AuthorizationRequest.Builder(
+                new ResponseType(ResponseType.Value.CODE), clientID)
+                .scope(scope)
+                .state(state)
+                .redirectionURI(getRedirectURI())
+                .endpointURI(getAuthorizeURI())
                 .build();
-        // clear cookie and saved consent
-        webClient.getCookieManager().clearCookies();
-        userConsentRepository.deleteAll();
 
-        Page page = webClient.getPage(startUrl.toString());
-        assertTrue(page.isHtmlPage());
-        HtmlPage loginPage = (HtmlPage) page;
-        HtmlForm loginForm = loginPage.getFormByName("login");
-        loginForm.getInputByName("username").setValueAttribute("admin");
-        loginForm.getInputByName("password").setValueAttribute("admin");
-        Page authorizePage = loginForm.getButtonByName("submit").click();
-        assertTrue(authorizePage.isHtmlPage());
-        HtmlPage authHtml = (HtmlPage) authorizePage;
-        List<HtmlButton> validButtons = authHtml.getFormByName("auth").getButtonsByName("valid");
-        for (HtmlButton b : validButtons) {
-            if ("true".equals(b.getValueAttribute())) {
-                try {
-                    b.click();
-                } catch (FailingHttpStatusCodeException ex) {
-                    assertEquals(404, ex.getStatusCode());
-                    URI redirectUri = ex.getResponse().getWebRequest().getUrl().toURI();
-                    UriComponents uriComponents = UriComponentsBuilder.fromUri(redirectUri).build();
-                    String authorizationCode = uriComponents.getQueryParams().getFirst("code");
-                    assertNotNull(authorizationCode);
-                    assertThat(authorizationCode.length(), greaterThan(0));
+        // Use this URI to send the end-user's browser to the server
+        URI authURI = request.toURI();
 
-                    String credentials = Base64Utils.encodeToString("client:client".getBytes(StandardCharsets.US_ASCII));
+        clearContext(true, true);
 
-                    mockMvc.perform(post(TOKEN_URL)
-                            .param("grant_type", "authorization_code")
-                            .param("code", authorizationCode)
-                            .header("Authorization", "Basic " + credentials)
-                            .accept(APPLICATION_JSON))
-                            .andExpect(status().isOk())
-                            .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                            .andExpect(jsonPath("$.access_token", notNullValue()));
-                    break;
-                }
-                fail("Redirection didn't happen");
-            }
-        }
+        HtmlPage htmlPage = loginForConsentPage(authURI, "admin", "admin");
+        URI uri = acceptAllConcent(htmlPage);
+
+        // Parse the authorisation response from the callback URI
+        AuthorizationResponse response = AuthorizationResponse.parse(uri);
+
+        assertTrue(response.indicatesSuccess());
+
+        AuthorizationSuccessResponse successResponse = (AuthorizationSuccessResponse) response;
+
+        assertTrue(state.equals(successResponse.getState()));
+
+        // Retrieve the authorisation code, to be used later to exchange the code for
+        // an access token at the token endpoint of the server
+        AuthorizationCode code = successResponse.getAuthorizationCode();
+
+        assertNotNull(code);
+
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, getRedirectURI());
+
+        ClientAuthentication clientAuth = new ClientSecretBasic(clientID, clientSecret);
+
+
+        // Make the token request
+        TokenRequest tokenRequest = new TokenRequest(getTokenURI(), clientAuth, codeGrant);
+
+        TokenResponse tokenResponse = TokenResponse.parse(tokenRequest.toHTTPRequest().send());
+
+        assertTrue(tokenResponse.indicatesSuccess());
+
+        assertNotNull(tokenResponse.toSuccessResponse().getTokens().getAccessToken());
     }
 
     @Test
-    public void testSuccessWithRedirectUri() throws Exception {
-        UriComponents startUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-                .queryParam("response_type", "code")
-                .queryParam("client_id", "client")
-                .queryParam("redirect_uri", REDIRECT_URL)
+    public void testSuccessWithoutStateAndRedirectURI() throws Exception {
+
+        // The requested scope values for the token
+        Scope scope = new Scope("scope1", "scope2");
+
+        // Build the request
+        AuthorizationRequest request = new AuthorizationRequest.Builder(
+                new ResponseType(ResponseType.Value.CODE), clientID)
+                .scope(scope)
+                .endpointURI(getAuthorizeURI())
                 .build();
-        // clear cookie and saved consent
-        webClient.getCookieManager().clearCookies();
-        userConsentRepository.deleteAll();
 
-        Page page = webClient.getPage(startUrl.toString());
-        assertTrue(page.isHtmlPage());
-        HtmlPage loginPage = (HtmlPage) page;
-        HtmlForm loginForm = loginPage.getFormByName("login");
-        loginForm.getInputByName("username").setValueAttribute("admin");
-        loginForm.getInputByName("password").setValueAttribute("admin");
-        Page authorizePage = loginForm.getButtonByName("submit").click();
-        assertTrue(authorizePage.isHtmlPage());
-        HtmlPage authHtml = (HtmlPage) authorizePage;
-        List<HtmlButton> validButtons = authHtml.getFormByName("auth").getButtonsByName("valid");
-        for (HtmlButton b : validButtons) {
-            if ("true".equals(b.getValueAttribute())) {
-                try {
-                    b.click();
-                } catch (FailingHttpStatusCodeException ex) {
-                    assertEquals(404, ex.getStatusCode());
-                    URI redirectUri = ex.getResponse().getWebRequest().getUrl().toURI();
-                    UriComponents uriComponents = UriComponentsBuilder.fromUri(redirectUri).build();
-                    String authorizationCode = uriComponents.getQueryParams().getFirst("code");
-                    assertNotNull(authorizationCode);
-                    assertThat(authorizationCode.length(), greaterThan(0));
-                    String returnedState = uriComponents.getQueryParams().getFirst("state");
-                    assertThat(returnedState, isEmptyOrNullString());
+        // Use this URI to send the end-user's browser to the server
+        URI authURI = request.toURI();
 
-                    String credentials = Base64Utils.encodeToString("client:client".getBytes(StandardCharsets.US_ASCII));
+        clearContext(true, true);
 
-                    mockMvc.perform(post(TOKEN_URL)
-                            .param("grant_type", "authorization_code")
-                            .param("code", authorizationCode)
-                            .param("redirect_uri", REDIRECT_URL)
-                            .header("Authorization", "Basic " + credentials)
-                            .accept(APPLICATION_JSON))
-                            .andExpect(status().isOk())
-                            .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                            .andExpect(jsonPath("$.access_token", notNullValue()));
-                    break;
-                }
-                fail("Redirection didn't happen");
-            }
-        }
-    }
+        HtmlPage htmlPage = loginForConsentPage(authURI, "admin", "admin");
+        URI uri = acceptAllConcent(htmlPage);
 
-    @Test
-    public void testSuccessWithRedirectUriAndState() throws Exception {
-        String state = RandomStringUtils.randomAlphanumeric(8);
-        UriComponents startUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-                .queryParam("response_type", "code")
-                .queryParam("client_id", "client")
-                .queryParam("state", state)
-                .queryParam("redirect_uri", REDIRECT_URL)
-                .build();
-        // clear cookie and saved consent
-        webClient.getCookieManager().clearCookies();
-        userConsentRepository.deleteAll();
+        // Parse the authorisation response from the callback URI
+        AuthorizationResponse response = AuthorizationResponse.parse(uri);
 
-        Page page = webClient.getPage(startUrl.toString());
-        assertTrue(page.isHtmlPage());
-        HtmlPage loginPage = (HtmlPage) page;
-        HtmlForm loginForm = loginPage.getFormByName("login");
-        loginForm.getInputByName("username").setValueAttribute("admin");
-        loginForm.getInputByName("password").setValueAttribute("admin");
-        Page authorizePage = loginForm.getButtonByName("submit").click();
-        assertTrue(authorizePage.isHtmlPage());
-        HtmlPage authHtml = (HtmlPage) authorizePage;
-        List<HtmlButton> validButtons = authHtml.getFormByName("auth").getButtonsByName("valid");
-        for (HtmlButton b : validButtons) {
-            if ("true".equals(b.getValueAttribute())) {
-                try {
-                    b.click();
-                } catch (FailingHttpStatusCodeException ex) {
-                    assertEquals(404, ex.getStatusCode());
-                    URI redirectUri = ex.getResponse().getWebRequest().getUrl().toURI();
-                    UriComponents uriComponents = UriComponentsBuilder.fromUri(redirectUri).build();
-                    String authorizationCode = uriComponents.getQueryParams().getFirst("code");
-                    assertNotNull(authorizationCode);
-                    assertThat(authorizationCode.length(), greaterThan(0));
-                    String returnedState = uriComponents.getQueryParams().getFirst("state");
-                    assertThat(returnedState, notNullValue());
-                    assertThat(returnedState, equalTo(state));
-                    break;
-                }
-                fail("Redirection didn't happen");
-            }
-        }
+        assertTrue(response.indicatesSuccess());
+
+        AuthorizationSuccessResponse successResponse = (AuthorizationSuccessResponse) response;
+
+        // Retrieve the authorisation code, to be used later to exchange the code for
+        // an access token at the token endpoint of the server
+        AuthorizationCode code = successResponse.getAuthorizationCode();
+
+        assertNotNull(code);
+
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, null);
+
+        ClientAuthentication clientAuth = new ClientSecretBasic(clientID, clientSecret);
+
+
+        // Make the token request
+        TokenRequest tokenRequest = new TokenRequest(getTokenURI(), clientAuth, codeGrant);
+
+        TokenResponse tokenResponse = TokenResponse.parse(tokenRequest.toHTTPRequest().send());
+
+        assertTrue(tokenResponse.indicatesSuccess());
+
+        assertNotNull(tokenResponse.toSuccessResponse().getTokens().getAccessToken());
     }
 }

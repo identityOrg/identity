@@ -1,35 +1,24 @@
 package net.prasenjit.identity.e2e;
 
+import net.prasenjit.identity.HtmlPageTestBase;
 import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.service.ClientService;
 import net.prasenjit.identity.service.CodeFactory;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-public class E2eTest {
 
-    @Autowired
-    private WebApplicationContext context;
+public class E2eTest extends HtmlPageTestBase {
 
     @Autowired
     private CodeFactory codeFactory;
@@ -37,21 +26,14 @@ public class E2eTest {
     @Autowired
     private ClientService clientService;
 
-    private MockMvc mockMvc;
-
-    private AccessToken createAccessToken;
-
-    @Before
-    public void setup() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-
-        UserDetails client = clientService.loadUserByUsername("client");
-        createAccessToken = codeFactory.createAccessToken(Profile.create(client), "client", Duration.ofMinutes(1),
-                "openid", LocalDateTime.now());
-    }
 
     @Test
     public void testEncryptionDecryption() throws Exception {
+
+        UserDetails client = clientService.loadUserByUsername("client");
+        AccessToken createAccessToken = codeFactory.createAccessToken(Profile.create(client), "client", Duration.ofMinutes(1),
+                "openid", LocalDateTime.now());
+
         String token = createAccessToken.getAssessToken();
         mockMvc.perform(get("/api/e2e")
                 .header("Authorization", "Bearer " + token)).andExpect(status().isOk())
