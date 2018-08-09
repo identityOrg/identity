@@ -6,6 +6,7 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.util.Cookie;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
@@ -13,7 +14,10 @@ import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.openid.connect.sdk.AuthenticationResponse;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
+import net.prasenjit.identity.entity.UserConsent;
 import net.prasenjit.identity.repository.UserConsentRepository;
+import net.prasenjit.identity.service.CodeFactory;
+import net.prasenjit.identity.service.openid.MetadataService;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +31,11 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -43,17 +50,21 @@ public abstract class HtmlPageTestBase {
     private static final String REDIRECT_URL = "http://localhost:4200/callback";
     private static final String AUTHORIZE_URL = "http://localhost/oauth/authorize";
     private static final String ISSUER_URL = "http://localhost";
-    @Autowired
-    protected WebApplicationContext context;
     protected WebClient webClient;
     protected MockMvc mockMvc;
     @Autowired
-    protected UserConsentRepository userConsentRepository;
-    @LocalServerPort
-    protected int port;
+    protected CodeFactory codeFactory;
+    @Autowired
+    protected MetadataService metadataService;
     // The client identifier provisioned by the server
     protected ClientID clientID = new ClientID("client");
     protected Secret clientSecret = new Secret("client");
+    @Autowired
+    private WebApplicationContext context;
+    @Autowired
+    private UserConsentRepository userConsentRepository;
+    @LocalServerPort
+    private int port;
 
     @Before
     public void setup() {
@@ -88,9 +99,33 @@ public abstract class HtmlPageTestBase {
         throw new RuntimeException("Could not accept all consent");
     }
 
+    protected void createUserConsent(String username, String approvedScope) {
+        // Save consent
+        UserConsent userConsent = new UserConsent();
+        userConsent.setUsername(username);
+        userConsent.setClientID(clientID.getValue());
+        userConsent.setApprovalDate(LocalDateTime.now());
+        userConsent.setScopes(approvedScope);
+        userConsentRepository.save(userConsent);
+    }
+
+    protected URI loginForURI(URI startUrl, String username, String password) throws IOException, URISyntaxException {
+        Page page = webClient.getPage(startUrl.toURL());
+        assertTrue(page.isHtmlPage());
+        HtmlPage loginPage = (HtmlPage) page;
+        HtmlForm loginForm = loginPage.getFormByName("login");
+        loginForm.getInputByName("username").setValueAttribute(username);
+        loginForm.getInputByName("password").setValueAttribute(password);
+        try {
+            Page nextPage = loginForm.getButtonByName("submit").click();
+        } catch (FailingHttpStatusCodeException ex) {
+            assertEquals(404, ex.getStatusCode());
+            return ex.getResponse().getWebRequest().getUrl().toURI();
+        }
+        throw new RuntimeException("Consent required");
+    }
+
     protected HtmlPage loginForConsentPage(URI startUrl, String username, String password) throws IOException {
-
-
         Page page = webClient.getPage(startUrl.toString());
         assertTrue(page.isHtmlPage());
         HtmlPage loginPage = (HtmlPage) page;
@@ -100,6 +135,13 @@ public abstract class HtmlPageTestBase {
         Page nextPage = loginForm.getButtonByName("submit").click();
         assertTrue(nextPage.isHtmlPage());
         return (HtmlPage) nextPage;
+    }
+
+    protected void setRememberLogin(String username) throws MalformedURLException {
+        String cookieToken = codeFactory.createCookieToken(username, LocalDateTime.now());
+        URL issuer = new URL(metadataService.findMetadata().getIssuer());
+        webClient.getCookieManager()
+                .addCookie(new Cookie(issuer.getAuthority(), "S_CONTEXT", cookieToken));
     }
 
     protected TokenResponse executeTokenResponse(ClientID clientID, Secret clientSecret, AuthenticationResponse response) throws ParseException, IOException {

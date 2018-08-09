@@ -52,7 +52,7 @@ public class JWTRememberMe implements RememberMeServices, LogoutHandler {
         if (successfulAuthentication instanceof UserAuthenticationToken) {
             Profile profile = (Profile) successfulAuthentication.getPrincipal();
             LocalDateTime loginTime = ((UserAuthenticationToken) successfulAuthentication).getLoginTime();
-            String idToken = codeFactory.createCookieToken(profile, loginTime);
+            String idToken = codeFactory.createCookieToken(profile.getUsername(), loginTime);
             setCookie(idToken, getTokenValiditySeconds(), request, response);
         }
     }

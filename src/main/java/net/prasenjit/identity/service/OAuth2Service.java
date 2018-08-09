@@ -120,10 +120,12 @@ public class OAuth2Service {
                             .map(Map.Entry::getKey).collect(Collectors.toList()).toArray(new String[1]);
                     Arrays.sort(preApprovedScope);
                     Arrays.sort(toBeApprovedScopes);
-                    if (Arrays.deepEquals(preApprovedScope, toBeApprovedScopes)) {
-                        authorizationModel.setConsentRequired(false);
-                    }
+                    authorizationModel.setConsentRequired(!Arrays.deepEquals(preApprovedScope, toBeApprovedScopes));
+                }else {
+                    authorizationModel.setConsentRequired(true);
                 }
+            }else {
+                authorizationModel.setLoginRequired(true);
             }
 
             if (authorizationModel.isOpenid()) {
@@ -140,7 +142,7 @@ public class OAuth2Service {
                         return authorizationModel;
                     }
                     if (promptNone) {
-                        if (principal == null) {
+                        if (authorizationModel.isLoginRequired()) {
                             authorizationModel.setErrorCode(OAuthError.LOGIN_REQUIRED);
                             authorizationModel.setErrorDescription("User not logged in and prompt none is requested");
                             return authorizationModel;
@@ -151,11 +153,13 @@ public class OAuth2Service {
                             return authorizationModel;
                         }
                     }
-                    authorizationModel.setLoginRequired(promptLogin);
-                    authorizationModel.setConsentRequired(promptConsent);
+                    if (promptLogin) {
+                        authorizationModel.setLoginRequired(true);
+                    }
+                    if (promptConsent) {
+                        authorizationModel.setConsentRequired(true);
+                    }
                     // handle prompt redirect
-                } else if (principal == null) {
-                    authorizationModel.setLoginRequired(true);
                 }
                 // handle max_age parameter for openid
                 if (request.getMax_age() > 0) {

@@ -22,6 +22,7 @@ public class HazelcastSessionConfig {
     @Bean
     public HazelcastInstance hazelcastInstance() {
         Config config = new Config();
+        config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         return Hazelcast.newHazelcastInstance(config);
     }
 

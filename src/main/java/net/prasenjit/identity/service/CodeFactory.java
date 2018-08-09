@@ -138,10 +138,10 @@ public class CodeFactory {
         return oAuthToken;
     }
 
-    public String createCookieToken(Profile user, LocalDateTime loginTime) {
+    public String createCookieToken(String username, LocalDateTime loginTime) {
         try {
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                    .subject(user.getUsername())
+                    .subject(username)
                     .issuer(metadataService.findMetadata().getIssuer())
                     .issueTime(convertToDate(loginTime))
                     .expirationTime(convertToDate(loginTime.plusDays(identityProperties.getRememberLoginDays())))
