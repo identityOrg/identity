@@ -77,7 +77,7 @@ public class OpenIDPromtTest extends HtmlPageTestBase {
 
         clearContext(true, true);
 
-        URI responseURI = loginForURI(request.toURI(), "admin", "admin");
+        URI responseURI = followForError(request.toURI());
 
         AuthenticationResponse response = AuthenticationResponseParser.parse(responseURI);
 

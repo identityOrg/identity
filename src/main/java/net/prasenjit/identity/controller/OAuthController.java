@@ -1,5 +1,7 @@
 package net.prasenjit.identity.controller;
 
+import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.AccessToken;
@@ -7,6 +9,7 @@ import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
+import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
@@ -14,6 +17,8 @@ import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import net.prasenjit.identity.service.OAuth2Service;
+import net.prasenjit.identity.service.OAuth2Service1;
+import net.prasenjit.identity.service.OpenIDConnectService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,7 +30,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -41,6 +48,8 @@ public class OAuthController {
 
     private final OAuth2Service oAuth2Service;
     private final OpenIDSessionContainer sessionContainer;
+    private final OpenIDConnectService openIDConnectService;
+    private final OAuth2Service1 oAuth2Service1;
 
     @PostMapping(value = "token", params = "grant_type=password")
     @ResponseBody
@@ -89,6 +98,71 @@ public class OAuthController {
         log.info("Processing refresh token grant");
         Client client = extractPrincipal(authentication, Client.class);
         return oAuth2Service.processRefreshTokenGrantToken(client, refreshToken);
+    }
+
+    @RequestMapping(value = "connect", method = RequestMethod.GET)
+    public String authorizeGet(HttpSession httpSession, Model model, Authentication authentication) {
+        AuthorizationResponse response;
+        URI authReqUri = ServletUriComponentsBuilder.fromCurrentRequest().build().toUri();
+        AuthorizationModel authorizationModel = new AuthorizationModel();
+        try {
+            AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(authReqUri);
+            if (authorizationRequest.getScope().contains("openid")) {
+                AuthenticationRequest authenticationRequest = AuthenticationRequest.parse(authReqUri);
+                response = openIDConnectService.processAuthentication(authorizationModel, authenticationRequest);
+            } else {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                    httpSession.setAttribute(PREVIOUS_URL, authReqUri.toString());
+                    return "redirect:/login";
+                }
+                response = oAuth2Service1.processAuthorization(authorizationModel, authorizationRequest);
+            }
+        } catch (ParseException e) {
+            if (e.getRedirectionURI() != null) {
+                response = new AuthorizationErrorResponse(e.getRedirectionURI(),
+                        e.getErrorObject(), e.getState(), e.getResponseMode());
+            } else if (e.getClientID() != null) {
+                URI redirectUri = oAuth2Service1.getRedirectUriForClientId(e.getClientID().getValue());
+                if (redirectUri != null) {
+                    response = new AuthorizationErrorResponse(redirectUri,
+                            e.getErrorObject(), e.getState(), e.getResponseMode());
+                } else {
+                    response = new IdentityViewResponse(e.getErrorObject());
+                }
+            } else {
+                response = new IdentityViewResponse(e.getErrorObject());
+            }
+        }
+        if (response instanceof IdentityViewResponse) {
+            IdentityViewResponse identityViewResponse = (IdentityViewResponse) response;
+            IdentityViewResponse.ViewType viewType = identityViewResponse.getViewType();
+            if (viewType == IdentityViewResponse.ViewType.LOGIN) {
+                httpSession.setAttribute(PREVIOUS_URL, authReqUri.toString());
+            } else if (viewType == IdentityViewResponse.ViewType.ERROR) {
+                model.addAttribute("error", identityViewResponse.getErrorObject());
+            } else {
+                model.addAttribute("model", authorizationModel);
+            }
+            return viewType.getViewName();
+        }
+        if (response.impliedResponseMode() == ResponseMode.FORM_POST) {
+            Map<String, String> responseMap;
+            if (response.indicatesSuccess()) {
+                responseMap = response.toSuccessResponse().toParameters();
+            } else {
+                responseMap = response.toErrorResponse().toParameters();
+            }
+            model.addAttribute("map", responseMap);
+            return "post_response";
+        } else {
+            URI redirect;
+            if (response.indicatesSuccess()) {
+                redirect = response.toSuccessResponse().toURI();
+            } else {
+                redirect = response.toErrorResponse().toURI();
+            }
+            return "redirect:" + redirect.toString();
+        }
     }
 
     @RequestMapping(value = "authorize", method = {RequestMethod.GET, RequestMethod.POST})

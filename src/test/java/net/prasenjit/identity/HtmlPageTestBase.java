@@ -99,6 +99,17 @@ public abstract class HtmlPageTestBase {
         throw new RuntimeException("Could not accept all consent");
     }
 
+    protected URI followForError(URI uri) throws Exception {
+        try {
+            Page page = webClient.getPage(uri.toURL());
+            System.out.println(page);
+        } catch (FailingHttpStatusCodeException ex) {
+            assertEquals(404, ex.getStatusCode());
+            return ex.getResponse().getWebRequest().getUrl().toURI();
+        }
+        throw new RuntimeException("Redirection did not happen");
+    }
+
     protected void createUserConsent(String username, String approvedScope) {
         // Save consent
         UserConsent userConsent = new UserConsent();
