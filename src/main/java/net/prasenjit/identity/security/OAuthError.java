@@ -10,4 +10,6 @@ public interface OAuthError {
     String TEMPORARILY_UNAVAILABLE = "temporarily_unavailable";
     String LOGIN_REQUIRED = "login_required";
     String INTERACTION_REQUIRED = "interaction_required";
+    String CLIENT_NOT_FOUND = "Client not found";
+    String INVALID_REDIRECT_URI = "Invalid redirect URI";
 }

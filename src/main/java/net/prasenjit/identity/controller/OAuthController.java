@@ -107,7 +107,7 @@ public class OAuthController {
         AuthorizationModel authorizationModel = new AuthorizationModel();
         try {
             AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(authReqUri);
-            if (authorizationRequest.getScope().contains("openid")) {
+            if (authorizationRequest.getScope() != null && authorizationRequest.getScope().contains("openid")) {
                 AuthenticationRequest authenticationRequest = AuthenticationRequest.parse(authReqUri);
                 response = openIDConnectService.processAuthentication(authorizationModel, authenticationRequest);
             } else {
