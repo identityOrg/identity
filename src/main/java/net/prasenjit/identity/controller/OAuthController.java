@@ -8,10 +8,7 @@ import net.prasenjit.identity.entity.AccessToken;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
-import net.prasenjit.identity.model.AuthorizationModel;
-import net.prasenjit.identity.model.IdentityViewResponse;
-import net.prasenjit.identity.model.OAuthToken;
-import net.prasenjit.identity.model.Profile;
+import net.prasenjit.identity.model.*;
 import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
 import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
 import net.prasenjit.identity.security.OAuthError;
@@ -28,10 +25,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -100,39 +95,70 @@ public class OAuthController {
         return oAuth2Service.processRefreshTokenGrantToken(client, refreshToken);
     }
 
+    @RequestMapping(value = "submit-consent", method = RequestMethod.POST)
+    public String submitConsent(@ModelAttribute ConsentModel consentModel, Model model, HttpSession httpSession) {
+        AuthorizationResponse response;
+        URI authReqUri = consentModel.getRequestUri();
+        try {
+            if (consentModel.isOpenid()) {
+                AuthenticationRequest authenticationRequest = AuthenticationRequest.parse(authReqUri);
+                response = openIDConnectService.processAuthentication(consentModel, authenticationRequest);
+            } else {
+                AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(authReqUri);
+                response = oAuth2Service1.processAuthorization(consentModel, authorizationRequest);
+            }
+        } catch (ParseException e) {
+            response = generateParseError(e);
+        }
+        return generateResponse(httpSession, model, response, authReqUri, consentModel);
+    }
+
     @RequestMapping(value = "connect", method = RequestMethod.GET)
     public String authorizeGet(HttpSession httpSession, Model model, Authentication authentication) {
         AuthorizationResponse response;
         URI authReqUri = ServletUriComponentsBuilder.fromCurrentRequest().build().toUri();
-        AuthorizationModel authorizationModel = new AuthorizationModel();
+        ConsentModel consentModel = new ConsentModel();
+        consentModel.setRequestUri(authReqUri);
         try {
             AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(authReqUri);
             if (authorizationRequest.getScope() != null && authorizationRequest.getScope().contains("openid")) {
+                consentModel.setOpenid(true);
                 AuthenticationRequest authenticationRequest = AuthenticationRequest.parse(authReqUri);
-                response = openIDConnectService.processAuthentication(authorizationModel, authenticationRequest);
+                response = openIDConnectService.processAuthentication(consentModel, authenticationRequest);
             } else {
+                consentModel.setOpenid(false);
                 if (authentication == null || !authentication.isAuthenticated()) {
                     httpSession.setAttribute(PREVIOUS_URL, authReqUri.toString());
                     return "redirect:/login";
                 }
-                response = oAuth2Service1.processAuthorization(authorizationModel, authorizationRequest);
+                response = oAuth2Service1.processAuthorization(consentModel, authorizationRequest);
             }
         } catch (ParseException e) {
-            if (e.getRedirectionURI() != null) {
-                response = new AuthorizationErrorResponse(e.getRedirectionURI(),
+            response = generateParseError(e);
+        }
+        return generateResponse(httpSession, model, response, authReqUri, consentModel);
+    }
+
+    private AuthorizationResponse generateParseError(ParseException e) {
+        AuthorizationResponse response;
+        if (e.getRedirectionURI() != null) {
+            response = new AuthorizationErrorResponse(e.getRedirectionURI(),
+                    e.getErrorObject(), e.getState(), e.getResponseMode());
+        } else if (e.getClientID() != null) {
+            URI redirectUri = oAuth2Service1.getRedirectUriForClientId(e.getClientID().getValue());
+            if (redirectUri != null) {
+                response = new AuthorizationErrorResponse(redirectUri,
                         e.getErrorObject(), e.getState(), e.getResponseMode());
-            } else if (e.getClientID() != null) {
-                URI redirectUri = oAuth2Service1.getRedirectUriForClientId(e.getClientID().getValue());
-                if (redirectUri != null) {
-                    response = new AuthorizationErrorResponse(redirectUri,
-                            e.getErrorObject(), e.getState(), e.getResponseMode());
-                } else {
-                    response = new IdentityViewResponse(e.getErrorObject());
-                }
             } else {
                 response = new IdentityViewResponse(e.getErrorObject());
             }
+        } else {
+            response = new IdentityViewResponse(e.getErrorObject());
         }
+        return response;
+    }
+
+    private String generateResponse(HttpSession httpSession, Model model, AuthorizationResponse response, URI authReqUri, ConsentModel consentModel) {
         if (response instanceof IdentityViewResponse) {
             IdentityViewResponse identityViewResponse = (IdentityViewResponse) response;
             IdentityViewResponse.ViewType viewType = identityViewResponse.getViewType();
@@ -141,7 +167,7 @@ public class OAuthController {
             } else if (viewType == IdentityViewResponse.ViewType.ERROR) {
                 model.addAttribute("error", identityViewResponse.getErrorObject());
             } else {
-                model.addAttribute("model", authorizationModel);
+                model.addAttribute("model", consentModel);
             }
             return viewType.getViewName();
         }
@@ -167,8 +193,7 @@ public class OAuthController {
 
     @RequestMapping(value = "authorize", method = {RequestMethod.GET, RequestMethod.POST})
     public String oAuthAuthorize(@ModelAttribute AuthorizeRequest request, Authentication authentication, Model model,
-                                 HttpServletRequest httpRequest)
-            throws IOException, ServletException {
+                                 HttpServletRequest httpRequest) {
         log.info("Processing authorization code grant");
         AuthorizationModel authorizationModel = oAuth2Service.validateAuthorizationGrant(authentication, request);
         if (authorizationModel.isValid()) {

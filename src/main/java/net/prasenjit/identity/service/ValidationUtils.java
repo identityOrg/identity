@@ -4,6 +4,7 @@ import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.Scope;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.AuthorizationModel;
+import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.Profile;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.core.Authentication;
@@ -23,7 +24,7 @@ public final class ValidationUtils {
         return null;
     }
 
-    public static Scope filterScopeToMap(String approved, Scope requestedScope, AuthorizationModel authorizationModel) {
+    public static Scope filterScopeToMap(String approved, Scope requestedScope, ConsentModel authorizationModel) {
         if (approved == null) {
             return new Scope();
         }

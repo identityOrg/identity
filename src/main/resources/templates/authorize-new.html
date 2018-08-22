@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Authorize Access</title>
+</head>
+<body>
+<!--/*@thymesVar id="model" type="net.prasenjit.identity.model.ConsentModel"*/-->
+<h1>Client
+    <b th:text="${model.client.clientName}"></b> is trying to access your resource</h1>
+<h2>If you recognise the activity please approve</h2>
+<span th:text="${model.client.clientName}"></span>
+will get access to.
+<form th:action="${#mvc.url('OAC#submitConsent').build()}" th:object="${model}" method="post" name="auth">
+    <div th:each="s : *{filteredScopes}">
+        <label th:for="${#ids.next('scope')}" th:text="${s.key}"></label>
+        <input th:id="${#ids.seq('scope')}" type="checkbox" th:field="*{filteredScopes[__${s.key}__]}">
+    </div>
+    <div>
+        <button type="submit" name="valid" value="true">Approve</button>
+        <button type="submit" name="valid" value="false">Disapprove</button>
+    </div>
+    <input type="hidden" th:field="*{requestUri}">
+    <input type="hidden" th:field="*{openid}">
+    <input type="hidden" th:field="*{redirectUriUsed}">
+    <input type="hidden" name="consentSubmitted" value="true">
+</form>
+</body>
+</html>
