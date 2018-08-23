@@ -58,6 +58,19 @@ public class OpenIDConnectService {
             } else {
                 return new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
             }
+        } else {
+            // max age check
+            if (request.getMaxAge() > 0) {
+                LocalDateTime loginTime = ((UserAuthenticationToken) authentication).getLoginTime();
+                if (loginTime.plusSeconds(request.getMaxAge()).isBefore(LocalDateTime.now())) {
+                    if (prompt.contains(Prompt.Type.NONE)) {
+                        return new AuthenticationErrorResponse(request.getRedirectionURI(), OIDCError.LOGIN_REQUIRED,
+                                request.getState(), request.getResponseMode());
+                    } else {
+                        return new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
+                    }
+                }
+            }
         }
         if (prompt.contains(Prompt.Type.LOGIN) && !sessionContainer.isInteractiveLoginDone()) {
             return new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);

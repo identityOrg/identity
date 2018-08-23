@@ -1,28 +1,30 @@
 package net.prasenjit.identity.service;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.*;
+import net.prasenjit.identity.entity.AccessToken;
+import net.prasenjit.identity.entity.AuthorizationCode;
+import net.prasenjit.identity.entity.RefreshToken;
+import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
-import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
-import net.prasenjit.identity.repository.*;
+import net.prasenjit.identity.repository.AuthorizationCodeRepository;
+import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.repository.RefreshTokenRepository;
+import net.prasenjit.identity.repository.UserRepository;
 import net.prasenjit.identity.security.GrantType;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,13 +41,13 @@ public class OAuth2Service {
     private final AuthorizationCodeRepository codeRepository;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final UserConsentRepository userConsentRepository;
 
-    public OAuthToken processPasswordGrant(Client client, String username, String password, String requestedScope) {
+    public OAuthToken processPasswordGrant(Profile profile, String username, String password, String requestedScope) {
+        Client client = clientRepository.getOne(profile.getUsername());
         if (!client.supportsGrant(GrantType.PASSWORD)) {
             throw new OAuthException("invalid_grant", "Unsupported grant");
         }
-        Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
+        Authentication authentication = new UserAuthenticationToken(username, password);
         try {
             authentication = authenticationManager.authenticate(authentication);
         } catch (BadCredentialsException e) {
@@ -77,183 +79,9 @@ public class OAuth2Service {
         return codeFactory.createOAuthToken(accessToken, null, null);
     }
 
-    public AuthorizationModel validateAuthorizationGrant(Authentication authentication, AuthorizeRequest request) {
-        Profile principal = extractPrincipal(authentication, Profile.class);
-        AuthorizationModel authorizationModel = new AuthorizationModel();
-        authorizationModel.setState(request.getState());
-        authorizationModel.setProfile(principal);
-        authorizationModel.setValid(false);
-        authorizationModel.setResponseType(request.getResponse_type());
-        authorizationModel.setRedirectUri(request.getRedirect_uri());
-        authorizationModel.setRedirectUriSet(StringUtils.hasText(request.getRedirect_uri()));
-        authorizationModel.setNonce(request.getNonce());
-        authorizationModel.setResponseMode(request.getResponse_mode());
-
-        if (request.getClient_id() == null) {
-            authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-            authorizationModel.setErrorDescription("Client id not specified");
-            return authorizationModel;
-        }
-
-        Optional<Client> client = clientRepository.findById(request.getClient_id());
-
-        if (!client.isPresent()) {
-            authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-            authorizationModel.setErrorDescription("Provided clientId is invalid");
-            return authorizationModel;
-        } else {
-            authorizationModel.setClient(client.get());
-            String[] redirectUris = client.get().getRedirectUris();
-            if (request.getRedirect_uri() != null && !ArrayUtils.contains(redirectUris, request.getRedirect_uri())) {
-                authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-                authorizationModel.setErrorDescription("Redirect URL doesn't match");
-                return authorizationModel;
-            }
-            filterScopeToMap(client.get().getApprovedScopes(), request.getScope(), authorizationModel);
-            if (principal != null) {
-                Optional<UserConsent> consent = userConsentRepository.findById(new UserConsent.UserConsentPK(
-                        principal.getUsername(), client.get().getClientId()));
-
-                if (consent.isPresent()) {
-                    String[] preApprovedScope = StringUtils.delimitedListToStringArray(consent.get().getScopes(), " ");
-                    String[] toBeApprovedScopes = authorizationModel.getFilteredScopes().entrySet().stream()
-                            .map(Map.Entry::getKey).collect(Collectors.toList()).toArray(new String[1]);
-                    Arrays.sort(preApprovedScope);
-                    Arrays.sort(toBeApprovedScopes);
-                    authorizationModel.setConsentRequired(!Arrays.deepEquals(preApprovedScope, toBeApprovedScopes));
-                }else {
-                    authorizationModel.setConsentRequired(true);
-                }
-            }else {
-                authorizationModel.setLoginRequired(true);
-            }
-
-            if (authorizationModel.isOpenid()) {
-                // handle prompt parameter for openid
-                if (StringUtils.hasText(request.getPrompt())) {
-                    String[] prompts = StringUtils.delimitedListToStringArray(request.getPrompt(), " ");
-                    Arrays.sort(prompts);
-                    boolean promptNone = Arrays.binarySearch(prompts, "none") > -1;
-                    boolean promptLogin = Arrays.binarySearch(prompts, "login") > -1;
-                    boolean promptConsent = Arrays.binarySearch(prompts, "consent") > -1;
-                    if (promptNone && (promptLogin || promptConsent)) {
-                        authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-                        authorizationModel.setErrorDescription("Prompt none can not be combined with anything else");
-                        return authorizationModel;
-                    }
-                    if (promptNone) {
-                        if (authorizationModel.isLoginRequired()) {
-                            authorizationModel.setErrorCode(OAuthError.LOGIN_REQUIRED);
-                            authorizationModel.setErrorDescription("User not logged in and prompt none is requested");
-                            return authorizationModel;
-                        }
-                        if (authorizationModel.isConsentRequired()) {
-                            authorizationModel.setErrorCode(OAuthError.INTERACTION_REQUIRED);
-                            authorizationModel.setErrorDescription("User consent required");
-                            return authorizationModel;
-                        }
-                    }
-                    if (promptLogin) {
-                        authorizationModel.setLoginRequired(true);
-                    }
-                    if (promptConsent) {
-                        authorizationModel.setConsentRequired(true);
-                    }
-                    // handle prompt redirect
-                }
-                // handle max_age parameter for openid
-                if (request.getMax_age() > 0) {
-                    UserAuthenticationToken userAuthentication = (UserAuthenticationToken) authentication;
-                    if (userAuthentication.getLoginTime().plusSeconds(request.getMax_age()).isBefore(LocalDateTime.now())) {
-                        // redirect for re-login
-                        authorizationModel.setLoginRequired(true);
-                    }
-                }
-            }
-
-            authorizationModel.setValid(true);
-            return authorizationModel;
-
-        }
-    }
-
-    public AuthorizationModel processAuthorizationOrImplicitGrant(AuthorizationModel authorizationModel) {
-        if (authorizationModel.isValid()) {
-            Optional<Client> client = clientRepository.findById(authorizationModel.getClient().getClientId());
-
-            if (!client.isPresent()) {
-                authorizationModel.setValid(false);
-                authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-                authorizationModel.setErrorDescription("Provided clientId is invalid");
-                return authorizationModel;
-            } else {
-                authorizationModel.setClient(client.get());
-                List<String> approvedScope = authorizationModel.getFilteredScopes().entrySet().stream()
-                        .filter(e ->
-                                e.getValue() != null && e.getValue()
-                        ).map(Map.Entry::getKey).collect(Collectors.toList());
-                if (!authorizationModel.isRedirectUriSet()) {
-                    authorizationModel.setRedirectUri(client.get().getRedirectUris()[0]);
-                }
-
-                // Save consent
-                UserConsent userConsent = new UserConsent();
-                userConsent.setUsername(authorizationModel.getProfile().getUsername());
-                userConsent.setClientID(client.get().getClientId());
-                userConsent.setApprovalDate(LocalDateTime.now());
-                userConsent.setScopes(StringUtils.collectionToDelimitedString(approvedScope, " "));
-                userConsentRepository.save(userConsent);
-
-                if (authorizationModel.requireCodeResponse()) {
-                    String redirectUri = authorizationModel.isRedirectUriSet() ?
-                            authorizationModel.getRedirectUri() : null;
-                    AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(
-                            client.get().getClientId(), redirectUri,
-                            StringUtils.collectionToDelimitedString(approvedScope, " "),
-                            authorizationModel.getProfile().getUsername(), authorizationModel.getState(),
-                            Duration.ofMinutes(10), authorizationModel.getLoginTime(), authorizationModel.isOpenid());
-                    authorizationModel.setAuthorizationCode(authorizationCode);
-                }
-                if (authorizationModel.isOpenid() && authorizationModel.requireTokenResponse()) {
-                    AccessToken accessToken = codeFactory.createAccessToken(authorizationModel.getProfile(),
-                            client.get().getClientId(), client.get().getAccessTokenValidity(),
-                            StringUtils.collectionToDelimitedString(approvedScope, " "),
-                            authorizationModel.getLoginTime());
-                    authorizationModel.setAccessToken(accessToken);
-                }
-                if (authorizationModel.isOpenid() && authorizationModel.requireIDTokenResponse()) {
-                    String accessToken = null;
-                    if (authorizationModel.getAccessToken() != null) {
-                        accessToken = authorizationModel.getAccessToken().getAssessToken();
-                    }
-                    String accessCode = null;
-                    if (authorizationModel.getAuthorizationCode() != null) {
-                        accessCode = authorizationModel.getAuthorizationCode().getAuthorizationCode();
-                    }
-                    String idToken = codeFactory.createIDToken(authorizationModel.getProfile(),
-                            authorizationModel.getLoginTime(), authorizationModel.getNonce(),
-                            client.get().getClientId(), client.get().getAccessTokenValidity(),
-                            approvedScope, accessToken, accessCode);
-                    authorizationModel.setIdToken(idToken);
-                }
-                if (!(authorizationModel.requireCodeResponse() || authorizationModel.requireTokenResponse()
-                        || authorizationModel.requireIDTokenResponse())) {
-                    authorizationModel.setErrorCode(OAuthError.UNSUPPORTED_RESPONSE_TYPE);
-                    authorizationModel.setErrorDescription("Invalid response type");
-                    authorizationModel.setValid(false);
-                }
-                return authorizationModel;
-            }
-        }
-        authorizationModel.setErrorCode(OAuthError.UNAUTHORIZED_REQUEST);
-        authorizationModel.setErrorDescription("User has denied the access");
-        authorizationModel.setValid(false);
-        return authorizationModel;
-    }
-
     public OAuthToken processAuthorizationCodeGrantToken(Profile profile, String code, String redirectUri,
                                                          String clientId) {
-        Client client = null;
+        Client client;
         if (profile == null) {
             if (clientId == null) {
                 throw new OAuthException("invalid_request", "non secure client must specify client_id parameter");

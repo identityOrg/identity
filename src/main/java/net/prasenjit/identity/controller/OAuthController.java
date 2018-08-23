@@ -1,36 +1,32 @@
 package net.prasenjit.identity.controller;
 
 import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.oauth2.sdk.http.CommonContentTypes;
+import com.nimbusds.oauth2.sdk.http.HTTPRequest;
+import com.nimbusds.oauth2.sdk.util.URLUtils;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.prasenjit.identity.entity.AccessToken;
+import net.minidev.json.JSONObject;
 import net.prasenjit.identity.entity.client.Client;
-import net.prasenjit.identity.exception.OAuthException;
 import net.prasenjit.identity.exception.UnauthenticatedClientException;
-import net.prasenjit.identity.model.*;
-import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
-import net.prasenjit.identity.model.openid.core.AuthorizeRequest;
-import net.prasenjit.identity.security.OAuthError;
-import net.prasenjit.identity.security.user.UserAuthenticationToken;
+import net.prasenjit.identity.model.ConsentModel;
+import net.prasenjit.identity.model.IdentityViewResponse;
+import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.service.OAuth2Service;
 import net.prasenjit.identity.service.OAuth2Service1;
 import net.prasenjit.identity.service.OpenIDConnectService;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import org.springframework.web.util.UriComponents;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.net.MalformedURLException;
 import java.net.URI;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.Map;
 
 import static net.prasenjit.identity.properties.ApplicationConstants.PREVIOUS_URL;
@@ -42,18 +38,46 @@ import static net.prasenjit.identity.properties.ApplicationConstants.PREVIOUS_UR
 public class OAuthController {
 
     private final OAuth2Service oAuth2Service;
-    private final OpenIDSessionContainer sessionContainer;
     private final OpenIDConnectService openIDConnectService;
     private final OAuth2Service1 oAuth2Service1;
 
-    @PostMapping(value = "token", params = "grant_type=password")
+    @RequestMapping(value = "token", method = RequestMethod.POST, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @ResponseBody
+    public JSONObject handleToken(@RequestBody String body, @RequestHeader("Authorization") String authz) throws MalformedURLException {
+        URI authReqUri = ServletUriComponentsBuilder.fromCurrentRequest().build(true).toUri();
+        HTTPRequest httpRequest = new HTTPRequest(HTTPRequest.Method.POST, authReqUri.toURL());
+        httpRequest.setContentType(CommonContentTypes.APPLICATION_URLENCODED);
+        Map<String, String> stringMap = URLUtils.parseParameters(body);
+        Map<String, String> parameters = httpRequest.getQueryParameters();
+        parameters.putAll(stringMap);
+        httpRequest.setQuery(URLUtils.serializeParameters(parameters));
+        httpRequest.setAuthorization(authz);
+
+        TokenRequest tokenRequest;
+        try {
+            tokenRequest = TokenRequest.parse(httpRequest);
+
+            TokenResponse tokenResponse = oAuth2Service1.handleTokenRequest(tokenRequest);
+            JSONObject jsonObject;
+            if (tokenResponse.indicatesSuccess()) {
+                jsonObject = tokenResponse.toSuccessResponse().toJSONObject();
+            } else {
+                jsonObject = tokenResponse.toErrorResponse().toJSONObject();
+            }
+            return jsonObject;
+        } catch (ParseException e) {
+            return e.getErrorObject().toJSONObject();
+        }
+    }
+
+    @PostMapping(value = "token2", params = "grant_type=password")
     @ResponseBody
     public OAuthToken passwordGrantToken(@RequestParam(value = "username") String username,
                                          @RequestParam(value = "password") String password,
                                          @RequestParam(value = "scope", defaultValue = "") String scope,
                                          Authentication clientAuth) {
         log.info("Processing password grant");
-        Client client = extractPrincipal(clientAuth, Client.class);
+        Profile client = extractPrincipal(clientAuth, Profile.class);
         if (client != null) {
             return oAuth2Service.processPasswordGrant(client, username, password, scope);
         } else {
@@ -95,7 +119,7 @@ public class OAuthController {
         return oAuth2Service.processRefreshTokenGrantToken(client, refreshToken);
     }
 
-    @RequestMapping(value = "submit-consent", method = RequestMethod.POST)
+    @RequestMapping(value = "authorized", method = RequestMethod.POST)
     public String submitConsent(@ModelAttribute ConsentModel consentModel, Model model, HttpSession httpSession) {
         AuthorizationResponse response;
         URI authReqUri = consentModel.getRequestUri();
@@ -113,10 +137,10 @@ public class OAuthController {
         return generateResponse(httpSession, model, response, authReqUri, consentModel);
     }
 
-    @RequestMapping(value = "connect", method = RequestMethod.GET)
+    @RequestMapping(value = "authorize", method = RequestMethod.GET)
     public String authorizeGet(HttpSession httpSession, Model model, Authentication authentication) {
         AuthorizationResponse response;
-        URI authReqUri = ServletUriComponentsBuilder.fromCurrentRequest().build().toUri();
+        URI authReqUri = ServletUriComponentsBuilder.fromCurrentRequest().build(true).toUri();
         ConsentModel consentModel = new ConsentModel();
         consentModel.setRequestUri(authReqUri);
         try {
@@ -189,98 +213,6 @@ public class OAuthController {
             }
             return "redirect:" + redirect.toString();
         }
-    }
-
-    @RequestMapping(value = "authorize", method = {RequestMethod.GET, RequestMethod.POST})
-    public String oAuthAuthorize(@ModelAttribute AuthorizeRequest request, Authentication authentication, Model model,
-                                 HttpServletRequest httpRequest) {
-        log.info("Processing authorization code grant");
-        AuthorizationModel authorizationModel = oAuth2Service.validateAuthorizationGrant(authentication, request);
-        if (authorizationModel.isValid()) {
-            if (authorizationModel.isLoginRequired() && !sessionContainer.isInteractiveLoginDone()) {
-                UriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentRequest();
-                httpRequest.getSession().setAttribute(PREVIOUS_URL, builder.build().toString());
-                return "redirect:/login";
-            }
-            if (!authorizationModel.isConsentRequired()) {
-                return submitAuthorize(authorizationModel, authentication, model);
-            }
-            model.addAttribute("model", authorizationModel);
-            return "authorize";
-        } else {
-            return buildErrorUrl(authorizationModel);
-        }
-    }
-
-    @PostMapping("authorized")
-    public String submitAuthorize(@ModelAttribute AuthorizationModel authorizationModel,
-                                  Authentication authentication, Model model) {
-        Profile profile = extractPrincipal(authentication, Profile.class);
-        authorizationModel.setProfile(profile);
-        authorizationModel.setLoginTime(((UserAuthenticationToken) authentication).getLoginTime());
-        authorizationModel = oAuth2Service.processAuthorizationOrImplicitGrant(authorizationModel);
-        if (authorizationModel.isValid()) {
-            boolean responseAsFragment = false;
-            Map<String, String> responseMap = new HashMap<>();
-            if (StringUtils.hasText(authorizationModel.getState())) {
-                responseMap.put("state", authorizationModel.getState());
-            }
-            if (authorizationModel.requireTokenResponse()) {
-                responseAsFragment = true;
-                AccessToken token = authorizationModel.getAccessToken();
-                responseMap.put("access_token", token.getAssessToken());
-                responseMap.put("token_type", "bearer");
-                long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), token.getExpiryDate());
-                responseMap.put("expires_in", "" + expIn);
-                //responseMap.put("scope", token.getScope()); //TODO handle scope later
-            }
-            if (authorizationModel.requireIDTokenResponse()) {
-                responseAsFragment = true;
-                responseMap.put("id_token", authorizationModel.getIdToken());
-            }
-            if (authorizationModel.requireCodeResponse()) {
-                responseMap.put("code", authorizationModel.getAuthorizationCode().getAuthorizationCode());
-            }
-            // handle response_mode
-            String tokenFragment = oAuth2Service.createTokenResponseFragment(responseMap);
-            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri());
-            if ("query".equals(authorizationModel.getResponseMode())) {
-                UriComponents uri = uriBuilder.query(tokenFragment).build();
-                return "redirect:" + uri;
-            } else if ("fragment".equals(authorizationModel.getResponseMode())) {
-                UriComponents uri = uriBuilder.fragment(tokenFragment).build();
-                return "redirect:" + uri;
-            } else if ("form".equals(authorizationModel.getResponseMode())) {
-                responseMap.put("redirect_uri", authorizationModel.getRedirectUri());
-                model.addAttribute("map", responseMap);
-                return "post_response";
-            } else {
-                if (responseAsFragment) {
-                    UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
-                            .fragment(tokenFragment).build();
-                    return "redirect:" + uri;
-                } else {
-                    String queryFragment = oAuth2Service.createTokenResponseFragment(responseMap);
-                    UriComponents uri = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
-                            .query(queryFragment).build();
-                    return "redirect:" + uri;
-                }
-            }
-        }
-        authorizationModel.setErrorCode(OAuthError.INVALID_REQUEST);
-        authorizationModel.setErrorDescription("response_type is invalid");
-        return buildErrorUrl(authorizationModel);
-
-    }
-
-    private String buildErrorUrl(AuthorizationModel authorizationModel) {
-        if (authorizationModel.getRedirectUri() == null) {
-            throw new OAuthException(authorizationModel.getErrorCode(), authorizationModel.getErrorDescription());
-        }
-        UriComponents redirect = UriComponentsBuilder.fromHttpUrl(authorizationModel.getRedirectUri())
-                .queryParam("error", authorizationModel.getErrorCode())
-                .queryParam("error_description", authorizationModel.getErrorDescription()).build();
-        return "redirect:" + redirect;
     }
 
     @SuppressWarnings("unchecked")

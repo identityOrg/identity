@@ -1,6 +1,11 @@
 package net.prasenjit.identity.openid;
 
 import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.oauth2.sdk.auth.Secret;
+import com.nimbusds.oauth2.sdk.http.HTTPResponse;
+import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
@@ -61,5 +66,30 @@ public class OtherTest {
         System.out.println(response.toURI());
         System.out.println(response.impliedResponseMode());
         System.out.println(response.impliedResponseType());
+    }
+
+    @Test
+    public void testPasswordGrant() throws Exception {
+
+        URI url = URI.create("http://localhost:8080/oauth/token");
+
+        // Construct the password grant from the username and password
+        String username = "admin";
+        Secret password = new Secret("admin");
+        AuthorizationGrant passwordGrant = new ResourceOwnerPasswordCredentialsGrant(username, password);
+
+        // The credentials to authenticate the client at the token endpoint
+        ClientID clientID = new ClientID("client");
+        Secret clientSecret = new Secret("client");
+        ClientAuthentication clientAuth = new ClientSecretBasic(clientID, clientSecret);
+
+        // The request scope for the token (may be optional)
+        Scope scope = new Scope("read", "write");
+
+        // Make the token request
+        TokenRequest request = new TokenRequest(url, clientAuth, passwordGrant, scope);
+
+        HTTPResponse response = request.toHTTPRequest().send();
+        System.out.println(response.getStatusMessage());
     }
 }

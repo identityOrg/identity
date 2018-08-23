@@ -1,9 +1,16 @@
 package net.prasenjit.identity.service;
 
 import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
+import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.oauth2.sdk.token.Tokens;
 import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.entity.RefreshToken;
 import net.prasenjit.identity.entity.UserConsent;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.ConsentModel;
@@ -12,9 +19,13 @@ import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.UserConsentRepository;
 import net.prasenjit.identity.security.OAuthError;
+import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +43,7 @@ public class OAuth2Service1 {
     private final ClientRepository clientRepository;
     private final UserConsentRepository userConsentRepository;
     private final CodeFactory codeFactory;
+    private final AuthenticationManager authenticationManager;
 
     public AuthorizationResponse processAuthorization(ConsentModel consentModel,
                                                       AuthorizationRequest request) {
@@ -151,5 +163,93 @@ public class OAuth2Service1 {
             }
         }
         return null;
+    }
+
+    public TokenResponse handleTokenRequest(TokenRequest tokenRequest) {
+        Client client;
+        if (tokenRequest.getClientAuthentication() == null) {
+            ClientID clientId = tokenRequest.getClientID();
+            Optional<Client> optionalClient = clientRepository.findById(clientId.getValue());
+            if (optionalClient.isPresent()) {
+                client = optionalClient.get();
+            } else {
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED);
+            }
+        } else {
+            ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
+            String clientId = clientAuthentication.getClientID().getValue();
+            String clientSecret;
+            if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
+                clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
+            } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
+                clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
+            } else {
+                return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT.setDescription("Client authentication not supported"));
+            }
+
+            BasicAuthenticationToken authenticate;
+            try {
+                authenticate = (BasicAuthenticationToken) authenticationManager.authenticate(
+                        new BasicAuthenticationToken(clientId, clientSecret));
+            } catch (AuthenticationException e) {
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed"));
+            }
+
+            Profile clientProfile = (Profile) authenticate.getPrincipal();
+            client = clientRepository.getOne(clientProfile.getUsername());
+        }
+        if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.AUTHORIZATION_CODE)) {
+            return handleGrantInternal(client, tokenRequest,
+                    ((AuthorizationCodeGrant) tokenRequest.getAuthorizationGrant()));
+        } else if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.CLIENT_CREDENTIALS)) {
+            return handleGrantInternal(client, tokenRequest,
+                    ((ClientCredentialsGrant) tokenRequest.getAuthorizationGrant()));
+        } else if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.PASSWORD)) {
+            return handleGrantInternal(client, tokenRequest,
+                    ((ResourceOwnerPasswordCredentialsGrant) tokenRequest.getAuthorizationGrant()));
+        } else if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.REFRESH_TOKEN)) {
+            return handleGrantInternal(client, tokenRequest,
+                    ((RefreshTokenGrant) tokenRequest.getAuthorizationGrant()));
+        } else {
+            return new TokenErrorResponse(OAuth2Error.INVALID_GRANT);
+        }
+    }
+
+    private TokenResponse handleGrantInternal(Client client, TokenRequest request, RefreshTokenGrant grant) {
+        return new TokenErrorResponse(OAuth2Error.INVALID_GRANT);
+    }
+
+    private TokenResponse handleGrantInternal(Client client, TokenRequest request,
+                                              ResourceOwnerPasswordCredentialsGrant grant) {
+
+        Authentication authToken = new UserAuthenticationToken(grant.getUsername(), grant.getPassword().getValue());
+        try {
+            authToken = authenticationManager.authenticate(authToken);
+            Profile userProfile = (Profile) authToken.getPrincipal();
+            Scope filteredScopes = ValidationUtils.filterScope(client.getApprovedScopes(), request.getScope());
+            net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(userProfile,
+                    client.getClientId(), client.getAccessTokenValidity(), filteredScopes.toString(), LocalDateTime.now());
+            long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+            AccessToken accessToken1 = new BearerAccessToken(accessToken.getAssessToken(), lifetime, filteredScopes);
+            com.nimbusds.oauth2.sdk.token.RefreshToken refreshToken1 = null;
+            if (!client.supportsGrant(net.prasenjit.identity.security.GrantType.REFRESH_TOKEN)) {
+                RefreshToken refreshToken = codeFactory.createRefreshToken(client.getClientId(), userProfile.getUsername(),
+                        filteredScopes.toString(), LocalDateTime.now(), client.getRefreshTokenValidity(), false);
+                refreshToken1 = new com.nimbusds.oauth2.sdk.token.RefreshToken(refreshToken.getRefreshToken());
+            }
+
+            Tokens tokens = new Tokens(accessToken1, refreshToken1);
+            return new AccessTokenResponse(tokens);
+        } catch (BadCredentialsException e) {
+            return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.setDescription("User authentication failed"));
+        }
+    }
+
+    private TokenResponse handleGrantInternal(Client client, TokenRequest request, ClientCredentialsGrant grant) {
+        return new TokenErrorResponse(OAuth2Error.INVALID_GRANT);
+    }
+
+    private TokenResponse handleGrantInternal(Client client, TokenRequest request, AuthorizationCodeGrant grant) {
+        return new TokenErrorResponse(OAuth2Error.INVALID_GRANT);
     }
 }

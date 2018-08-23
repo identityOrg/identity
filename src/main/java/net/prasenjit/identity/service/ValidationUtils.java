@@ -3,11 +3,11 @@ package net.prasenjit.identity.service;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.Scope;
 import net.prasenjit.identity.entity.client.Client;
-import net.prasenjit.identity.model.AuthorizationModel;
 import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.Profile;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.core.Authentication;
+import org.springframework.util.StringUtils;
 
 import java.util.stream.Collectors;
 
@@ -25,11 +25,11 @@ public final class ValidationUtils {
     }
 
     public static Scope filterScopeToMap(String approved, Scope requestedScope, ConsentModel authorizationModel) {
-        if (approved == null) {
+        if (!StringUtils.hasText(approved)) {
             return new Scope();
         }
         Scope approvedScopes = Scope.parse(approved);
-        if (requestedScope == null) {
+        if (requestedScope == null || requestedScope.isEmpty()) {
             authorizationModel.setFilteredScopes(approvedScopes.toStringList().stream()
                     .collect(Collectors.toMap(s -> s, s -> Boolean.TRUE)));
             return approvedScopes;
@@ -67,5 +67,22 @@ public final class ValidationUtils {
         }
         // Grant validation end
         return false;
+    }
+
+    public static Scope filterScope(String approved, Scope requestedScope) {
+        if (!StringUtils.hasText(approved)) {
+            return new Scope();
+        }
+        Scope approvedScopes = Scope.parse(approved);
+        if (requestedScope == null || requestedScope.isEmpty()) {
+            return approvedScopes;
+        }
+        Scope filteredScopes = new Scope();
+        for (String r : requestedScope.toStringList()) {
+            if (approvedScopes.contains(r)) {
+                filteredScopes.add(r);
+            }
+        }
+        return filteredScopes;
     }
 }
