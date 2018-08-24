@@ -2,7 +2,7 @@ package net.prasenjit.identity.entity.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
-import net.prasenjit.identity.entity.Scope;
+import net.prasenjit.identity.entity.ScopeEntity;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.converter.AbstractJsonConverter;
 import net.prasenjit.identity.model.openid.registration.ApplicationType;
@@ -47,7 +47,7 @@ public class Client {
     @JoinTable(name = "T_CLIENT_SCOPE",
             joinColumns = @JoinColumn(name = "CLIENT_ID", referencedColumnName = "CLIENT_ID"),
             inverseJoinColumns = @JoinColumn(name = "SCOPE_ID", referencedColumnName = "SCOPE_ID"))
-    private Set<Scope> scopes;
+    private Set<ScopeEntity> scopes;
 
     @Column(name = "REDIRECT_URI", length = 500, nullable = false)
     @Convert(converter = AbstractJsonConverter.StringArrayConverter.class)
@@ -96,7 +96,7 @@ public class Client {
 
     public String getApprovedScopes() {
         if (!CollectionUtils.isEmpty(this.scopes)) {
-            return this.scopes.stream().map(Scope::getScopeId).reduce((x, y) -> x + " " + y).orElse(null);
+            return this.scopes.stream().map(ScopeEntity::getScopeId).reduce((x, y) -> x + " " + y).orElse(null);
         }
         return null;
     }

@@ -2,7 +2,7 @@ package net.prasenjit.identity.model.api.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
-import net.prasenjit.identity.entity.Scope;
+import net.prasenjit.identity.entity.ScopeEntity;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotEmpty;
@@ -26,5 +26,5 @@ public class UpdateClientRequest {
     private Duration accessTokenValidity;
     @NotNull
     private Duration refreshTokenValidity;
-    private Set<Scope> scopes;
+    private Set<ScopeEntity> scopes;
 }

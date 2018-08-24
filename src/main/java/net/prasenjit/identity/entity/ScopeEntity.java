@@ -16,7 +16,7 @@ import java.io.Serializable;
 @Table(name = "T_SCOPE")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Scope implements Serializable {
+public class ScopeEntity implements Serializable {
     @Id
     @Column(name = "SCOPE_ID", length = 10, nullable = false, unique = true)
     @NotEmpty

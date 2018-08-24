@@ -1,7 +1,7 @@
 package net.prasenjit.identity.service.openid;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.Scope;
+import net.prasenjit.identity.entity.ScopeEntity;
 import net.prasenjit.identity.model.openid.discovery.DiscoveryResponse;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.properties.ServerMetadata;
@@ -46,7 +46,7 @@ public class MetadataService {
             builder1 = builder.cloneBuilder();
             metadata.setJwksURI(builder1.pathSegment("api", "keys").toUriString());
             metadata.setScopesSupported(scopeRepository.findAll().stream()
-                    .map(Scope::getScopeId)
+                    .map(ScopeEntity::getScopeId)
                     .collect(Collectors.toList()));
             metadata.setResponseTypesSupported(new String[]{"code", "code id_token", "id_token", "token id_token"});
             metadata.setGrantTypesSupported(new String[]{"authorization_code", "implicit"});

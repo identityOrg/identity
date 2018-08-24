@@ -2,7 +2,7 @@ package net.prasenjit.identity.controller.scope;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import net.prasenjit.identity.entity.Scope;
+import net.prasenjit.identity.entity.ScopeEntity;
 import net.prasenjit.identity.model.api.scope.UpdateScopeRequest;
 
 import java.util.List;
@@ -11,14 +11,14 @@ import java.util.List;
 public interface ScopeApi {
 
     @ApiOperation(value = "Create Scope", notes = "Create a new scope.")
-    Scope create(Scope scope);
+    ScopeEntity create(ScopeEntity scope);
 
     @ApiOperation(value = "Update Scope", notes = "Update a scope.")
-    Scope update(String scopeId, UpdateScopeRequest scope);
+    ScopeEntity update(String scopeId, UpdateScopeRequest scope);
 
     @ApiOperation(value = "Find Scope", notes = "Find a scope.")
-    Scope findScope(String scopeId);
+    ScopeEntity findScope(String scopeId);
 
     @ApiOperation(value = "Find all", notes = "Find all scopes.")
-    List<Scope> findAll();
+    List<ScopeEntity> findAll();
 }

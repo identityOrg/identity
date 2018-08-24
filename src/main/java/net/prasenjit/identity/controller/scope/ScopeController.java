@@ -3,7 +3,7 @@ package net.prasenjit.identity.controller.scope;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.ResourceType;
-import net.prasenjit.identity.entity.Scope;
+import net.prasenjit.identity.entity.ScopeEntity;
 import net.prasenjit.identity.events.CreateEvent;
 import net.prasenjit.identity.events.UpdateEvent;
 import net.prasenjit.identity.exception.ConflictException;
@@ -31,8 +31,8 @@ public class ScopeController implements ScopeApi {
     @Override
     @Transactional
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Scope create(@RequestBody @Valid Scope scope) {
-        Optional<Scope> scopeOptional = scopeRepository.findById(scope.getScopeId());
+    public ScopeEntity create(@RequestBody @Valid ScopeEntity scope) {
+        Optional<ScopeEntity> scopeOptional = scopeRepository.findById(scope.getScopeId());
         if (scopeOptional.isPresent()) {
             throw new ConflictException("Scope already present");
         }
@@ -45,12 +45,12 @@ public class ScopeController implements ScopeApi {
 
     @Override
     @PutMapping(value = "{scopeId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Scope update(@PathVariable("scopeId") String scopeId, @RequestBody @Valid UpdateScopeRequest request) {
-        Optional<Scope> scopeOptional = scopeRepository.findById(scopeId);
+    public ScopeEntity update(@PathVariable("scopeId") String scopeId, @RequestBody @Valid UpdateScopeRequest request) {
+        Optional<ScopeEntity> scopeOptional = scopeRepository.findById(scopeId);
         if (!scopeOptional.isPresent()) {
             throw new ItemNotFoundException("Scope not exist");
         }
-        Scope scope = scopeOptional.get();
+        ScopeEntity scope = scopeOptional.get();
         scope.setScopeName(request.getScopeName());
 
         UpdateEvent csEvent = new UpdateEvent(this, ResourceType.SCOPE, scopeId);
@@ -61,8 +61,8 @@ public class ScopeController implements ScopeApi {
 
     @Override
     @GetMapping(value = "{scopeId}")
-    public Scope findScope(@PathVariable("scopeId") String scopeId) {
-        Optional<Scope> scopeOptional = scopeRepository.findById(scopeId);
+    public ScopeEntity findScope(@PathVariable("scopeId") String scopeId) {
+        Optional<ScopeEntity> scopeOptional = scopeRepository.findById(scopeId);
         if (!scopeOptional.isPresent()) {
             throw new ItemNotFoundException("Scope not found");
         }
@@ -71,7 +71,7 @@ public class ScopeController implements ScopeApi {
 
     @Override
     @GetMapping
-    public List<Scope> findAll() {
+    public List<ScopeEntity> findAll() {
         return scopeRepository.findAll();
     }
 }

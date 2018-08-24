@@ -46,12 +46,12 @@ public class IdentityApplication implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
-        scopeRepository.save(new Scope("scope1", "Scope 1"));
-        scopeRepository.save(new Scope("scope2", "Scope 2"));
-        scopeRepository.save(new Scope("openid", "OpenID Scope"));
-        scopeRepository.save(new Scope("profile", "OpenID Profile"));
-        scopeRepository.save(new Scope("email", "OpenID Email"));
-        scopeRepository.save(new Scope("address", "OpenID Address"));
+        scopeRepository.save(new ScopeEntity("scope1", "Scope 1"));
+        scopeRepository.save(new ScopeEntity("scope2", "Scope 2"));
+        scopeRepository.save(new ScopeEntity("openid", "OpenID Scope"));
+        scopeRepository.save(new ScopeEntity("profile", "OpenID Profile"));
+        scopeRepository.save(new ScopeEntity("email", "OpenID Email"));
+        scopeRepository.save(new ScopeEntity("address", "OpenID Address"));
 
         User admin = createAdmin("admin");
         userRepository.saveAndFlush(admin);
