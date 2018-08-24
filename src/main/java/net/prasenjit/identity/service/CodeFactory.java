@@ -6,15 +6,19 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.oauth2.sdk.AuthorizationCode;
+import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.store.CryptoKeyFactory;
 import net.prasenjit.identity.entity.AccessTokenEntity;
 import net.prasenjit.identity.entity.AuthorizationCodeEntity;
 import net.prasenjit.identity.entity.JWKKey;
 import net.prasenjit.identity.entity.RefreshTokenEntity;
-import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.AccessTokenRepository;
@@ -69,9 +73,9 @@ public class CodeFactory {
         macVerifier = new MACVerifier(mainKey);
     }
 
-    public AuthorizationCodeEntity createAuthorizationCode(String clientId, String returnUrl, String scope, String userName,
-                                                           String state, Duration validity, LocalDateTime loginDate,
-                                                           boolean openId) {
+    AuthorizationCode createAuthorizationCode(String clientId, String returnUrl, String scope, String userName,
+                                              String state, Duration validity, LocalDateTime loginDate,
+                                              boolean openId) {
         AuthorizationCodeEntity authorizationCode = new AuthorizationCodeEntity();
         authorizationCode.setClientId(clientId);
         LocalDateTime creationDate = LocalDateTime.now();
@@ -86,10 +90,10 @@ public class CodeFactory {
         authorizationCode.setLoginDate(loginDate);
         authorizationCode.setAuthorizationCode(RandomStringUtils.randomAlphanumeric(8));
         authorizationCodeRepository.saveAndFlush(authorizationCode);
-        return authorizationCode;
+        return new AuthorizationCode(authorizationCode.getAuthorizationCode());
     }
 
-    public AccessTokenEntity createAccessToken(Profile user, String clientId, Duration duration,
+    public BearerAccessToken createAccessToken(Profile user, String clientId, Duration duration,
                                                String scope, LocalDateTime loginDate) {
         AccessTokenEntity accessToken = new AccessTokenEntity();
         accessToken.setAssessToken(RandomStringUtils.randomAlphanumeric(24));
@@ -102,11 +106,13 @@ public class CodeFactory {
         accessToken.setScope(scope);
         accessToken.setLoginDate(loginDate);
         accessTokenRepository.saveAndFlush(accessToken);
-        return accessToken;
+        long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+        Scope tokenScope = Scope.parse(accessToken.getScope());
+        return new BearerAccessToken(accessToken.getAssessToken(), lifetime, tokenScope);
     }
 
-    public RefreshTokenEntity createRefreshToken(String clientId, String userName, String scope, LocalDateTime loginDate,
-                                                 Duration duration, boolean openId) {
+    RefreshToken createRefreshToken(String clientId, String userName, String scope, LocalDateTime loginDate,
+                                    Duration duration, boolean openId) {
         RefreshTokenEntity refreshToken = new RefreshTokenEntity();
         refreshToken.setClientId(clientId);
         LocalDateTime creationDate = LocalDateTime.now();
@@ -119,23 +125,7 @@ public class CodeFactory {
         refreshToken.setRefreshToken(RandomStringUtils.randomAlphanumeric(24));
         refreshToken.setUsed(false);
         refreshTokenRepository.saveAndFlush(refreshToken);
-        return refreshToken;
-    }
-
-    public OAuthToken createOAuthToken(AccessTokenEntity accessToken, RefreshTokenEntity refreshToken, String idToken) {
-        OAuthToken oAuthToken = new OAuthToken();
-        oAuthToken.setAccessToken(accessToken.getAssessToken());
-        if (refreshToken != null) {
-            oAuthToken.setRefreshToken(refreshToken.getRefreshToken());
-        }
-        oAuthToken.setTokenType("bearer");
-        oAuthToken.setScope(accessToken.getScope());
-        long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
-        oAuthToken.setExpiresIn(expIn);
-        if (StringUtils.hasText(idToken)) {
-            oAuthToken.setIdToken(idToken);
-        }
-        return oAuthToken;
+        return new RefreshToken(refreshToken.getRefreshToken());
     }
 
     public String createCookieToken(String username, LocalDateTime loginTime) {
@@ -176,8 +166,8 @@ public class CodeFactory {
         }
     }
 
-    public String createIDToken(Profile profile, LocalDateTime loginTime, String nonce, String clientId,
-                                Duration idTokenValidity, List<String> scope, String accessToken, String accessCode) {
+    JWT createIDToken(Profile profile, LocalDateTime loginTime, String nonce, String clientId,
+                      Duration idTokenValidity, List<String> scope, String accessToken, String accessCode) {
         try {
             LocalDateTime issueTime = LocalDateTime.now();
             JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder()
@@ -209,7 +199,7 @@ public class CodeFactory {
             SignedJWT signedJWT = new SignedJWT(header, claimsSetBuilder.build());
             RSASSASigner signer = new RSASSASigner(signingKey);
             signedJWT.sign(signer);
-            return signedJWT.serialize();
+            return signedJWT;
         } catch (JOSEException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }

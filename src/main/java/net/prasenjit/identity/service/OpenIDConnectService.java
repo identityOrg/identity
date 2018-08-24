@@ -1,14 +1,10 @@
 package net.prasenjit.identity.service;
 
 import com.nimbusds.jwt.JWT;
-import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.oauth2.sdk.*;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.*;
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.AccessTokenEntity;
-import net.prasenjit.identity.entity.AuthorizationCodeEntity;
 import net.prasenjit.identity.entity.UserConsent;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.ConsentModel;
@@ -24,10 +20,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.text.ParseException;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Optional;
 
@@ -165,34 +159,25 @@ public class OpenIDConnectService {
                                                      UserAuthenticationToken authentication, Profile principal,
                                                      Client client, Scope filteredScope) {
         AuthorizationCode code = null;
-        AccessToken accessToken = null;
-        JWT idToken = null;
 
         LocalDateTime loginTime = authentication.getLoginTime();
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
             String stateValue = request.getState() == null ? null : request.getState().getValue();
-            AuthorizationCodeEntity authorizationCode = codeFactory.createAuthorizationCode(
-                    client.getClientId(), request.getRedirectionURI().toString(),
-                    filteredScope.toString(), principal.getUsername(), stateValue,
-                    Duration.ofMinutes(10), loginTime, false);
-            code = new AuthorizationCode(authorizationCode.getAuthorizationCode());
+            code = codeFactory.createAuthorizationCode(client.getClientId(), request.getRedirectionURI().toString(),
+                    filteredScope.toString(), principal.getUsername(), stateValue, Duration.ofMinutes(10),
+                    loginTime, true);
         }
+        BearerAccessToken accessToken = null;
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {
-            AccessTokenEntity token = codeFactory.createAccessToken(principal, client.getClientId(),
+            accessToken = codeFactory.createAccessToken(principal, client.getClientId(),
                     client.getAccessTokenValidity(), filteredScope.toString(), loginTime);
-            long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), token.getExpiryDate());
-            accessToken = new BearerAccessToken(token.getAssessToken(), expIn, filteredScope);
         }
+        JWT idToken = null;
         if (request.getResponseType().contains("id_token")) {
             String at = accessToken == null ? null : accessToken.getValue();
             String ac = code == null ? null : code.getValue();
-            String token = codeFactory.createIDToken(principal, loginTime, request.getNonce().getValue(),
+            idToken = codeFactory.createIDToken(principal, loginTime, request.getNonce().getValue(),
                     client.getClientId(), client.getAccessTokenValidity(), filteredScope.toStringList(), at, ac);
-            try {
-                idToken = JWTParser.parse(token);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
         }
         return new AuthenticationSuccessResponse(request.getRedirectionURI(), code, idToken, accessToken,
                 request.getState(), null, request.getResponseMode());
