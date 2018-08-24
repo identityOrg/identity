@@ -9,15 +9,17 @@ import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.Tokens;
+import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
+import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.RefreshToken;
+import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.entity.UserConsent;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.model.Profile;
-import net.prasenjit.identity.repository.ClientRepository;
-import net.prasenjit.identity.repository.UserConsentRepository;
+import net.prasenjit.identity.repository.*;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
@@ -28,6 +30,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.net.URI;
 import java.time.Duration;
@@ -44,6 +47,9 @@ public class OAuth2Service1 {
     private final UserConsentRepository userConsentRepository;
     private final CodeFactory codeFactory;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
+    private final AuthorizationCodeRepository codeRepository;
 
     public AuthorizationResponse processAuthorization(ConsentModel consentModel,
                                                       AuthorizationRequest request) {
@@ -172,6 +178,9 @@ public class OAuth2Service1 {
             Optional<Client> optionalClient = clientRepository.findById(clientId.getValue());
             if (optionalClient.isPresent()) {
                 client = optionalClient.get();
+                if (!StringUtils.hasText(client.getClientSecret())) {
+                    return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED);
+                }
             } else {
                 return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED);
             }
@@ -199,24 +208,65 @@ public class OAuth2Service1 {
             client = clientRepository.getOne(clientProfile.getUsername());
         }
         if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.AUTHORIZATION_CODE)) {
-            return handleGrantInternal(client, tokenRequest,
+            return handleGrantInternal(client,
                     ((AuthorizationCodeGrant) tokenRequest.getAuthorizationGrant()));
         } else if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.CLIENT_CREDENTIALS)) {
-            return handleGrantInternal(client, tokenRequest,
-                    ((ClientCredentialsGrant) tokenRequest.getAuthorizationGrant()));
+            return handleGrantInternal(client, tokenRequest);
         } else if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.PASSWORD)) {
             return handleGrantInternal(client, tokenRequest,
                     ((ResourceOwnerPasswordCredentialsGrant) tokenRequest.getAuthorizationGrant()));
         } else if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.REFRESH_TOKEN)) {
-            return handleGrantInternal(client, tokenRequest,
+            return handleGrantInternal(client,
                     ((RefreshTokenGrant) tokenRequest.getAuthorizationGrant()));
         } else {
             return new TokenErrorResponse(OAuth2Error.INVALID_GRANT);
         }
     }
 
-    private TokenResponse handleGrantInternal(Client client, TokenRequest request, RefreshTokenGrant grant) {
-        return new TokenErrorResponse(OAuth2Error.INVALID_GRANT);
+    private TokenResponse handleGrantInternal(Client client, RefreshTokenGrant grant) {
+        Optional<RefreshToken> tokenOptional = refreshTokenRepository.findById(grant.getRefreshToken().getValue());
+        if (tokenOptional.isPresent()) {
+            if (tokenOptional.get().isValid()) {
+                Optional<User> userOptional = userRepository.findById(tokenOptional.get().getUsername());
+                if (userOptional.isPresent()) {
+                    if (userOptional.get().isValid()) {
+                        tokenOptional.get().setUsed(true);
+                        Profile userProfile = Profile.create(userOptional.get());
+                        net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(userProfile,
+                                client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope(),
+                                tokenOptional.get().getLoginDate());
+                        RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),
+                                userOptional.get().getUsername(), tokenOptional.get().getScope(),
+                                tokenOptional.get().getLoginDate(), client.getRefreshTokenValidity(),
+                                tokenOptional.get().isOpenId());
+
+                        long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+                        Scope approvedScope = Scope.parse(accessToken.getScope());
+                        AccessToken at = new BearerAccessToken(accessToken.getAssessToken(), lifetime,
+                                approvedScope);
+                        com.nimbusds.oauth2.sdk.token.RefreshToken rt =
+                                new com.nimbusds.oauth2.sdk.token.RefreshToken(refreshToken1.getRefreshToken());
+                        if (tokenOptional.get().isOpenId()) {
+                            String idToken = codeFactory.createIDToken(userProfile, tokenOptional.get().getLoginDate(), null,
+                                    client.getClientId(), client.getAccessTokenValidity(), approvedScope.toStringList(),
+                                    at.getValue(), null);
+                            OIDCTokens tokens = new OIDCTokens(idToken, at, rt);
+                            return new OIDCTokenResponse(tokens);
+                        } else {
+                            Tokens tokens = new Tokens(at, rt);
+                            return new AccessTokenResponse(tokens);
+                        }
+                    } else {
+                        return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid user"));
+                    }
+                } else {
+                    return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Associated user not found"));
+                }
+            } else {
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Expired refresh token"));
+            }
+        }
+        return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid refresh token"));
     }
 
     private TokenResponse handleGrantInternal(Client client, TokenRequest request,
@@ -245,11 +295,74 @@ public class OAuth2Service1 {
         }
     }
 
-    private TokenResponse handleGrantInternal(Client client, TokenRequest request, ClientCredentialsGrant grant) {
-        return new TokenErrorResponse(OAuth2Error.INVALID_GRANT);
+    private TokenResponse handleGrantInternal(Client client, TokenRequest request) {
+        Scope filteredScope = ValidationUtils.filterScope(client.getApprovedScopes(), request.getScope());
+        net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(Profile.create(client), client.getClientId(),
+                client.getAccessTokenValidity(), filteredScope.toString(), LocalDateTime.now());
+        long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+        AccessToken accessToken1 = new BearerAccessToken(accessToken.getAssessToken(), lifetime, filteredScope);
+
+        Tokens tokens = new Tokens(accessToken1, null);
+        return new AccessTokenResponse(tokens);
     }
 
-    private TokenResponse handleGrantInternal(Client client, TokenRequest request, AuthorizationCodeGrant grant) {
-        return new TokenErrorResponse(OAuth2Error.INVALID_GRANT);
+    private TokenResponse handleGrantInternal(Client client, AuthorizationCodeGrant grant) {
+        Optional<net.prasenjit.identity.entity.AuthorizationCode> authorizationCode = codeRepository.findByAuthorizationCode(grant.getAuthorizationCode().getValue());
+        if (authorizationCode.isPresent()) {
+            if (!authorizationCode.get().isUsed()) {
+                if (authorizationCode.get().getClientId().equals(client.getClientId())) {
+                    if (!StringUtils.hasText(authorizationCode.get().getReturnUrl())
+                            || (grant.getRedirectionURI() != null &&
+                            authorizationCode.get().getReturnUrl().equals(grant.getRedirectionURI().toString()))) {
+                        if (authorizationCode.get().isValid()) {
+                            authorizationCode.get().setUsed(true);
+                            Optional<User> associatedUser = userRepository.findById(authorizationCode.get().getUsername());
+                            if (associatedUser.isPresent()) {
+                                Scope approvedScope = Scope.parse(authorizationCode.get().getScope());
+                                Profile userProfile = Profile.create(associatedUser.get());
+                                com.nimbusds.oauth2.sdk.token.RefreshToken rt = null;
+                                AccessToken at;
+
+                                net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(
+                                        userProfile, client.getClientId(), client.getAccessTokenValidity(),
+                                        approvedScope.toString(), authorizationCode.get().getLoginDate());
+                                long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+                                at = new BearerAccessToken(accessToken.getAssessToken(), lifetime, approvedScope);
+
+
+                                RefreshToken refreshToken;
+                                if (client.supportsGrant(net.prasenjit.identity.security.GrantType.REFRESH_TOKEN)) {
+                                    refreshToken = codeFactory.createRefreshToken(client.getClientId(),
+                                            associatedUser.get().getUsername(),
+                                            accessToken.getScope(), authorizationCode.get().getLoginDate(),
+                                            client.getRefreshTokenValidity(), authorizationCode.get().isOpenId());
+                                    rt = new com.nimbusds.oauth2.sdk.token.RefreshToken(refreshToken.getRefreshToken());
+                                }
+
+                                String idToken;
+                                if (authorizationCode.get().isOpenId()) {
+                                    idToken = codeFactory.createIDToken(userProfile,
+                                            authorizationCode.get().getLoginDate(), null,
+                                            client.getClientId(), client.getAccessTokenValidity(),
+                                            approvedScope.toStringList(), accessToken.getAssessToken(),
+                                            null);
+                                    OIDCTokens tokens = new OIDCTokens(idToken, at, rt);
+                                    return new OIDCTokenResponse(tokens);
+                                } else {
+                                    Tokens tokens = new Tokens(at, rt);
+                                    return new AccessTokenResponse(tokens);
+                                }
+                            }
+                            return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid user"));
+                        }
+                        return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Code expired"));
+                    }
+                    return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Redirect URI did not match"));
+                }
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid code"));
+            }
+            return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Code used"));
+        }
+        return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid code"));
     }
 }

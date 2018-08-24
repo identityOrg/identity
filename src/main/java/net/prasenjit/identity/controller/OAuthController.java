@@ -85,7 +85,7 @@ public class OAuthController {
         }
     }
 
-    @PostMapping(value = "token", params = "grant_type=client_credentials")
+    @PostMapping(value = "token2", params = "grant_type=client_credentials")
     @ResponseBody
     public OAuthToken clientCredentialGrantToken(@RequestParam(value = "scope", defaultValue = "") String scope,
                                                  Authentication clientAuth) {
@@ -98,7 +98,7 @@ public class OAuthController {
         }
     }
 
-    @PostMapping(value = "token", params = "grant_type=authorization_code")
+    @PostMapping(value = "token2", params = "grant_type=authorization_code")
     @ResponseBody
     public OAuthToken authorizationCodeGrantToken(@RequestParam(value = "code", required = false) String code,
                                                   @RequestParam(value = "redirect_uri", required = false) String redirectUri,
@@ -109,7 +109,7 @@ public class OAuthController {
         return oAuth2Service.processAuthorizationCodeGrantToken(client, code, redirectUri, clientId);
     }
 
-    @PostMapping(value = "token", params = "grant_type=refresh_token")
+    @PostMapping(value = "token2", params = "grant_type=refresh_token")
     @ResponseBody
     public OAuthToken refreshTokenGrantToken(
             @RequestParam(value = "refresh_token", required = false) String refreshToken,
