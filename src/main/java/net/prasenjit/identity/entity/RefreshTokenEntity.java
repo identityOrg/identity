@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "T_REFRESH_TOKEN")
-public class RefreshToken {
+public class RefreshTokenEntity {
 
     @Id
     @Column(name = "REFRESH_TOKEN", length = 50, nullable = false, unique = true)

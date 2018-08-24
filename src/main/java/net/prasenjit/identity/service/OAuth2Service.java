@@ -1,6 +1,7 @@
 package net.prasenjit.identity.service;
 
 import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
@@ -12,10 +13,7 @@ import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
 import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.AccessTokenEntity;
-import net.prasenjit.identity.entity.RefreshToken;
-import net.prasenjit.identity.entity.User;
-import net.prasenjit.identity.entity.UserConsent;
+import net.prasenjit.identity.entity.*;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.IdentityViewResponse;
@@ -152,7 +150,7 @@ public class OAuth2Service {
         LocalDateTime loginTime = authentication.getLoginTime();
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
             String value = request.getState() != null ? request.getState().getValue() : null;
-            net.prasenjit.identity.entity.AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(
+            AuthorizationCodeEntity authorizationCode = codeFactory.createAuthorizationCode(
                     client.getClientId(), tokenRedirectUri,
                     filteredScope.toString(), principal.getUsername(), value,
                     Duration.ofMinutes(10), loginTime, false);
@@ -231,7 +229,7 @@ public class OAuth2Service {
     }
 
     private TokenResponse handleGrantInternal(Client client, RefreshTokenGrant grant) {
-        Optional<RefreshToken> tokenOptional = refreshTokenRepository.findById(grant.getRefreshToken().getValue());
+        Optional<RefreshTokenEntity> tokenOptional = refreshTokenRepository.findById(grant.getRefreshToken().getValue());
         if (tokenOptional.isPresent()) {
             if (tokenOptional.get().isValid()) {
                 Optional<User> userOptional = userRepository.findById(tokenOptional.get().getUsername());
@@ -242,7 +240,7 @@ public class OAuth2Service {
                         AccessTokenEntity accessToken = codeFactory.createAccessToken(userProfile,
                                 client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope(),
                                 tokenOptional.get().getLoginDate());
-                        RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),
+                        RefreshTokenEntity refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),
                                 userOptional.get().getUsername(), tokenOptional.get().getScope(),
                                 tokenOptional.get().getLoginDate(), client.getRefreshTokenValidity(),
                                 tokenOptional.get().isOpenId());
@@ -290,7 +288,7 @@ public class OAuth2Service {
             AccessToken accessToken1 = new BearerAccessToken(accessToken.getAssessToken(), lifetime, filteredScopes);
             com.nimbusds.oauth2.sdk.token.RefreshToken refreshToken1 = null;
             if (!client.supportsGrant(net.prasenjit.identity.security.GrantType.REFRESH_TOKEN)) {
-                RefreshToken refreshToken = codeFactory.createRefreshToken(client.getClientId(), userProfile.getUsername(),
+                RefreshTokenEntity refreshToken = codeFactory.createRefreshToken(client.getClientId(), userProfile.getUsername(),
                         filteredScopes.toString(), LocalDateTime.now(), client.getRefreshTokenValidity(), false);
                 refreshToken1 = new com.nimbusds.oauth2.sdk.token.RefreshToken(refreshToken.getRefreshToken());
             }
@@ -314,7 +312,7 @@ public class OAuth2Service {
     }
 
     private TokenResponse handleGrantInternal(Client client, AuthorizationCodeGrant grant) {
-        Optional<net.prasenjit.identity.entity.AuthorizationCode> authorizationCode = codeRepository.findByAuthorizationCode(grant.getAuthorizationCode().getValue());
+        Optional<AuthorizationCodeEntity> authorizationCode = codeRepository.findByAuthorizationCode(grant.getAuthorizationCode().getValue());
         if (authorizationCode.isPresent()) {
             if (!authorizationCode.get().isUsed()) {
                 if (authorizationCode.get().getClientId().equals(client.getClientId())) {
@@ -337,7 +335,7 @@ public class OAuth2Service {
                                 at = new BearerAccessToken(accessToken.getAssessToken(), lifetime, approvedScope);
 
 
-                                RefreshToken refreshToken;
+                                RefreshTokenEntity refreshToken;
                                 if (client.supportsGrant(net.prasenjit.identity.security.GrantType.REFRESH_TOKEN)) {
                                     refreshToken = codeFactory.createRefreshToken(client.getClientId(),
                                             associatedUser.get().getUsername(),

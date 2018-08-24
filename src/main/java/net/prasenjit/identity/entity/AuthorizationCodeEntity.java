@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "T_AUTHORIZATION_CODE")
-public class AuthorizationCode {
+public class AuthorizationCodeEntity {
     @Id
     @Column(name = "AUTHORIZATION_CODE", length = 50, nullable = false, unique = true)
     private String authorizationCode;

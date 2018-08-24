@@ -11,9 +11,9 @@ import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.store.CryptoKeyFactory;
 import net.prasenjit.identity.entity.AccessTokenEntity;
-import net.prasenjit.identity.entity.AuthorizationCode;
+import net.prasenjit.identity.entity.AuthorizationCodeEntity;
 import net.prasenjit.identity.entity.JWKKey;
-import net.prasenjit.identity.entity.RefreshToken;
+import net.prasenjit.identity.entity.RefreshTokenEntity;
 import net.prasenjit.identity.model.OAuthToken;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.properties.IdentityProperties;
@@ -69,10 +69,10 @@ public class CodeFactory {
         macVerifier = new MACVerifier(mainKey);
     }
 
-    public AuthorizationCode createAuthorizationCode(String clientId, String returnUrl, String scope, String userName,
-                                                     String state, Duration validity, LocalDateTime loginDate,
-                                                     boolean openId) {
-        AuthorizationCode authorizationCode = new AuthorizationCode();
+    public AuthorizationCodeEntity createAuthorizationCode(String clientId, String returnUrl, String scope, String userName,
+                                                           String state, Duration validity, LocalDateTime loginDate,
+                                                           boolean openId) {
+        AuthorizationCodeEntity authorizationCode = new AuthorizationCodeEntity();
         authorizationCode.setClientId(clientId);
         LocalDateTime creationDate = LocalDateTime.now();
         authorizationCode.setCreationDate(creationDate);
@@ -105,9 +105,9 @@ public class CodeFactory {
         return accessToken;
     }
 
-    public RefreshToken createRefreshToken(String clientId, String userName, String scope, LocalDateTime loginDate,
-                                           Duration duration, boolean openId) {
-        RefreshToken refreshToken = new RefreshToken();
+    public RefreshTokenEntity createRefreshToken(String clientId, String userName, String scope, LocalDateTime loginDate,
+                                                 Duration duration, boolean openId) {
+        RefreshTokenEntity refreshToken = new RefreshTokenEntity();
         refreshToken.setClientId(clientId);
         LocalDateTime creationDate = LocalDateTime.now();
         refreshToken.setCreationDate(creationDate);
@@ -122,7 +122,7 @@ public class CodeFactory {
         return refreshToken;
     }
 
-    public OAuthToken createOAuthToken(AccessTokenEntity accessToken, RefreshToken refreshToken, String idToken) {
+    public OAuthToken createOAuthToken(AccessTokenEntity accessToken, RefreshTokenEntity refreshToken, String idToken) {
         OAuthToken oAuthToken = new OAuthToken();
         oAuthToken.setAccessToken(accessToken.getAssessToken());
         if (refreshToken != null) {
