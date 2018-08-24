@@ -25,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.htmlunit.MockMvcWebClientBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -41,6 +42,8 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -79,7 +82,7 @@ public abstract class HtmlPageTestBase {
                 .contextPath("")
                 // By default MockMvc is used for localhost only;
                 // the following will use MockMvc for example.com and example.org as well
-                // .useMockMvcForHosts("example.com","example.org")
+                .useMockMvcForHosts("oid.prasenjit.net")
                 .build();
     }
 
@@ -100,14 +103,13 @@ public abstract class HtmlPageTestBase {
     }
 
     protected URI followForError(URI uri) throws Exception {
-        try {
-            Page page = webClient.getPage(uri.toURL());
-            System.out.println(page);
-        } catch (FailingHttpStatusCodeException ex) {
-            assertEquals(404, ex.getStatusCode());
-            return ex.getResponse().getWebRequest().getUrl().toURI();
-        }
-        throw new RuntimeException("Redirection did not happen");
+
+        MvcResult mvcResult = mockMvc.perform(get(uri.getPath() + "?" + uri.getQuery()))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+        String location = mvcResult.getResponse().getHeader("Location");
+
+        return URI.create(location);
     }
 
     protected void createUserConsent(String username, String approvedScope) {
