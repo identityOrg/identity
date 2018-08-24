@@ -1,7 +1,7 @@
 package net.prasenjit.identity.security.bearer;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.AccessToken;
+import net.prasenjit.identity.entity.AccessTokenEntity;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.repository.AccessTokenRepository;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -24,7 +24,7 @@ public class BearerAuthenticationProvider implements AuthenticationProvider {
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         if (supports(authentication.getClass())) {
             String credentials = (String) authentication.getCredentials();
-            Optional<AccessToken> tokenOptional = accessTokenRepository.findById(credentials);
+            Optional<AccessTokenEntity> tokenOptional = accessTokenRepository.findById(credentials);
             if (tokenOptional.isPresent()) {
                 if (tokenOptional.get().isValid()) {
                     return createSuccessAuthentication(tokenOptional.get(), authentication);
@@ -39,7 +39,7 @@ public class BearerAuthenticationProvider implements AuthenticationProvider {
         return BearerAuthenticationToken.class.isAssignableFrom(authentication);
     }
 
-    private Authentication createSuccessAuthentication(AccessToken accessToken, Authentication authentication) {
+    private Authentication createSuccessAuthentication(AccessTokenEntity accessToken, Authentication authentication) {
         String[] scopes = StringUtils.delimitedListToStringArray(accessToken.getScope(), " ");
         List<Profile.SimpleGrantedAuthority> authorities = Stream.of(scopes)
                 .map(Profile.SimpleGrantedAuthority::new)

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "T_ACCESS_TOKEN")
-public class AccessToken {
+public class AccessTokenEntity {
     @Id
     @Column(name = "ACCESS_TOKEN", length = 50)
     private String assessToken;

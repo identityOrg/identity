@@ -10,7 +10,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.store.CryptoKeyFactory;
-import net.prasenjit.identity.entity.AccessToken;
+import net.prasenjit.identity.entity.AccessTokenEntity;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.JWKKey;
 import net.prasenjit.identity.entity.RefreshToken;
@@ -89,9 +89,9 @@ public class CodeFactory {
         return authorizationCode;
     }
 
-    public AccessToken createAccessToken(Profile user, String clientId, Duration duration,
-                                         String scope, LocalDateTime loginDate) {
-        AccessToken accessToken = new AccessToken();
+    public AccessTokenEntity createAccessToken(Profile user, String clientId, Duration duration,
+                                               String scope, LocalDateTime loginDate) {
+        AccessTokenEntity accessToken = new AccessTokenEntity();
         accessToken.setAssessToken(RandomStringUtils.randomAlphanumeric(24));
         accessToken.setUsername(user.getUsername());
         LocalDateTime creationDate = LocalDateTime.now();
@@ -122,7 +122,7 @@ public class CodeFactory {
         return refreshToken;
     }
 
-    public OAuthToken createOAuthToken(AccessToken accessToken, RefreshToken refreshToken, String idToken) {
+    public OAuthToken createOAuthToken(AccessTokenEntity accessToken, RefreshToken refreshToken, String idToken) {
         OAuthToken oAuthToken = new OAuthToken();
         oAuthToken.setAccessToken(accessToken.getAssessToken());
         if (refreshToken != null) {

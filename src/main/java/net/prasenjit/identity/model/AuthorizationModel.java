@@ -2,7 +2,7 @@ package net.prasenjit.identity.model;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.prasenjit.identity.entity.AccessToken;
+import net.prasenjit.identity.entity.AccessTokenEntity;
 import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.client.Client;
 import org.springframework.util.StringUtils;
@@ -28,7 +28,7 @@ public class AuthorizationModel {
     private String redirectUri;
     private boolean redirectUriSet = false;
     private Map<String, Boolean> filteredScopes = new HashMap<>();
-    private AccessToken accessToken;
+    private AccessTokenEntity accessToken;
     private AuthorizationCode authorizationCode;
     private String idToken;
     private boolean loginRequired;

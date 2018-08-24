@@ -12,6 +12,7 @@ import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
 import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.entity.AccessTokenEntity;
 import net.prasenjit.identity.entity.RefreshToken;
 import net.prasenjit.identity.entity.User;
 import net.prasenjit.identity.entity.UserConsent;
@@ -158,7 +159,7 @@ public class OAuth2Service {
             code = new AuthorizationCode(authorizationCode.getAuthorizationCode());
         }
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {
-            net.prasenjit.identity.entity.AccessToken token = codeFactory.createAccessToken(principal,
+            AccessTokenEntity token = codeFactory.createAccessToken(principal,
                     client.getClientId(), client.getAccessTokenValidity(), filteredScope.toString(), loginTime);
             long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), token.getExpiryDate());
             accessToken = new BearerAccessToken(token.getAssessToken(), expIn, filteredScope);
@@ -238,7 +239,7 @@ public class OAuth2Service {
                     if (userOptional.get().isValid()) {
                         tokenOptional.get().setUsed(true);
                         Profile userProfile = Profile.create(userOptional.get());
-                        net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(userProfile,
+                        AccessTokenEntity accessToken = codeFactory.createAccessToken(userProfile,
                                 client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope(),
                                 tokenOptional.get().getLoginDate());
                         RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),
@@ -283,7 +284,7 @@ public class OAuth2Service {
             authToken = authenticationManager.authenticate(authToken);
             Profile userProfile = (Profile) authToken.getPrincipal();
             Scope filteredScopes = ValidationUtils.filterScope(client.getApprovedScopes(), request.getScope());
-            net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(userProfile,
+            AccessTokenEntity accessToken = codeFactory.createAccessToken(userProfile,
                     client.getClientId(), client.getAccessTokenValidity(), filteredScopes.toString(), LocalDateTime.now());
             long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
             AccessToken accessToken1 = new BearerAccessToken(accessToken.getAssessToken(), lifetime, filteredScopes);
@@ -303,7 +304,7 @@ public class OAuth2Service {
 
     private TokenResponse handleGrantInternal(Client client, TokenRequest request) {
         Scope filteredScope = ValidationUtils.filterScope(client.getApprovedScopes(), request.getScope());
-        net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(Profile.create(client), client.getClientId(),
+        AccessTokenEntity accessToken = codeFactory.createAccessToken(Profile.create(client), client.getClientId(),
                 client.getAccessTokenValidity(), filteredScope.toString(), LocalDateTime.now());
         long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
         AccessToken accessToken1 = new BearerAccessToken(accessToken.getAssessToken(), lifetime, filteredScope);
@@ -329,7 +330,7 @@ public class OAuth2Service {
                                 com.nimbusds.oauth2.sdk.token.RefreshToken rt = null;
                                 AccessToken at;
 
-                                net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(
+                                AccessTokenEntity accessToken = codeFactory.createAccessToken(
                                         userProfile, client.getClientId(), client.getAccessTokenValidity(),
                                         approvedScope.toString(), authorizationCode.get().getLoginDate());
                                 long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());

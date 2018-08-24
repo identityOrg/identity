@@ -1,7 +1,7 @@
 package net.prasenjit.identity.e2e;
 
 import net.prasenjit.identity.HtmlPageTestBase;
-import net.prasenjit.identity.entity.AccessToken;
+import net.prasenjit.identity.entity.AccessTokenEntity;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.service.ClientService;
 import net.prasenjit.identity.service.CodeFactory;
@@ -31,7 +31,7 @@ public class E2eTest extends HtmlPageTestBase {
     public void testEncryptionDecryption() throws Exception {
 
         UserDetails client = clientService.loadUserByUsername("client");
-        AccessToken createAccessToken = codeFactory.createAccessToken(Profile.create(client), "client", Duration.ofMinutes(1),
+        AccessTokenEntity createAccessToken = codeFactory.createAccessToken(Profile.create(client), "client", Duration.ofMinutes(1),
                 "openid", LocalDateTime.now());
 
         String token = createAccessToken.getAssessToken();

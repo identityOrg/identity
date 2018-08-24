@@ -7,6 +7,7 @@ import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.*;
 import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.entity.AccessTokenEntity;
 import net.prasenjit.identity.entity.UserConsent;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.ConsentModel;
@@ -176,7 +177,7 @@ public class OpenIDConnectService {
             code = new AuthorizationCode(authorizationCode.getAuthorizationCode());
         }
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {
-            net.prasenjit.identity.entity.AccessToken token = codeFactory.createAccessToken(principal, client.getClientId(),
+            AccessTokenEntity token = codeFactory.createAccessToken(principal, client.getClientId(),
                     client.getAccessTokenValidity(), filteredScope.toString(), loginTime);
             long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), token.getExpiryDate());
             accessToken = new BearerAccessToken(token.getAssessToken(), expIn, filteredScope);
