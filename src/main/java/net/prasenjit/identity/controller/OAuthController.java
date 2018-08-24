@@ -12,7 +12,9 @@ import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.service.OAuth2Service;
 import net.prasenjit.identity.service.OpenIDConnectService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,7 +39,7 @@ public class OAuthController {
 
     @RequestMapping(value = "token", method = RequestMethod.POST, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ResponseBody
-    public JSONObject handleToken(@RequestBody String body, @RequestHeader("Authorization") String authz) throws MalformedURLException {
+    public ResponseEntity<JSONObject> handleToken(@RequestBody String body, @RequestHeader("Authorization") String authz) throws MalformedURLException {
         URI authReqUri = ServletUriComponentsBuilder.fromCurrentRequest().build(true).toUri();
         HTTPRequest httpRequest = new HTTPRequest(HTTPRequest.Method.POST, authReqUri.toURL());
         httpRequest.setContentType(CommonContentTypes.APPLICATION_URLENCODED);
@@ -55,12 +57,13 @@ public class OAuthController {
             JSONObject jsonObject;
             if (tokenResponse.indicatesSuccess()) {
                 jsonObject = tokenResponse.toSuccessResponse().toJSONObject();
+                return ResponseEntity.status(HttpStatus.OK).body(jsonObject);
             } else {
                 jsonObject = tokenResponse.toErrorResponse().toJSONObject();
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(jsonObject);
             }
-            return jsonObject;
         } catch (ParseException e) {
-            return e.getErrorObject().toJSONObject();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getErrorObject().toJSONObject());
         }
     }
 

@@ -78,8 +78,10 @@ public class OAuth2Service {
                             request.getState(), request.getResponseMode());
                 }
                 redirectUri = request.getRedirectionURI();
-            } else {
+            } else if (redirectUris.length == 1) {
                 redirectUri = URI.create(redirectUris[0]);
+            } else {
+                return new IdentityViewResponse(OAuth2Error.INVALID_REQUEST.setDescription("Redirect URI must be provided"));
             }
             consentModel.setRedirectUriUsed(redirectUri);
             // Redirect URI validation end
@@ -142,11 +144,13 @@ public class OAuth2Service {
                                                      URI redirectUri, Scope filteredScope) {
         AuthorizationCode code = null;
         AccessToken accessToken = null;
+        String tokenRedirectUri = request.getRedirectionURI() == null ? null : request.getRedirectionURI().toString();
+
         LocalDateTime loginTime = authentication.getLoginTime();
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
             String value = request.getState() != null ? request.getState().getValue() : null;
             net.prasenjit.identity.entity.AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(
-                    client.getClientId(), redirectUri.toString(),
+                    client.getClientId(), tokenRedirectUri,
                     filteredScope.toString(), principal.getUsername(), value,
                     Duration.ofMinutes(10), loginTime, false);
             code = new AuthorizationCode(authorizationCode.getAuthorizationCode());
