@@ -8,14 +8,9 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
-import net.prasenjit.identity.entity.client.Client;
-import net.prasenjit.identity.exception.UnauthenticatedClientException;
 import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.IdentityViewResponse;
-import net.prasenjit.identity.model.OAuthToken;
-import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.service.OAuth2Service;
-import net.prasenjit.identity.service.OAuth2Service1;
 import net.prasenjit.identity.service.OpenIDConnectService;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -37,9 +32,8 @@ import static net.prasenjit.identity.properties.ApplicationConstants.PREVIOUS_UR
 @RequiredArgsConstructor
 public class OAuthController {
 
-    private final OAuth2Service oAuth2Service;
     private final OpenIDConnectService openIDConnectService;
-    private final OAuth2Service1 oAuth2Service1;
+    private final OAuth2Service oAuth2Service;
 
     @RequestMapping(value = "token", method = RequestMethod.POST, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ResponseBody
@@ -57,7 +51,7 @@ public class OAuthController {
         try {
             tokenRequest = TokenRequest.parse(httpRequest);
 
-            TokenResponse tokenResponse = oAuth2Service1.handleTokenRequest(tokenRequest);
+            TokenResponse tokenResponse = oAuth2Service.handleTokenRequest(tokenRequest);
             JSONObject jsonObject;
             if (tokenResponse.indicatesSuccess()) {
                 jsonObject = tokenResponse.toSuccessResponse().toJSONObject();
@@ -70,55 +64,6 @@ public class OAuthController {
         }
     }
 
-    @PostMapping(value = "token2", params = "grant_type=password")
-    @ResponseBody
-    public OAuthToken passwordGrantToken(@RequestParam(value = "username") String username,
-                                         @RequestParam(value = "password") String password,
-                                         @RequestParam(value = "scope", defaultValue = "") String scope,
-                                         Authentication clientAuth) {
-        log.info("Processing password grant");
-        Profile client = extractPrincipal(clientAuth, Profile.class);
-        if (client != null) {
-            return oAuth2Service.processPasswordGrant(client, username, password, scope);
-        } else {
-            throw new UnauthenticatedClientException("unauthorized_client", "client not authenticated");
-        }
-    }
-
-    @PostMapping(value = "token2", params = "grant_type=client_credentials")
-    @ResponseBody
-    public OAuthToken clientCredentialGrantToken(@RequestParam(value = "scope", defaultValue = "") String scope,
-                                                 Authentication clientAuth) {
-        log.info("Processing password grant");
-        Profile client = extractPrincipal(clientAuth, Profile.class);
-        if (client != null) {
-            return oAuth2Service.processClientCredentialsGrant(client, scope);
-        } else {
-            throw new UnauthenticatedClientException("unauthorized_client", "client not authenticated");
-        }
-    }
-
-    @PostMapping(value = "token2", params = "grant_type=authorization_code")
-    @ResponseBody
-    public OAuthToken authorizationCodeGrantToken(@RequestParam(value = "code", required = false) String code,
-                                                  @RequestParam(value = "redirect_uri", required = false) String redirectUri,
-                                                  @RequestParam(value = "client_id", required = false) String clientId,
-                                                  Authentication authentication) {
-        log.info("Processing password grant");
-        Profile client = extractPrincipal(authentication, Profile.class);
-        return oAuth2Service.processAuthorizationCodeGrantToken(client, code, redirectUri, clientId);
-    }
-
-    @PostMapping(value = "token2", params = "grant_type=refresh_token")
-    @ResponseBody
-    public OAuthToken refreshTokenGrantToken(
-            @RequestParam(value = "refresh_token", required = false) String refreshToken,
-            Authentication authentication) {
-        log.info("Processing refresh token grant");
-        Client client = extractPrincipal(authentication, Client.class);
-        return oAuth2Service.processRefreshTokenGrantToken(client, refreshToken);
-    }
-
     @RequestMapping(value = "authorized", method = RequestMethod.POST)
     public String submitConsent(@ModelAttribute ConsentModel consentModel, Model model, HttpSession httpSession) {
         AuthorizationResponse response;
@@ -129,7 +74,7 @@ public class OAuthController {
                 response = openIDConnectService.processAuthentication(consentModel, authenticationRequest);
             } else {
                 AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(authReqUri);
-                response = oAuth2Service1.processAuthorization(consentModel, authorizationRequest);
+                response = oAuth2Service.processAuthorization(consentModel, authorizationRequest);
             }
         } catch (ParseException e) {
             response = generateParseError(e);
@@ -155,7 +100,7 @@ public class OAuthController {
                     httpSession.setAttribute(PREVIOUS_URL, authReqUri.toString());
                     return "redirect:/login";
                 }
-                response = oAuth2Service1.processAuthorization(consentModel, authorizationRequest);
+                response = oAuth2Service.processAuthorization(consentModel, authorizationRequest);
             }
         } catch (ParseException e) {
             response = generateParseError(e);
@@ -169,7 +114,7 @@ public class OAuthController {
             response = new AuthorizationErrorResponse(e.getRedirectionURI(),
                     e.getErrorObject(), e.getState(), e.getResponseMode());
         } else if (e.getClientID() != null) {
-            URI redirectUri = oAuth2Service1.getRedirectUriForClientId(e.getClientID().getValue());
+            URI redirectUri = oAuth2Service.getRedirectUriForClientId(e.getClientID().getValue());
             if (redirectUri != null) {
                 response = new AuthorizationErrorResponse(redirectUri,
                         e.getErrorObject(), e.getState(), e.getResponseMode());
@@ -213,16 +158,5 @@ public class OAuthController {
             }
             return "redirect:" + redirect.toString();
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T extractPrincipal(Authentication authentication, Class<T> userClass) {
-        if (authentication != null && authentication.isAuthenticated()) {
-            Object principal = authentication.getPrincipal();
-            if (principal != null && userClass.isInstance(principal)) {
-                return (T) principal;
-            }
-        }
-        return null;
     }
 }

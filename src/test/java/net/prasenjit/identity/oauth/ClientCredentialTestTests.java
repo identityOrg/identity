@@ -3,20 +3,19 @@ package net.prasenjit.identity.oauth;
 import net.prasenjit.identity.HtmlPageTestBase;
 import net.prasenjit.identity.model.OAuthToken;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.Base64Utils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.nio.charset.StandardCharsets;
+
+import static org.junit.Assert.assertNotNull;
 
 
 public class ClientCredentialTestTests extends HtmlPageTestBase {
@@ -34,14 +33,15 @@ public class ClientCredentialTestTests extends HtmlPageTestBase {
         headers.add("Authorization", "Basic " + encoded);
 
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-        map.add("scope", "openid");
+        map.add("scope", "scope1");
         map.add("grant_type", "client_credentials");
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-        ResponseEntity<OAuthToken> tokenResponseEntity = restTemplate.postForEntity("/security/token",
+        ResponseEntity<OAuthToken> tokenResponseEntity = restTemplate.postForEntity("/oauth/token",
                 request, OAuthToken.class);
-        System.out.println(tokenResponseEntity.getBody());
+        assertNotNull(tokenResponseEntity.getBody());
+        assertNotNull(tokenResponseEntity.getBody().getAccessToken());
     }
 
 }

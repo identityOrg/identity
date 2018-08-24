@@ -1,242 +1,368 @@
 package net.prasenjit.identity.service;
 
+import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
+import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.token.AccessToken;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.oauth2.sdk.token.Tokens;
+import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
+import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.AccessToken;
-import net.prasenjit.identity.entity.AuthorizationCode;
 import net.prasenjit.identity.entity.RefreshToken;
 import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.entity.UserConsent;
 import net.prasenjit.identity.entity.client.Client;
-import net.prasenjit.identity.exception.OAuthException;
-import net.prasenjit.identity.exception.UnauthenticatedClientException;
-import net.prasenjit.identity.model.AuthorizationModel;
-import net.prasenjit.identity.model.OAuthToken;
+import net.prasenjit.identity.model.ConsentModel;
+import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.model.Profile;
-import net.prasenjit.identity.repository.AuthorizationCodeRepository;
-import net.prasenjit.identity.repository.ClientRepository;
-import net.prasenjit.identity.repository.RefreshTokenRepository;
-import net.prasenjit.identity.repository.UserRepository;
-import net.prasenjit.identity.security.GrantType;
+import net.prasenjit.identity.repository.*;
 import net.prasenjit.identity.security.OAuthError;
+import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.net.URI;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import java.util.Optional;
 
-//@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OAuth2Service {
 
-    private final AuthenticationManager authenticationManager;
-    private final CodeFactory codeFactory;
     private final ClientRepository clientRepository;
-    private final AuthorizationCodeRepository codeRepository;
-    private final UserRepository userRepository;
+    private final UserConsentRepository userConsentRepository;
+    private final CodeFactory codeFactory;
+    private final AuthenticationManager authenticationManager;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
+    private final AuthorizationCodeRepository codeRepository;
 
-    public OAuthToken processPasswordGrant(Profile profile, String username, String password, String requestedScope) {
-        Client client = clientRepository.getOne(profile.getUsername());
-        if (!client.supportsGrant(GrantType.PASSWORD)) {
-            throw new OAuthException("invalid_grant", "Unsupported grant");
-        }
-        Authentication authentication = new UserAuthenticationToken(username, password);
-        try {
-            authentication = authenticationManager.authenticate(authentication);
-        } catch (BadCredentialsException e) {
-            throw new OAuthException("access_denied", "user authentication failed", e);
-        }
-        String filteredScopes = filterScope(client.getApprovedScopes(), requestedScope);
-        AccessToken accessToken = codeFactory.createAccessToken((Profile) authentication.getPrincipal(),
-                client.getClientId(), client.getAccessTokenValidity(), filteredScopes, LocalDateTime.now());
-        RefreshToken refreshToken = null;
-        if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
-            refreshToken = codeFactory.createRefreshToken(client.getClientId(), username, filteredScopes,
-                    LocalDateTime.now(), client.getRefreshTokenValidity(), false);
-        }
-        return codeFactory.createOAuthToken(accessToken, refreshToken, null);
-    }
+    public AuthorizationResponse processAuthorization(ConsentModel consentModel,
+                                                      AuthorizationRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Profile principal = ValidationUtils.extractPrincipal(authentication);
 
-    public OAuthToken processClientCredentialsGrant(Profile profile, String scope) {
-        Optional<Client> clientOptional = clientRepository.findById(profile.getUsername());
-        if (!clientOptional.isPresent()) {
-            throw new OAuthException(OAuthError.INVALID_REQUEST, "Client not found");
-        }
-        Client client = clientOptional.get();
-        if (!client.supportsGrant(GrantType.CLIENT_CREDENTIALS)) {
-            throw new OAuthException("invalid_grant", "Unsupported grant");
-        }
-        String filteredScope = filterScope(client.getApprovedScopes(), scope);
-        AccessToken accessToken = codeFactory.createAccessToken(Profile.create(client), client.getClientId(),
-                client.getAccessTokenValidity(), filteredScope, LocalDateTime.now());
-        return codeFactory.createOAuthToken(accessToken, null, null);
-    }
+        Optional<Client> client = clientRepository.findById(request.getClientID().getValue());
 
-    public OAuthToken processAuthorizationCodeGrantToken(Profile profile, String code, String redirectUri,
-                                                         String clientId) {
-        Client client;
-        if (profile == null) {
-            if (clientId == null) {
-                throw new OAuthException("invalid_request", "non secure client must specify client_id parameter");
+        if (!client.isPresent()) {
+            if (request.getRedirectionURI() != null) {
+                return new AuthorizationErrorResponse(request.getRedirectionURI(),
+                        OAuth2Error.INVALID_CLIENT.setDescription(OAuthError.CLIENT_NOT_FOUND),
+                        request.getState(), request.getResponseMode());
             }
-            Optional<Client> optionalClient = clientRepository.findById(clientId);
-            if (optionalClient.isPresent()) {
-                if (optionalClient.get().supportsGrant(GrantType.AUTHORIZATION_CODE)) {
-                    throw new UnauthenticatedClientException("unauthorized_client", "Secure client must be authenticated");
-                } else {
-                    client = optionalClient.get();
+            return new IdentityViewResponse(OAuth2Error.INVALID_CLIENT);
+        } else {
+            URI redirectUri;
+            consentModel.setClient(client.get());
+
+            // Redirect URI validation start
+            String[] redirectUris = client.get().getRedirectUris();
+            if (request.getRedirectionURI() != null) {
+                if (!ArrayUtils.contains(redirectUris, request.getRedirectionURI().toString())) {
+                    return new AuthorizationErrorResponse(request.getRedirectionURI(),
+                            OAuth2Error.INVALID_REQUEST.setDescription(OAuthError.INVALID_REDIRECT_URI),
+                            request.getState(), request.getResponseMode());
                 }
+                redirectUri = request.getRedirectionURI();
             } else {
-                throw new OAuthException("invalid_request", "Client not found for client_id " + clientId);
+                redirectUri = URI.create(redirectUris[0]);
             }
-        } else {
-            client = clientRepository.findById(profile.getUsername()).get();
-        }
-        if (null == code) {
-            throw new OAuthException("invalid_request", "authorization code must be provided");
-        } else {
-            Optional<AuthorizationCode> authorizationCode = codeRepository.findByAuthorizationCode(code);
-            if (authorizationCode.isPresent()) {
-                if (!authorizationCode.get().isUsed()) {
-                    if (authorizationCode.get().getClientId().equals(client.getClientId())) {
-                        if (!StringUtils.hasText(authorizationCode.get().getReturnUrl())
-                                || authorizationCode.get().getReturnUrl().equals(redirectUri)) {
-                            if (authorizationCode.get().isValid()) {
-                                authorizationCode.get().setUsed(true);
-                                Optional<User> associatedUser = userRepository
-                                        .findById(authorizationCode.get().getUsername());
-                                if (associatedUser.isPresent()) {
-                                    AccessToken accessToken = codeFactory.createAccessToken(
-                                            Profile.create(associatedUser.get()),
-                                            client.getClientId(), client.getAccessTokenValidity(),
-                                            authorizationCode.get().getScope(),
-                                            authorizationCode.get().getLoginDate());
-                                    String idToken = null;
-                                    if (authorizationCode.get().isOpenId()) {
-                                        String[] strings = StringUtils.delimitedListToStringArray(
-                                                authorizationCode.get().getScope(), " ");
-                                        idToken = codeFactory.createIDToken(Profile.create(associatedUser.get()),
-                                                authorizationCode.get().getLoginDate(), null,
-                                                client.getClientId(), client.getAccessTokenValidity(),
-                                                CollectionUtils.arrayToList(strings), accessToken.getAssessToken(),
-                                                null);
-                                    }
-                                    RefreshToken refreshToken = null;
-                                    if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {
-                                        refreshToken = codeFactory.createRefreshToken(client.getClientId(),
-                                                associatedUser.get().getUsername(),
-                                                accessToken.getScope(), authorizationCode.get().getLoginDate(),
-                                                client.getRefreshTokenValidity(), authorizationCode.get().isOpenId());
-                                    }
-                                    return codeFactory.createOAuthToken(accessToken, refreshToken, idToken);
-                                }
-                            }
-                        }
+            consentModel.setRedirectUriUsed(redirectUri);
+            // Redirect URI validation end
+
+            if (ValidationUtils.invalidGrant(request, client.get())) {
+                return new AuthorizationErrorResponse(redirectUri, OAuth2Error.INVALID_GRANT, request.getState(),
+                        request.getResponseMode());
+            }
+
+            if (consentModel.isConsentSubmitted()) {
+                if (!consentModel.isValid()) {
+                    return new AuthorizationErrorResponse(redirectUri, OAuth2Error.ACCESS_DENIED,
+                            request.getState(), request.getResponseMode());
+                } else {
+                    Scope approvedScope = new Scope();
+                    consentModel.getFilteredScopes().entrySet().stream().filter(Map.Entry::getValue)
+                            .map(Map.Entry::getKey).forEach(approvedScope::add);
+
+                    // Save consent
+                    UserConsent userConsent = new UserConsent();
+                    userConsent.setUsername(principal.getUsername());
+                    userConsent.setClientID(client.get().getClientId());
+                    userConsent.setApprovalDate(LocalDateTime.now());
+                    userConsent.setScopes(approvedScope.toString());
+                    userConsentRepository.save(userConsent);
+
+                    return respondWithSuccess(request, (UserAuthenticationToken) authentication,
+                            principal, client.get(), redirectUri, approvedScope);
+                }
+            }
+
+
+            Scope filteredScope = ValidationUtils.filterScopeToMap(client.get().getApprovedScopes(),
+                    request.getScope(), consentModel);
+
+            // Check for already approved scopes
+            Optional<UserConsent> consent = userConsentRepository.findById(new UserConsent.UserConsentPK(
+                    principal.getUsername(), client.get().getClientId()));
+
+            if (consent.isPresent()) {
+
+                Scope savedConsentScope = Scope.parse(consent.get().getScopes());
+                for (String s : filteredScope.toStringList()) {
+                    if (!savedConsentScope.contains(s)) {
+                        return new IdentityViewResponse(IdentityViewResponse.ViewType.CONSENT);
                     }
                 }
+
+                return respondWithSuccess(request, (UserAuthenticationToken) authentication,
+                        principal, client.get(), redirectUri, filteredScope);
+            } else {
+                return new IdentityViewResponse(IdentityViewResponse.ViewType.CONSENT);
             }
-            throw new OAuthException("invalid_request", "Authorization code invalid");
         }
     }
 
-    public OAuthToken processRefreshTokenGrantToken(Client client, String refreshToken) {
-        if (client == null) {
-            throw new UnauthenticatedClientException("unauthorized_client", "Client is not authenticated");
+    private AuthorizationResponse respondWithSuccess(AuthorizationRequest request,
+                                                     UserAuthenticationToken authentication,
+                                                     Profile principal, Client client,
+                                                     URI redirectUri, Scope filteredScope) {
+        AuthorizationCode code = null;
+        AccessToken accessToken = null;
+        LocalDateTime loginTime = authentication.getLoginTime();
+        if (request.getResponseType().contains(ResponseType.Value.CODE)) {
+            String value = request.getState() != null ? request.getState().getValue() : null;
+            net.prasenjit.identity.entity.AuthorizationCode authorizationCode = codeFactory.createAuthorizationCode(
+                    client.getClientId(), redirectUri.toString(),
+                    filteredScope.toString(), principal.getUsername(), value,
+                    Duration.ofMinutes(10), loginTime, false);
+            code = new AuthorizationCode(authorizationCode.getAuthorizationCode());
         }
-        Optional<RefreshToken> tokenOptional = refreshTokenRepository.findById(refreshToken);
+        if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {
+            net.prasenjit.identity.entity.AccessToken token = codeFactory.createAccessToken(principal,
+                    client.getClientId(), client.getAccessTokenValidity(), filteredScope.toString(), loginTime);
+            long expIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), token.getExpiryDate());
+            accessToken = new BearerAccessToken(token.getAssessToken(), expIn, filteredScope);
+        }
+        return new AuthorizationSuccessResponse(redirectUri, code, accessToken, request.getState(),
+                request.getResponseMode());
+    }
+
+    public URI getRedirectUriForClientId(String value) {
+        Optional<Client> optionalClient = clientRepository.findById(value);
+        if (optionalClient.isPresent()) {
+            if (optionalClient.get().getRedirectUris() != null && optionalClient.get().getRedirectUris().length > 0) {
+                return URI.create(optionalClient.get().getRedirectUris()[0]);
+            }
+        }
+        return null;
+    }
+
+    public TokenResponse handleTokenRequest(TokenRequest tokenRequest) {
+        Client client;
+        if (tokenRequest.getClientAuthentication() == null) {
+            ClientID clientId = tokenRequest.getClientID();
+            Optional<Client> optionalClient = clientRepository.findById(clientId.getValue());
+            if (optionalClient.isPresent()) {
+                client = optionalClient.get();
+                if (!StringUtils.hasText(client.getClientSecret())) {
+                    return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED);
+                }
+            } else {
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED);
+            }
+        } else {
+            ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
+            String clientId = clientAuthentication.getClientID().getValue();
+            String clientSecret;
+            if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
+                clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
+            } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
+                clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
+            } else {
+                return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT.setDescription("Client authentication not supported"));
+            }
+
+            BasicAuthenticationToken authenticate;
+            try {
+                authenticate = (BasicAuthenticationToken) authenticationManager.authenticate(
+                        new BasicAuthenticationToken(clientId, clientSecret));
+            } catch (AuthenticationException e) {
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed"));
+            }
+
+            Profile clientProfile = (Profile) authenticate.getPrincipal();
+            client = clientRepository.getOne(clientProfile.getUsername());
+        }
+        if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.AUTHORIZATION_CODE)) {
+            return handleGrantInternal(client,
+                    ((AuthorizationCodeGrant) tokenRequest.getAuthorizationGrant()));
+        } else if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.CLIENT_CREDENTIALS)) {
+            return handleGrantInternal(client, tokenRequest);
+        } else if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.PASSWORD)) {
+            return handleGrantInternal(client, tokenRequest,
+                    ((ResourceOwnerPasswordCredentialsGrant) tokenRequest.getAuthorizationGrant()));
+        } else if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.REFRESH_TOKEN)) {
+            return handleGrantInternal(client,
+                    ((RefreshTokenGrant) tokenRequest.getAuthorizationGrant()));
+        } else {
+            return new TokenErrorResponse(OAuth2Error.INVALID_GRANT);
+        }
+    }
+
+    private TokenResponse handleGrantInternal(Client client, RefreshTokenGrant grant) {
+        Optional<RefreshToken> tokenOptional = refreshTokenRepository.findById(grant.getRefreshToken().getValue());
         if (tokenOptional.isPresent()) {
             if (tokenOptional.get().isValid()) {
                 Optional<User> userOptional = userRepository.findById(tokenOptional.get().getUsername());
                 if (userOptional.isPresent()) {
                     if (userOptional.get().isValid()) {
                         tokenOptional.get().setUsed(true);
-                        AccessToken accessToken = codeFactory.createAccessToken(Profile.create(userOptional.get()),
+                        Profile userProfile = Profile.create(userOptional.get());
+                        net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(userProfile,
                                 client.getClientId(), client.getAccessTokenValidity(), tokenOptional.get().getScope(),
                                 tokenOptional.get().getLoginDate());
                         RefreshToken refreshToken1 = codeFactory.createRefreshToken(client.getClientId(),
                                 userOptional.get().getUsername(), tokenOptional.get().getScope(),
                                 tokenOptional.get().getLoginDate(), client.getRefreshTokenValidity(),
                                 tokenOptional.get().isOpenId());
-                        return codeFactory.createOAuthToken(accessToken, refreshToken1, null); // TODO add id token from refresh token
+
+                        long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+                        Scope approvedScope = Scope.parse(accessToken.getScope());
+                        AccessToken at = new BearerAccessToken(accessToken.getAssessToken(), lifetime,
+                                approvedScope);
+                        com.nimbusds.oauth2.sdk.token.RefreshToken rt =
+                                new com.nimbusds.oauth2.sdk.token.RefreshToken(refreshToken1.getRefreshToken());
+                        if (tokenOptional.get().isOpenId()) {
+                            String idToken = codeFactory.createIDToken(userProfile, tokenOptional.get().getLoginDate(), null,
+                                    client.getClientId(), client.getAccessTokenValidity(), approvedScope.toStringList(),
+                                    at.getValue(), null);
+                            OIDCTokens tokens = new OIDCTokens(idToken, at, rt);
+                            return new OIDCTokenResponse(tokens);
+                        } else {
+                            Tokens tokens = new Tokens(at, rt);
+                            return new AccessTokenResponse(tokens);
+                        }
                     } else {
-                        throw new UnauthenticatedClientException("access_denied", "Invalid user");
+                        return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid user"));
                     }
                 } else {
-                    throw new OAuthException("access_denied", "Associated user not found");
+                    return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Associated user not found"));
                 }
             } else {
-                throw new OAuthException("access_denied", "Expired refresh token");
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Expired refresh token"));
             }
         }
-        throw new OAuthException("access_denied", "Invalid refresh token");
+        return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid refresh token"));
     }
 
-    public String createTokenResponseFragment(Map<String, String> respMap) {
-        String fragment = respMap.entrySet().stream()
-                .map(e -> e.getKey() + "=" + e.getValue())
-                .reduce((s, s2) -> s + "&" + s2).orElse("");
-        return fragment;
-    }
+    private TokenResponse handleGrantInternal(Client client, TokenRequest request,
+                                              ResourceOwnerPasswordCredentialsGrant grant) {
 
-    private void filterScopeToMap(String approvedScopes, String requestedScope,
-                                  AuthorizationModel authorizationModel) {
-        String[] approved = StringUtils.delimitedListToStringArray(approvedScopes, " ");
-        String[] requested = StringUtils.delimitedListToStringArray(requestedScope, " ");
-        if (approved.length == 0) {
-            return;
-        }
-        if (requested.length == 0) {
-            authorizationModel.setFilteredScopes(Stream.of(approved)
-                    .collect(Collectors.toMap(o -> o, o -> Boolean.TRUE)));
-            return;
-        }
-        Arrays.sort(approved);
-        Arrays.sort(requested);
-        if (Arrays.binarySearch(requested, "openid") > -1) {
-            authorizationModel.setOpenid(true);
-        }
-        for (String r : requested) {
-            if (Arrays.binarySearch(approved, r) > -1) {
-                authorizationModel.getFilteredScopes().put(r, Boolean.TRUE);
+        Authentication authToken = new UserAuthenticationToken(grant.getUsername(), grant.getPassword().getValue());
+        try {
+            authToken = authenticationManager.authenticate(authToken);
+            Profile userProfile = (Profile) authToken.getPrincipal();
+            Scope filteredScopes = ValidationUtils.filterScope(client.getApprovedScopes(), request.getScope());
+            net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(userProfile,
+                    client.getClientId(), client.getAccessTokenValidity(), filteredScopes.toString(), LocalDateTime.now());
+            long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+            AccessToken accessToken1 = new BearerAccessToken(accessToken.getAssessToken(), lifetime, filteredScopes);
+            com.nimbusds.oauth2.sdk.token.RefreshToken refreshToken1 = null;
+            if (!client.supportsGrant(net.prasenjit.identity.security.GrantType.REFRESH_TOKEN)) {
+                RefreshToken refreshToken = codeFactory.createRefreshToken(client.getClientId(), userProfile.getUsername(),
+                        filteredScopes.toString(), LocalDateTime.now(), client.getRefreshTokenValidity(), false);
+                refreshToken1 = new com.nimbusds.oauth2.sdk.token.RefreshToken(refreshToken.getRefreshToken());
             }
+
+            Tokens tokens = new Tokens(accessToken1, refreshToken1);
+            return new AccessTokenResponse(tokens);
+        } catch (BadCredentialsException e) {
+            return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.setDescription("User authentication failed"));
         }
     }
 
-    private String filterScope(String approvedScopes, String requestedScope) {
-        String[] approved = StringUtils.delimitedListToStringArray(approvedScopes, " ");
-        String[] requested = StringUtils.delimitedListToStringArray(requestedScope, " ");
-        if (approved.length == 0) {
-            return null;
-        }
-        if (requested.length == 0) {
-            return approvedScopes;
-        }
-        Arrays.sort(approved);
-        Arrays.sort(requested);
-        List<String> filtered = new ArrayList<>();
-        for (String r : requested) {
-            if (Arrays.binarySearch(approved, r) > -1) {
-                filtered.add(r);
-            }
-        }
-        return StringUtils.collectionToDelimitedString(filtered, " ");
+    private TokenResponse handleGrantInternal(Client client, TokenRequest request) {
+        Scope filteredScope = ValidationUtils.filterScope(client.getApprovedScopes(), request.getScope());
+        net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(Profile.create(client), client.getClientId(),
+                client.getAccessTokenValidity(), filteredScope.toString(), LocalDateTime.now());
+        long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+        AccessToken accessToken1 = new BearerAccessToken(accessToken.getAssessToken(), lifetime, filteredScope);
+
+        Tokens tokens = new Tokens(accessToken1, null);
+        return new AccessTokenResponse(tokens);
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> T extractPrincipal(Authentication authentication, Class<T> userClass) {
-        if (authentication != null && authentication.isAuthenticated()) {
-            Object principal = authentication.getPrincipal();
-            if (principal != null && userClass.isInstance(principal)) {
-                return (T) principal;
+    private TokenResponse handleGrantInternal(Client client, AuthorizationCodeGrant grant) {
+        Optional<net.prasenjit.identity.entity.AuthorizationCode> authorizationCode = codeRepository.findByAuthorizationCode(grant.getAuthorizationCode().getValue());
+        if (authorizationCode.isPresent()) {
+            if (!authorizationCode.get().isUsed()) {
+                if (authorizationCode.get().getClientId().equals(client.getClientId())) {
+                    if (!StringUtils.hasText(authorizationCode.get().getReturnUrl())
+                            || (grant.getRedirectionURI() != null &&
+                            authorizationCode.get().getReturnUrl().equals(grant.getRedirectionURI().toString()))) {
+                        if (authorizationCode.get().isValid()) {
+                            authorizationCode.get().setUsed(true);
+                            Optional<User> associatedUser = userRepository.findById(authorizationCode.get().getUsername());
+                            if (associatedUser.isPresent()) {
+                                Scope approvedScope = Scope.parse(authorizationCode.get().getScope());
+                                Profile userProfile = Profile.create(associatedUser.get());
+                                com.nimbusds.oauth2.sdk.token.RefreshToken rt = null;
+                                AccessToken at;
+
+                                net.prasenjit.identity.entity.AccessToken accessToken = codeFactory.createAccessToken(
+                                        userProfile, client.getClientId(), client.getAccessTokenValidity(),
+                                        approvedScope.toString(), authorizationCode.get().getLoginDate());
+                                long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
+                                at = new BearerAccessToken(accessToken.getAssessToken(), lifetime, approvedScope);
+
+
+                                RefreshToken refreshToken;
+                                if (client.supportsGrant(net.prasenjit.identity.security.GrantType.REFRESH_TOKEN)) {
+                                    refreshToken = codeFactory.createRefreshToken(client.getClientId(),
+                                            associatedUser.get().getUsername(),
+                                            accessToken.getScope(), authorizationCode.get().getLoginDate(),
+                                            client.getRefreshTokenValidity(), authorizationCode.get().isOpenId());
+                                    rt = new com.nimbusds.oauth2.sdk.token.RefreshToken(refreshToken.getRefreshToken());
+                                }
+
+                                String idToken;
+                                if (authorizationCode.get().isOpenId()) {
+                                    idToken = codeFactory.createIDToken(userProfile,
+                                            authorizationCode.get().getLoginDate(), null,
+                                            client.getClientId(), client.getAccessTokenValidity(),
+                                            approvedScope.toStringList(), accessToken.getAssessToken(),
+                                            null);
+                                    OIDCTokens tokens = new OIDCTokens(idToken, at, rt);
+                                    return new OIDCTokenResponse(tokens);
+                                } else {
+                                    Tokens tokens = new Tokens(at, rt);
+                                    return new AccessTokenResponse(tokens);
+                                }
+                            }
+                            return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid user"));
+                        }
+                        return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Code expired"));
+                    }
+                    return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Redirect URI did not match"));
+                }
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid code"));
             }
+            return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Code used"));
         }
-        return null;
+        return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid code"));
     }
 }
