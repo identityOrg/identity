@@ -1,9 +1,9 @@
 package net.prasenjit.identity.controller;
 
+import com.nimbusds.jose.jwk.JWKSet;
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.model.JwksResponse;
+import net.minidev.json.JSONObject;
 import net.prasenjit.identity.service.openid.CryptographyService;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,11 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class CryptographyController {
     private final CryptographyService cryptographyService;
 
-    @RequestMapping(value = "api/keys", method = {RequestMethod.GET, RequestMethod.POST},
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public JwksResponse keys() {
-        JwksResponse resp = new JwksResponse();
-        resp.setKeys(cryptographyService.getLast5Keys());
-        return resp;
+    @RequestMapping(value = "api/keys", method = {RequestMethod.GET, RequestMethod.POST}, produces = JWKSet.MIME_TYPE)
+    public JSONObject keys() {
+        JWKSet jwkSet = cryptographyService.loadJwkKeys();
+        return jwkSet.toPublicJWKSet().toJSONObject();
     }
 }

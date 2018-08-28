@@ -1,23 +1,32 @@
 package net.prasenjit.identity;
 
 import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.RSADecrypter;
-import com.nimbusds.jose.crypto.RSAEncrypter;
-import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.crypto.*;
 import com.nimbusds.jose.crypto.bc.BouncyCastleProviderSingleton;
 import com.nimbusds.jose.jca.JCASupport;
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.JWSKeySelector;
+import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
+import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 
@@ -123,5 +132,43 @@ public class JwtTest {
         signedJWT.verify(rsassaVerifier);
 
         assertEquals("ccs", signedJWT.getJWTClaimsSet().getIssuer());
+    }
+
+    @Test
+    public void JWTValidationTest() throws Exception {
+        KeyGenerator generator = KeyGenerator.getInstance("AES");
+        generator.init(256);
+        SecretKey secretKey = generator.generateKey();
+
+        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().issuer("ccs1")
+                .expirationTime(new Date(System.currentTimeMillis()))
+                .build();
+
+        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.HS256).build();
+        SignedJWT jwt = new SignedJWT(header, claimsSet);
+
+        MACSigner signer = new MACSigner(secretKey);
+
+        jwt.sign(signer);
+
+
+        ConfigurableJWTProcessor<SecurityContext> jwtProcessor = new DefaultJWTProcessor<>();
+        JWKSource<SecurityContext> source = new ImmutableSecret<>(secretKey);
+        JWSKeySelector<SecurityContext> keySelector = new JWSVerificationKeySelector<>(JWSAlgorithm.HS256, source);
+        jwtProcessor.setJWSKeySelector(keySelector);
+
+        jwtProcessor.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier<SecurityContext>() {
+            @Override
+            public void verify(JWTClaimsSet claimsSet, SecurityContext context) throws BadJWTException {
+                super.verify(claimsSet, context);
+
+                if (!"ccs".equals(claimsSet.getIssuer())) {
+                    throw new BadJWTException("Invalid issuer");
+                }
+            }
+        });
+
+        JWTClaimsSet receivedClaim = jwtProcessor.process(jwt.serialize(), null);
+        System.out.println(receivedClaim.toJSONObject());
     }
 }

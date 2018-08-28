@@ -6,6 +6,9 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -17,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.store.CryptoKeyFactory;
 import net.prasenjit.identity.entity.AccessTokenEntity;
 import net.prasenjit.identity.entity.AuthorizationCodeEntity;
-import net.prasenjit.identity.entity.JWKKey;
 import net.prasenjit.identity.entity.RefreshTokenEntity;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.properties.IdentityProperties;
@@ -38,7 +40,6 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -47,6 +48,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 //@Slf4j
 @Component
@@ -191,13 +193,14 @@ public class CodeFactory {
                 claimsSetBuilder.claim("given_name", profile.getFirstName())
                         .claim("family_name", profile.getLastName());
             }
-            JWKKey latestKey = cryptographyService.getOrGenerateJwkKeys().get(0);
-            PrivateKey signingKey = cryptographyService.getSigningKey(latestKey);
+            JWKSet keySet = cryptographyService.loadJwkKeys();
+            int nextInt = new Random().nextInt(identityProperties.getCryptoProperties().getJwkSetCount());
+            JWK signingKey = keySet.getKeys().get(nextInt);
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
-                    .keyID("" + latestKey.getId()).build();
+                    .keyID(signingKey.getKeyID()).build();
 
             SignedJWT signedJWT = new SignedJWT(header, claimsSetBuilder.build());
-            RSASSASigner signer = new RSASSASigner(signingKey);
+            RSASSASigner signer = new RSASSASigner((RSAKey) signingKey);
             signedJWT.sign(signer);
             return signedJWT;
         } catch (JOSEException | NoSuchAlgorithmException e) {
@@ -209,8 +212,8 @@ public class CodeFactory {
         MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
         sha256.update(accessToken.getBytes(StandardCharsets.US_ASCII));
         byte[] digest = sha256.digest();
-        byte[] octate = new byte[16];
-        System.arraycopy(digest, 0, octate, 0, 16);
+        byte[] octate = new byte[digest.length / 2];
+        System.arraycopy(digest, 0, octate, 0, octate.length);
         return Base64Utils.encodeToUrlSafeString(octate);
     }
 

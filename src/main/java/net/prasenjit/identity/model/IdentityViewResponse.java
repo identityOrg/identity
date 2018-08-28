@@ -6,6 +6,7 @@ import com.nimbusds.oauth2.sdk.ResponseMode;
 import lombok.Getter;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
 public class IdentityViewResponse extends AuthorizationResponse {
@@ -14,6 +15,8 @@ public class IdentityViewResponse extends AuthorizationResponse {
     private ViewType viewType;
     @Getter
     private ErrorObject errorObject;
+    @Getter
+    private Map<String, String> attributes = new HashMap<>();
 
     public IdentityViewResponse(ViewType viewType) {
         super(URI.create("http://localhost"), null, null);

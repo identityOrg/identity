@@ -20,4 +20,7 @@ public class CryptoProperties {
     private List<String> cyclePassword;
 
     private int jwkKeySize = 2048;
+
+    private int jwkSetCount = 2;
+    private String jwkKeyPassword = "jwt";
 }

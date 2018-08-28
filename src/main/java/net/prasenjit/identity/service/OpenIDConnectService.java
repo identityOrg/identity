@@ -19,6 +19,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -38,6 +39,19 @@ public class OpenIDConnectService {
                                                        AuthenticationRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Profile principal = ValidationUtils.extractPrincipal(authentication);
+        // handle login hint
+        IdentityViewResponse identityLoginView = new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
+        if (StringUtils.hasText(request.getLoginHint())) {
+            String loginHint = request.getLoginHint();
+            if (principal != null && !loginHint.equals(principal.getUsername())) {
+                return new AuthenticationErrorResponse(request.getRedirectionURI(),
+                        OIDCError.LOGIN_REQUIRED.appendDescription(" :Mismatch with login_hint"),
+                        request.getState(), request.getResponseMode());
+            }
+            identityLoginView.getAttributes().put("loginHint", loginHint);
+        }
+        // handle id token hint
+        
 
         // Check prompt and login status
         Prompt prompt = request.getPrompt();
@@ -52,7 +66,7 @@ public class OpenIDConnectService {
                 return new AuthenticationErrorResponse(request.getRedirectionURI(),
                         OIDCError.LOGIN_REQUIRED, request.getState(), request.getResponseMode());
             } else {
-                return new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
+                return identityLoginView;
             }
         } else {
             // max age check
@@ -63,13 +77,13 @@ public class OpenIDConnectService {
                         return new AuthenticationErrorResponse(request.getRedirectionURI(), OIDCError.LOGIN_REQUIRED,
                                 request.getState(), request.getResponseMode());
                     } else {
-                        return new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
+                        return identityLoginView;
                     }
                 }
             }
         }
         if (prompt.contains(Prompt.Type.LOGIN) && !sessionContainer.isInteractiveLoginDone()) {
-            return new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
+            return identityLoginView;
         }
         // End prompt and login status check
 
