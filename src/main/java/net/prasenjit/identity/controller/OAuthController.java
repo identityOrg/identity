@@ -134,6 +134,7 @@ public class OAuthController {
         if (response instanceof IdentityViewResponse) {
             IdentityViewResponse identityViewResponse = (IdentityViewResponse) response;
             IdentityViewResponse.ViewType viewType = identityViewResponse.getViewType();
+            model.addAllAttributes(identityViewResponse.getAttributes());
             if (viewType == IdentityViewResponse.ViewType.LOGIN) {
                 httpSession.setAttribute(PREVIOUS_URL, authReqUri.toString());
             } else if (viewType == IdentityViewResponse.ViewType.ERROR) {
