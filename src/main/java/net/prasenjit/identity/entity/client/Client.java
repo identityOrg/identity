@@ -77,7 +77,7 @@ public class Client {
 
     @Column(name = "URI_CONTAINER")
     @Convert(converter = AbstractJsonConverter.URIInfoConverter.class)
-    private URIInfoContainer uriContainer;
+    private URIInfoContainer uriContainer = new URIInfoContainer();
 
     @Column(name = "JWKS_URI")
     private URL jwksUri;
@@ -88,7 +88,7 @@ public class Client {
 
     @Column(name = "SECURITY_CONTAINER")
     @Convert(converter = AbstractJsonConverter.SecurityInfoConverter.class)
-    private SecurityInfoContainer securityContainer;
+    private SecurityInfoContainer securityContainer = new SecurityInfoContainer();
 
     public boolean supportsGrant(GrantType grant) {
         return approvedGrants != null && ArrayUtils.contains(approvedGrants, grant);

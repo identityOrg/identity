@@ -21,6 +21,6 @@ public class CryptoProperties {
 
     private int jwkKeySize = 2048;
 
-    private int jwkSetCount = 2;
-    private String jwkKeyPassword = "jwt";
+    private String jwkEncKeyPassword = "jwk";
+    private String jwkSigKeyPassword = "jwk";
 }

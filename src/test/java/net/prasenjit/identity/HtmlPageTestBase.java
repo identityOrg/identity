@@ -14,7 +14,7 @@ import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.openid.connect.sdk.AuthenticationResponse;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
-import net.prasenjit.identity.entity.UserConsent;
+import net.prasenjit.identity.entity.user.UserConsent;
 import net.prasenjit.identity.repository.UserConsentRepository;
 import net.prasenjit.identity.service.CodeFactory;
 import net.prasenjit.identity.service.openid.MetadataService;

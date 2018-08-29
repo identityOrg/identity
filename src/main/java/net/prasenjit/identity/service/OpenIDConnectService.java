@@ -5,7 +5,7 @@ import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.*;
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.UserConsent;
+import net.prasenjit.identity.entity.user.UserConsent;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.IdentityViewResponse;

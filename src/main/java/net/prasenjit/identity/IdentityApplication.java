@@ -1,8 +1,20 @@
 package net.prasenjit.identity;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import net.minidev.json.JSONStyle;
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.*;
 import net.prasenjit.identity.entity.client.Client;
+import net.prasenjit.identity.entity.user.User;
+import net.prasenjit.identity.entity.user.UserAddress;
+import net.prasenjit.identity.entity.user.UserProfile;
+import net.prasenjit.identity.model.openid.EncryptionAlgorithm;
+import net.prasenjit.identity.model.openid.EncryptionEnc;
+import net.prasenjit.identity.model.openid.SignatureAlgorithm;
 import net.prasenjit.identity.model.openid.registration.ApplicationType;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
@@ -22,7 +34,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 @EnableAsync
 @SpringBootApplication
@@ -67,7 +81,7 @@ public class IdentityApplication implements ApplicationRunner {
 
     }
 
-    private Client createClient(String clientId, boolean secure) {
+    private Client createClient(String clientId, boolean secure) throws JOSEException {
         Client client = new Client();
         client.setClientId(clientId);
         if (secure)
@@ -82,7 +96,26 @@ public class IdentityApplication implements ApplicationRunner {
         client.setApplicationType(ApplicationType.WEB);
         client.setApprovedGrants(GrantType.values());
         client.setApprovedResponseTypes(ResponseType.values());
+        client.setJwks(createRandomJwks());
+        client.getSecurityContainer().setRequestObjectSigningAlgo(SignatureAlgorithm.RS256);
+        client.getSecurityContainer().setRequestObjectEncryptionAlgo(EncryptionAlgorithm.RSA_OAEP_256);
+        client.getSecurityContainer().setRequestObjectEncryptionEnc(EncryptionEnc.A128GCM);
         return client;
+    }
+
+    private String createRandomJwks() throws JOSEException {
+        List<JWK> keys = new ArrayList<>();
+        RSAKeyGenerator generator = new RSAKeyGenerator(2048);
+        generator.keyIDFromThumbprint(false);
+        generator.keyUse(KeyUse.ENCRYPTION);
+        keys.add(generator.generate());
+        generator = new RSAKeyGenerator(2048);
+        generator.keyIDFromThumbprint(false);
+        generator.keyUse(KeyUse.SIGNATURE);
+        keys.add(generator.generate());
+
+        JWKSet jwkSet = new JWKSet(keys);
+        return jwkSet.toJSONObject(false).toJSONString();
     }
 
     private User createAdmin(String username) {

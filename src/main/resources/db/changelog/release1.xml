@@ -86,8 +86,8 @@
             <column name="CLIENT_SECRET" type="VARCHAR(50)"/>
             <column name="CONTACTS" type="VARCHAR(1000)"/>
             <column name="URI_CONTAINER" type="VARCHAR(2000)"/>
-            <column name="SECURITY_CONTAINER" type="VARCHAR(200)"/>
-            <column name="JWKS_URI" type="VARCHAR(500)"/>
+            <column name="SECURITY_CONTAINER" type="VARCHAR(2000)"/>
+            <column name="JWKS_URI" type="VARCHAR(1000)"/>
             <column name="JWKS" type="CLOB"/>
             <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>

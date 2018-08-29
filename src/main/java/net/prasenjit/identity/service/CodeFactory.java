@@ -194,8 +194,7 @@ public class CodeFactory {
                         .claim("family_name", profile.getLastName());
             }
             JWKSet keySet = cryptographyService.loadJwkKeys();
-            int nextInt = new Random().nextInt(identityProperties.getCryptoProperties().getJwkSetCount());
-            JWK signingKey = keySet.getKeys().get(nextInt);
+            JWK signingKey = keySet.getKeyByKeyId("jwk-sig");
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
                     .keyID(signingKey.getKeyID()).build();
 

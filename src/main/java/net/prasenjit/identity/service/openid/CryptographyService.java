@@ -1,8 +1,8 @@
 package net.prasenjit.identity.service.openid;
 
-import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.store.CryptoKeyFactory;
@@ -24,23 +24,27 @@ public class CryptographyService {
     private final CryptoKeyFactory cryptoKeyFactory;
 
     public JWKSet loadJwkKeys() {
-        int keyCount = identityProperties.getCryptoProperties().getJwkSetCount();
         List<JWK> keys = new ArrayList<>();
-        for (int i = 0; i < keyCount; i++) {
-            String alias = "jwt-" + i;
-            PublicKey key = cryptoKeyFactory.getPublicKey(alias);
-            PrivateKey privateKey = cryptoKeyFactory.getPrivateKey(alias,
-                    identityProperties.getCryptoProperties().getJwkKeyPassword().toCharArray());
-            try {
-                RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) key)
-                        .privateKey((RSAPrivateKey) privateKey)
-                        .keyIDFromThumbprint()
-                        .build();
-                keys.add(rsaKey);
-            } catch (JOSEException e) {
-                throw new RuntimeException("JWK build failed", e);
-            }
-        }
+        String alias = "jwk-enc";
+        PublicKey key = cryptoKeyFactory.getPublicKey(alias);
+        PrivateKey privateKey = cryptoKeyFactory.getPrivateKey(alias,
+                identityProperties.getCryptoProperties().getJwkEncKeyPassword().toCharArray());
+        RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) key)
+                .privateKey((RSAPrivateKey) privateKey)
+                .keyID(alias)
+                .keyUse(KeyUse.ENCRYPTION)
+                .build();
+        keys.add(rsaKey);
+        alias = "jwk-sig";
+        key = cryptoKeyFactory.getPublicKey(alias);
+        privateKey = cryptoKeyFactory.getPrivateKey(alias,
+                identityProperties.getCryptoProperties().getJwkEncKeyPassword().toCharArray());
+        rsaKey = new RSAKey.Builder((RSAPublicKey) key)
+                .privateKey((RSAPrivateKey) privateKey)
+                .keyID(alias)
+                .keyUse(KeyUse.SIGNATURE)
+                .build();
+        keys.add(rsaKey);
         return new JWKSet(keys);
     }
 }

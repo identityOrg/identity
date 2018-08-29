@@ -7,7 +7,7 @@ import net.prasenjit.crypto.endtoend.RsaEncryptorBuilder;
 import net.prasenjit.identity.security.crypto.CyclicEncryptorFactory;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.E2EKey;
-import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.E2EKeyRepository;

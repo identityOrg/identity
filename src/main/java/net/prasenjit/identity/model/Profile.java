@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.prasenjit.identity.entity.Status;
-import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.entity.client.Client;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

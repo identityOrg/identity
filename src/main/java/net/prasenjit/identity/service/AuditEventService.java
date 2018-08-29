@@ -3,6 +3,7 @@ package net.prasenjit.identity.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.*;
+import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.events.AbstractModificationEvent;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.security.basic.BasicAuthenticationToken;

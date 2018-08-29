@@ -1,6 +1,7 @@
-package net.prasenjit.identity.entity;
+package net.prasenjit.identity.entity.user;
 
 import lombok.Data;
+import net.prasenjit.identity.entity.user.UserAddress;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

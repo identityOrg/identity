@@ -3,7 +3,7 @@ package net.prasenjit.identity.service;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.Status;
-import net.prasenjit.identity.entity.User;
+import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.events.ChangePasswordEvent;
 import net.prasenjit.identity.events.ChangeStatusEvent;
 import net.prasenjit.identity.events.CreateEvent;

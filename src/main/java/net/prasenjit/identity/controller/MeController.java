@@ -2,8 +2,8 @@ package net.prasenjit.identity.controller;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.config.doc.SwaggerDocumented;
-import net.prasenjit.identity.entity.User;
-import net.prasenjit.identity.entity.UserProfile;
+import net.prasenjit.identity.entity.user.User;
+import net.prasenjit.identity.entity.user.UserProfile;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.model.openid.AddressClaim;
 import net.prasenjit.identity.model.openid.StandardClaim;
