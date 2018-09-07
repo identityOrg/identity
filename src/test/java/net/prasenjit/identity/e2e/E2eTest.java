@@ -1,5 +1,7 @@
 package net.prasenjit.identity.e2e;
 
+import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import net.prasenjit.identity.HtmlPageTestBase;
 import net.prasenjit.identity.model.Profile;
@@ -30,9 +32,11 @@ public class E2eTest extends HtmlPageTestBase {
     @Test
     public void testEncryptionDecryption() throws Exception {
 
-        UserDetails client = clientService.loadUserByUsername("client");
-        BearerAccessToken createAccessToken = codeFactory.createAccessToken(Profile.create(client), "client", Duration.ofMinutes(1),
-                "openid", LocalDateTime.now());
+        ClientID clientID = new ClientID("client");
+        UserDetails client = clientService.loadUserByUsername(clientID.getValue());
+        Scope openid = Scope.parse("openid");
+        BearerAccessToken createAccessToken = codeFactory.createAccessToken(Profile.create(client), clientID, Duration.ofMinutes(1),
+                openid, LocalDateTime.now());
 
         String token = createAccessToken.getValue();
         mockMvc.perform(get("/api/e2e")

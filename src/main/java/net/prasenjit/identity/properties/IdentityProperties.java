@@ -12,6 +12,7 @@ import java.time.Duration;
 public class IdentityProperties {
     private CryptoProperties cryptoProperties = new CryptoProperties();
     private ServerMetadata serverMetadata = new ServerMetadata();
+    private CodeProperty codeProperty = new CodeProperty();
     private Duration userPasswordValidity = Duration.ofDays(60);
     private Duration e2eKeyValidity = Duration.ofHours(6);
     private int lockUserOnErrorCount = 3;

@@ -140,7 +140,7 @@ public class JwtTest {
         generator.init(256);
         SecretKey secretKey = generator.generateKey();
 
-        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().issuer("ccs1")
+        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().issuer("ccs")
                 .expirationTime(new Date(System.currentTimeMillis()))
                 .build();
 

@@ -176,28 +176,19 @@ public class OpenIDConnectService {
 
         LocalDateTime loginTime = authentication.getLoginTime();
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
-            String stateValue = request.getState() == null ? null : request.getState().getValue();
-            String challenge = null;
-            String challengeMethod = null;
-            if (request.getCodeChallenge() != null && request.getCodeChallengeMethod() != null) {
-                challenge = request.getCodeChallenge().getValue();
-                challengeMethod = request.getCodeChallengeMethod().getValue();
-            }
-            code = codeFactory.createAuthorizationCode(client.getClientId(), request.getRedirectionURI().toString(),
-                    filteredScope.toString(), principal.getUsername(), stateValue, Duration.ofMinutes(10),
-                    loginTime, challenge, challengeMethod, true);
+            code = codeFactory.createAuthorizationCode(request.getClientID(), request.getRedirectionURI(),
+                    filteredScope, principal.getUsername(), request.getState(), Duration.ofMinutes(10),
+                    loginTime, request.getCodeChallenge(), request.getCodeChallengeMethod(), true);
         }
         BearerAccessToken accessToken = null;
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {
-            accessToken = codeFactory.createAccessToken(principal, client.getClientId(),
-                    client.getAccessTokenValidity(), filteredScope.toString(), loginTime);
+            accessToken = codeFactory.createAccessToken(principal, request.getClientID(),
+                    client.getAccessTokenValidity(), filteredScope, loginTime);
         }
         JWT idToken = null;
         if (request.getResponseType().contains("id_token")) {
-            String at = accessToken == null ? null : accessToken.getValue();
-            String ac = code == null ? null : code.getValue();
-            idToken = codeFactory.createIDToken(principal, loginTime, request.getNonce().getValue(),
-                    client.getClientId(), client.getAccessTokenValidity(), filteredScope.toStringList(), at, ac);
+            idToken = codeFactory.createIDToken(principal, loginTime, request.getNonce(),
+                    request.getClientID(), client.getAccessTokenValidity(), filteredScope, accessToken, code);
         }
         return new AuthenticationSuccessResponse(request.getRedirectionURI(), code, idToken, accessToken,
                 request.getState(), null, request.getResponseMode());

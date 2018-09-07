@@ -14,8 +14,14 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.id.State;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
+import com.nimbusds.openid.connect.sdk.Nonce;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.store.CryptoKeyFactory;
 import net.prasenjit.identity.entity.AccessTokenEntity;
@@ -33,10 +39,10 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Base64Utils;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.crypto.SecretKey;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -47,7 +53,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.List;
 
 //@Slf4j
 @Component
@@ -74,30 +79,35 @@ public class CodeFactory {
         macVerifier = new MACVerifier(mainKey);
     }
 
-    AuthorizationCode createAuthorizationCode(String clientId, String returnUrl, String scope, String userName,
-                                              String state, Duration validity, LocalDateTime loginDate,
-                                              String challenge, String challengeMethod, boolean openId) {
+    AuthorizationCode createAuthorizationCode(ClientID clientId, URI returnUrl, Scope scope, String userName,
+                                              State state, Duration validity, LocalDateTime loginDate,
+                                              CodeChallenge challenge, CodeChallengeMethod method, boolean openId) {
         AuthorizationCodeEntity authorizationCode = new AuthorizationCodeEntity();
-        authorizationCode.setClientId(clientId);
+        authorizationCode.setClientId(clientId.getValue());
         LocalDateTime creationDate = LocalDateTime.now();
         authorizationCode.setCreationDate(creationDate);
         authorizationCode.setExpiryDate(creationDate.plus(validity));
-        authorizationCode.setReturnUrl(returnUrl);
-        authorizationCode.setScope(scope);
+        authorizationCode.setReturnUrl(returnUrl == null ? null : returnUrl.toString());
+        authorizationCode.setScope(scope.toString());
         authorizationCode.setUsername(userName);
         authorizationCode.setUsed(false);
-        authorizationCode.setState(state);
-        authorizationCode.setChallenge(challenge);
-        authorizationCode.setChallengeMethod(challengeMethod);
+        if (state != null) {
+            authorizationCode.setState(state.getValue());
+        }
+        if (challenge != null && method != null) {
+            authorizationCode.setChallenge(challenge.getValue());
+            authorizationCode.setChallengeMethod(method.getValue());
+        }
         authorizationCode.setOpenId(openId);
         authorizationCode.setLoginDate(loginDate);
-        authorizationCode.setAuthorizationCode(RandomStringUtils.randomAlphanumeric(8));
+        int codeLength = identityProperties.getCodeProperty().getAuthorizationCodeLength();
+        authorizationCode.setAuthorizationCode(RandomStringUtils.randomAlphanumeric(codeLength));
         authorizationCodeRepository.saveAndFlush(authorizationCode);
         return new AuthorizationCode(authorizationCode.getAuthorizationCode());
     }
 
-    public BearerAccessToken createAccessToken(Profile user, String clientId, Duration duration,
-                                               String scope, LocalDateTime loginDate) {
+    public BearerAccessToken createAccessToken(Profile user, ClientID clientId, Duration duration,
+                                               Scope scope, LocalDateTime loginDate) {
         AccessTokenEntity accessToken = new AccessTokenEntity();
         accessToken.setAssessToken(RandomStringUtils.randomAlphanumeric(24));
         accessToken.setUsername(user.getUsername());
@@ -105,23 +115,26 @@ public class CodeFactory {
         accessToken.setCreationDate(creationDate);
         accessToken.setExpiryDate(creationDate.plus(duration));
         accessToken.setUserProfile(user);
-        accessToken.setClientId(clientId);
-        accessToken.setScope(scope);
+        accessToken.setClientId(clientId.getValue());
+        if (scope != null) {
+            accessToken.setScope(scope.toString());
+        }
         accessToken.setLoginDate(loginDate);
         accessTokenRepository.saveAndFlush(accessToken);
         long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
-        Scope tokenScope = Scope.parse(accessToken.getScope());
-        return new BearerAccessToken(accessToken.getAssessToken(), lifetime, tokenScope);
+        return new BearerAccessToken(accessToken.getAssessToken(), lifetime, scope);
     }
 
-    RefreshToken createRefreshToken(String clientId, String userName, String scope, LocalDateTime loginDate,
+    RefreshToken createRefreshToken(ClientID clientId, String userName, Scope scope, LocalDateTime loginDate,
                                     Duration duration, boolean openId) {
         RefreshTokenEntity refreshToken = new RefreshTokenEntity();
-        refreshToken.setClientId(clientId);
+        refreshToken.setClientId(clientId.getValue());
         LocalDateTime creationDate = LocalDateTime.now();
         refreshToken.setCreationDate(creationDate);
         refreshToken.setExpiryDate(creationDate.plus(duration));
-        refreshToken.setScope(scope);
+        if (scope != null) {
+            refreshToken.setScope(scope.toString());
+        }
         refreshToken.setUsername(userName);
         refreshToken.setLoginDate(loginDate);
         refreshToken.setOpenId(openId);
@@ -169,25 +182,27 @@ public class CodeFactory {
         }
     }
 
-    JWT createIDToken(Profile profile, LocalDateTime loginTime, String nonce, String clientId,
-                      Duration idTokenValidity, List<String> scope, String accessToken, String accessCode) {
+    JWT createIDToken(Profile profile, LocalDateTime loginTime, Nonce nonce, ClientID clientId,
+                      Duration idTokenValidity, Scope scope, AccessToken accessToken, AuthorizationCode authCode) {
         try {
             LocalDateTime issueTime = LocalDateTime.now();
             JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder()
                     .subject(profile.getUsername())
                     .issuer(metadataService.findMetadata().getIssuer())
-                    .audience(clientId)
+                    .audience(clientId.getValue())
                     .issueTime(convertToDate(issueTime))
                     .expirationTime(convertToDate(issueTime.plus(idTokenValidity)))
                     .claim("auth_time", convertToDate(loginTime))
-                    .claim("nonce", nonce)
-                    .claim("azp", clientId);
-            if (StringUtils.hasText(accessToken)) {
-                String atHash = generateHash(accessToken);
+                    .claim("azp", clientId.getValue());
+            if (nonce!=null){
+                claimsSetBuilder.claim("nonce", nonce.getValue());
+            }
+            if (accessToken != null) {
+                String atHash = generateHash(accessToken.getValue());
                 claimsSetBuilder.claim("at_hash", atHash);
             }
-            if (StringUtils.hasText(accessCode)) {
-                String cHash = generateHash(accessCode);
+            if (authCode != null) {
+                String cHash = generateHash(authCode.getValue());
                 claimsSetBuilder.claim("c_hash", cHash);
             }
             if (scope.contains("profile")) {
