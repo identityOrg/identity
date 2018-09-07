@@ -106,11 +106,11 @@ public class IdentityApplication implements ApplicationRunner {
     private String createRandomJwks() throws JOSEException {
         List<JWK> keys = new ArrayList<>();
         RSAKeyGenerator generator = new RSAKeyGenerator(2048);
-        generator.keyIDFromThumbprint(false);
+        generator.keyID("encr");
         generator.keyUse(KeyUse.ENCRYPTION);
         keys.add(generator.generate());
         generator = new RSAKeyGenerator(2048);
-        generator.keyIDFromThumbprint(false);
+        generator.keyID("sign");
         generator.keyUse(KeyUse.SIGNATURE);
         keys.add(generator.generate());
 

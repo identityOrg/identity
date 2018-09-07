@@ -4,6 +4,7 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.*;
+import com.nimbusds.openid.connect.sdk.op.ResolveException;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.user.UserConsent;
@@ -15,6 +16,7 @@ import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.UserConsentRepository;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
+import net.prasenjit.identity.service.openid.AuthenticationRequestJWTResolver;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,58 +36,13 @@ public class OpenIDConnectService {
     private final UserConsentRepository userConsentRepository;
     private final OpenIDSessionContainer sessionContainer;
     private final CodeFactory codeFactory;
+    private final AuthenticationRequestJWTResolver requestJWTResolver;
 
     public AuthorizationResponse processAuthentication(ConsentModel consentModel,
-                                                       AuthenticationRequest request) {
+                                                       AuthenticationRequest request)
+            throws ParseException, ResolveException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Profile principal = ValidationUtils.extractPrincipal(authentication);
-        // handle login hint
-        IdentityViewResponse identityLoginView = new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
-        if (StringUtils.hasText(request.getLoginHint())) {
-            String loginHint = request.getLoginHint();
-            if (principal != null && !loginHint.equals(principal.getUsername())) {
-                return new AuthenticationErrorResponse(request.getRedirectionURI(),
-                        OIDCError.LOGIN_REQUIRED.appendDescription(" :Mismatch with login_hint"),
-                        request.getState(), request.getResponseMode());
-            }
-            identityLoginView.getAttributes().put("loginHint", loginHint);
-        }
-        // handle id token hint
-
-
-        // Check prompt and login status
-        Prompt prompt = request.getPrompt();
-        if (prompt == null) prompt = new Prompt();
-        if (!prompt.isValid()) {
-            return new AuthenticationErrorResponse(request.getRedirectionURI(),
-                    OAuth2Error.INVALID_REQUEST.setDescription("Invalid prompt"),
-                    request.getState(), request.getResponseMode());
-        }
-        if (principal == null) {
-            if (prompt.contains(Prompt.Type.NONE)) {
-                return new AuthenticationErrorResponse(request.getRedirectionURI(),
-                        OIDCError.LOGIN_REQUIRED, request.getState(), request.getResponseMode());
-            } else {
-                return identityLoginView;
-            }
-        } else {
-            // max age check
-            if (request.getMaxAge() > 0) {
-                LocalDateTime loginTime = ((UserAuthenticationToken) authentication).getLoginTime();
-                if (loginTime.plusSeconds(request.getMaxAge()).isBefore(LocalDateTime.now())) {
-                    if (prompt.contains(Prompt.Type.NONE)) {
-                        return new AuthenticationErrorResponse(request.getRedirectionURI(), OIDCError.LOGIN_REQUIRED,
-                                request.getState(), request.getResponseMode());
-                    } else {
-                        return identityLoginView;
-                    }
-                }
-            }
-        }
-        if (prompt.contains(Prompt.Type.LOGIN) && !sessionContainer.isInteractiveLoginDone()) {
-            return identityLoginView;
-        }
-        // End prompt and login status check
 
         Optional<Client> client = clientRepository.findById(request.getClientID().getValue());
 
@@ -94,6 +51,55 @@ public class OpenIDConnectService {
                     OAuth2Error.INVALID_CLIENT.setDescription(OAuthError.CLIENT_NOT_FOUND),
                     request.getState(), request.getResponseMode());
         } else {
+            request = requestJWTResolver.resolve(request, client.get());
+
+            // handle login hint
+            IdentityViewResponse identityLoginView = new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
+            if (StringUtils.hasText(request.getLoginHint())) {
+                String loginHint = request.getLoginHint();
+                if (principal != null && !loginHint.equals(principal.getUsername())) {
+                    return new AuthenticationErrorResponse(request.getRedirectionURI(),
+                            OIDCError.LOGIN_REQUIRED.appendDescription(" :Mismatch with login_hint"),
+                            request.getState(), request.getResponseMode());
+                }
+                identityLoginView.getAttributes().put("loginHint", loginHint);
+            }
+            // handle id token hint
+
+
+            // Check prompt and login status
+            Prompt prompt = request.getPrompt();
+            if (prompt == null) prompt = new Prompt();
+            if (!prompt.isValid()) {
+                return new AuthenticationErrorResponse(request.getRedirectionURI(),
+                        OAuth2Error.INVALID_REQUEST.setDescription("Invalid prompt"),
+                        request.getState(), request.getResponseMode());
+            }
+            if (principal == null) {
+                if (prompt.contains(Prompt.Type.NONE)) {
+                    return new AuthenticationErrorResponse(request.getRedirectionURI(),
+                            OIDCError.LOGIN_REQUIRED, request.getState(), request.getResponseMode());
+                } else {
+                    return identityLoginView;
+                }
+            } else {
+                // max age check
+                if (request.getMaxAge() > 0) {
+                    LocalDateTime loginTime = ((UserAuthenticationToken) authentication).getLoginTime();
+                    if (loginTime.plusSeconds(request.getMaxAge()).isBefore(LocalDateTime.now())) {
+                        if (prompt.contains(Prompt.Type.NONE)) {
+                            return new AuthenticationErrorResponse(request.getRedirectionURI(), OIDCError.LOGIN_REQUIRED,
+                                    request.getState(), request.getResponseMode());
+                        } else {
+                            return identityLoginView;
+                        }
+                    }
+                }
+            }
+            if (prompt.contains(Prompt.Type.LOGIN) && !sessionContainer.isInteractiveLoginDone()) {
+                return identityLoginView;
+            }
+            // End prompt and login status check
             consentModel.setClient(client.get());
             // Redirect URI validation start
             String[] redirectUris = client.get().getRedirectUris();

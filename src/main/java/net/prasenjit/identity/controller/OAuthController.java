@@ -5,6 +5,7 @@ import com.nimbusds.oauth2.sdk.http.CommonContentTypes;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.util.URLUtils;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.op.ResolveException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
@@ -79,7 +80,7 @@ public class OAuthController {
                 AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(authReqUri);
                 response = oAuth2Service.processAuthorization(consentModel, authorizationRequest);
             }
-        } catch (ParseException e) {
+        } catch (ParseException | ResolveException e) {
             response = generateParseError(e);
         }
         return generateResponse(httpSession, model, response, authReqUri, consentModel);
@@ -105,13 +106,13 @@ public class OAuthController {
                 }
                 response = oAuth2Service.processAuthorization(consentModel, authorizationRequest);
             }
-        } catch (ParseException e) {
+        } catch (ParseException | ResolveException e) {
             response = generateParseError(e);
         }
         return generateResponse(httpSession, model, response, authReqUri, consentModel);
     }
 
-    private AuthorizationResponse generateParseError(ParseException e) {
+    private AuthorizationResponse generateParseError(GeneralException e) {
         AuthorizationResponse response;
         if (e.getRedirectionURI() != null) {
             response = new AuthorizationErrorResponse(e.getRedirectionURI(),

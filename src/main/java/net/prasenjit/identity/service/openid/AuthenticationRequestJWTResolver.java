@@ -25,6 +25,7 @@ import net.prasenjit.identity.entity.client.SecurityInfoContainer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import javax.mail.internet.ContentType;
@@ -39,18 +40,18 @@ public class AuthenticationRequestJWTResolver implements ResourceRetriever {
     private final RestTemplate restTemplate;
     private final CryptographyService cryptographyService;
 
-    public AuthenticationRequest resolve(AuthenticationRequest request, Client client) throws ParseException, ResolveException {
+    public AuthenticationRequest resolve(AuthenticationRequest request, Client client)
+            throws ParseException, ResolveException {
         if (request.specifiesRequestObject()) {
             SecurityInfoContainer securityContainer = client.getSecurityContainer();
             if (securityContainer.getRequestObjectSigningAlgo() == null &&
                     (securityContainer.getRequestObjectEncryptionAlgo() == null ||
                             securityContainer.getRequestObjectEncryptionEnc() == null)) {
-                throw new ParseException("Request object not supported",
-                        OIDCError.REQUEST_NOT_SUPPORTED, request.getClientID(), request.getRedirectionURI(),
-                        request.getResponseMode(), request.getState());
+                throw new ResolveException(OIDCError.REQUEST_NOT_SUPPORTED, request);
             }
             JWTProcessor<SecurityContext> jwtProcessor = createJWTProcessor(client, securityContainer, request);
-            AuthenticationRequestResolver<SecurityContext> requestResolver = new AuthenticationRequestResolver<>(jwtProcessor, this);
+            AuthenticationRequestResolver<SecurityContext> requestResolver =
+                    new AuthenticationRequestResolver<>(jwtProcessor, this);
 
             try {
                 return requestResolver.resolve(request, null);
@@ -64,7 +65,7 @@ public class AuthenticationRequestJWTResolver implements ResourceRetriever {
     private JWTProcessor<SecurityContext> createJWTProcessor(Client client,
                                                              SecurityInfoContainer securityContainer,
                                                              AuthenticationRequest request)
-            throws ParseException {
+            throws ParseException, ResolveException {
         JWEDecryptionKeySelector<SecurityContext> encKeySelector = null;
         JWSVerificationKeySelector<SecurityContext> signKeySelector = null;
         if (securityContainer.getRequestObjectSigningAlgo() != null) {
@@ -72,7 +73,8 @@ public class AuthenticationRequestJWTResolver implements ResourceRetriever {
             JWKSource<SecurityContext> keySource = new ImmutableJWKSet<>(getClientJWKSet(client, request));
             signKeySelector = new JWSVerificationKeySelector<>(algo, keySource);
         }
-        if (securityContainer.getRequestObjectEncryptionAlgo() != null && securityContainer.getRequestObjectEncryptionEnc() != null) {
+        if (securityContainer.getRequestObjectEncryptionAlgo() != null
+                && securityContainer.getRequestObjectEncryptionEnc() != null) {
             JWEAlgorithm jweAlg = securityContainer.getRequestObjectEncryptionAlgo().getValue();
             EncryptionMethod jweEnc = securityContainer.getRequestObjectEncryptionEnc().getValue();
             JWKSource<SecurityContext> opKeySource = new ImmutableJWKSet<>(cryptographyService.loadJwkKeys());
@@ -84,14 +86,25 @@ public class AuthenticationRequestJWTResolver implements ResourceRetriever {
         return processor;
     }
 
-    private JWKSet getClientJWKSet(Client client, AuthenticationRequest request) throws ParseException {
+    private JWKSet getClientJWKSet(Client client, AuthenticationRequest request) throws ParseException, ResolveException {
         try {
-            return JWKSet.parse(client.getJwks());
+            if (StringUtils.hasText(client.getJwks())) {
+                return JWKSet.parse(client.getJwks());
+            } else if (client.getJwksUri() != null) {
+                Resource jwksResource = retrieveResource(client.getJwksUri());
+                return JWKSet.parse(jwksResource.getContent());
+            } else {
+                throw new ResolveException(OIDCError.REQUEST_NOT_SUPPORTED
+                        .appendDescription(":Registered client doesnot have key set"), request);
+            }
         } catch (java.text.ParseException e) {
             throw new ParseException("Client keyset has error",
                     OIDCError.REQUEST_NOT_SUPPORTED.appendDescription(":Registered client key set is invalid"),
                     request.getClientID(), request.getRedirectionURI(), request.getResponseMode(),
                     request.getState());
+        } catch (IOException e) {
+            throw new ResolveException(OIDCError.REQUEST_NOT_SUPPORTED
+                    .appendDescription(":Registered client key set retrieval failed"), request);
         }
     }
 
