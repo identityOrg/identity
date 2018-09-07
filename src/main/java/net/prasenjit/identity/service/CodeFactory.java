@@ -48,7 +48,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 
 //@Slf4j
 @Component
@@ -77,7 +76,7 @@ public class CodeFactory {
 
     AuthorizationCode createAuthorizationCode(String clientId, String returnUrl, String scope, String userName,
                                               String state, Duration validity, LocalDateTime loginDate,
-                                              boolean openId) {
+                                              String challenge, String challengeMethod, boolean openId) {
         AuthorizationCodeEntity authorizationCode = new AuthorizationCodeEntity();
         authorizationCode.setClientId(clientId);
         LocalDateTime creationDate = LocalDateTime.now();
@@ -88,6 +87,8 @@ public class CodeFactory {
         authorizationCode.setUsername(userName);
         authorizationCode.setUsed(false);
         authorizationCode.setState(state);
+        authorizationCode.setChallenge(challenge);
+        authorizationCode.setChallengeMethod(challengeMethod);
         authorizationCode.setOpenId(openId);
         authorizationCode.setLoginDate(loginDate);
         authorizationCode.setAuthorizationCode(RandomStringUtils.randomAlphanumeric(8));

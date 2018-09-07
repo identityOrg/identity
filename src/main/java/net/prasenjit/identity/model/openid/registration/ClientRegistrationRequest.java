@@ -124,7 +124,7 @@ public class ClientRegistrationRequest {
      * requested, the response will be signed then encrypted, with the result being a Nested JWT, as defined in [JWT].
      * The default, if omitted, is that no encryption is performed.
      */
-    private EncryptionAlgorithm id_token_encrypted_response_alg = EncryptionAlgorithm.RSA_OAEP;
+    private EncryptionAlgorithm id_token_encrypted_response_alg = EncryptionAlgorithm.RSA_OAEP_256;
     /**
      * OPTIONAL. JWE enc algorithm [JWA] REQUIRED for encrypting the ID Token issued to this Client. If
      * id_token_encrypted_response_alg is specified, the default for this value is A128CBC-HS256. When
@@ -142,7 +142,7 @@ public class ClientRegistrationRequest {
      * encryption are requested, the response will be signed then encrypted, with the result being a Nested JWT,
      * as defined in [JWT]. The default, if omitted, is that no encryption is performed.
      */
-    private EncryptionAlgorithm userinfo_encrypted_response_alg = EncryptionAlgorithm.RSA_OAEP;
+    private EncryptionAlgorithm userinfo_encrypted_response_alg = EncryptionAlgorithm.RSA_OAEP_256;
     /**
      * OPTIONAL. JWE enc algorithm [JWA] REQUIRED for encrypting UserInfo Responses.
      * If userinfo_encrypted_response_alg is specified, the default for this value is A128CBC-HS256.
@@ -167,7 +167,7 @@ public class ClientRegistrationRequest {
      * the Request Object will be signed then encrypted, with the result being a Nested JWT, as defined in [JWT].
      * The default, if omitted, is that the RP is not declaring whether it might encrypt any Request Objects.
      */
-    private EncryptionAlgorithm request_object_encryption_alg = EncryptionAlgorithm.RSA_OAEP;
+    private EncryptionAlgorithm request_object_encryption_alg = EncryptionAlgorithm.RSA_OAEP_256;
     /**
      * OPTIONAL. JWE enc algorithm [JWA] the RP is declaring that it may use for encrypting Request Objects sent
      * to the OP. If request_object_encryption_alg is specified, the default for this value is A128CBC-HS256.

@@ -7,6 +7,8 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
@@ -16,9 +18,9 @@ import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.AuthorizationCodeEntity;
 import net.prasenjit.identity.entity.RefreshTokenEntity;
+import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.entity.user.UserConsent;
-import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.model.Profile;
@@ -153,8 +155,15 @@ public class OAuth2Service {
         LocalDateTime loginTime = authentication.getLoginTime();
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
             String value = request.getState() != null ? request.getState().getValue() : null;
+            String challenge = null;
+            String challengeMethod = null;
+            if (request.getCodeChallenge() != null && request.getCodeChallengeMethod() != null) {
+                challenge = request.getCodeChallenge().getValue();
+                challengeMethod = request.getCodeChallengeMethod().getValue();
+            }
             code = codeFactory.createAuthorizationCode(client.getClientId(), tokenRedirectUri, filteredScope.toString(),
-                    principal.getUsername(), value, Duration.ofMinutes(10), loginTime, false);
+                    principal.getUsername(), value, Duration.ofMinutes(10), loginTime,
+                    challenge, challengeMethod, false);
         }
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {
             accessToken = codeFactory.createAccessToken(principal,
@@ -302,35 +311,45 @@ public class OAuth2Service {
     private TokenResponse handleGrantInternal(Client client, AuthorizationCodeGrant grant) {
         Optional<AuthorizationCodeEntity> authorizationCode = codeRepository.findByAuthorizationCode(grant.getAuthorizationCode().getValue());
         if (authorizationCode.isPresent()) {
-            if (!authorizationCode.get().isUsed()) {
-                if (authorizationCode.get().getClientId().equals(client.getClientId())) {
-                    if (!StringUtils.hasText(authorizationCode.get().getReturnUrl())
-                            || (grant.getRedirectionURI() != null &&
-                            authorizationCode.get().getReturnUrl().equals(grant.getRedirectionURI().toString()))) {
-                        if (authorizationCode.get().isValid()) {
-                            authorizationCode.get().setUsed(true);
-                            Optional<User> associatedUser = userRepository.findById(authorizationCode.get().getUsername());
+            AuthorizationCodeEntity authCode = authorizationCode.get();
+            if (!authCode.isUsed()) {
+                if (authCode.getClientId().equals(client.getClientId())) {
+                    if (!StringUtils.hasText(authCode.getReturnUrl()) || (grant.getRedirectionURI() != null &&
+                            authCode.getReturnUrl().equals(grant.getRedirectionURI().toString()))) {
+                        if (authCode.isValid()) {
+                            if (authCode.isChallengeAvailable()) {
+                                if (grant.getCodeVerifier() != null) {
+                                    CodeChallengeMethod method = CodeChallengeMethod.parse(authCode.getChallengeMethod());
+                                    CodeChallenge compute = CodeChallenge.compute(method, grant.getCodeVerifier());
+                                    if (!compute.getValue().equals(authCode.getChallenge())) {
+                                        return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid challenge"));
+                                    }
+                                }
+                                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Challenge required"));
+                            }
+                            authCode.setUsed(true);
+                            Optional<User> associatedUser = userRepository.findById(authCode.getUsername());
                             if (associatedUser.isPresent()) {
-                                Scope approvedScope = Scope.parse(authorizationCode.get().getScope());
+                                Scope approvedScope = Scope.parse(authCode.getScope());
                                 Profile userProfile = Profile.create(associatedUser.get());
 
                                 BearerAccessToken accessToken = codeFactory.createAccessToken(
                                         userProfile, client.getClientId(), client.getAccessTokenValidity(),
-                                        approvedScope.toString(), authorizationCode.get().getLoginDate());
+                                        approvedScope.toString(), authCode.getLoginDate());
 
 
                                 RefreshToken refreshToken = null;
                                 if (client.supportsGrant(net.prasenjit.identity.security.GrantType.REFRESH_TOKEN)) {
                                     refreshToken = codeFactory.createRefreshToken(client.getClientId(),
                                             associatedUser.get().getUsername(),
-                                            accessToken.getScope().toString(), authorizationCode.get().getLoginDate(),
-                                            client.getRefreshTokenValidity(), authorizationCode.get().isOpenId());
+                                            accessToken.getScope().toString(), authCode.getLoginDate(),
+                                            client.getRefreshTokenValidity(), authCode.isOpenId());
                                 }
 
                                 JWT idToken;
-                                if (authorizationCode.get().isOpenId()) {
+                                if (authCode.isOpenId()) {
                                     idToken = codeFactory.createIDToken(userProfile,
-                                            authorizationCode.get().getLoginDate(), null,
+                                            authCode.getLoginDate(), null,
                                             client.getClientId(), client.getAccessTokenValidity(),
                                             approvedScope.toStringList(), accessToken.getValue(),
                                             null);

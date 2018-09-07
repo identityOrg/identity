@@ -5,8 +5,8 @@ import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.*;
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.user.UserConsent;
 import net.prasenjit.identity.entity.client.Client;
+import net.prasenjit.identity.entity.user.UserConsent;
 import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.model.Profile;
@@ -51,7 +51,7 @@ public class OpenIDConnectService {
             identityLoginView.getAttributes().put("loginHint", loginHint);
         }
         // handle id token hint
-        
+
 
         // Check prompt and login status
         Prompt prompt = request.getPrompt();
@@ -177,9 +177,15 @@ public class OpenIDConnectService {
         LocalDateTime loginTime = authentication.getLoginTime();
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
             String stateValue = request.getState() == null ? null : request.getState().getValue();
+            String challenge = null;
+            String challengeMethod = null;
+            if (request.getCodeChallenge() != null && request.getCodeChallengeMethod() != null) {
+                challenge = request.getCodeChallenge().getValue();
+                challengeMethod = request.getCodeChallengeMethod().getValue();
+            }
             code = codeFactory.createAuthorizationCode(client.getClientId(), request.getRedirectionURI().toString(),
                     filteredScope.toString(), principal.getUsername(), stateValue, Duration.ofMinutes(10),
-                    loginTime, true);
+                    loginTime, challenge, challengeMethod, true);
         }
         BearerAccessToken accessToken = null;
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {

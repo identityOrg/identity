@@ -25,7 +25,7 @@
         <java.version>1.8</java.version>
         <spring-cloud.version>Finchley.RELEASE</spring-cloud.version>
         <springfox-version>2.9.2</springfox-version>
-        <docker.image.prefix>identityOrg</docker.image.prefix>
+        <docker.image.prefix>identityorg</docker.image.prefix>
     </properties>
 
     <dependencies>
@@ -282,6 +282,8 @@
                     <buildArgs>
                         <JAR_FILE>target/${project.build.finalName}.jar</JAR_FILE>
                     </buildArgs>
+                    <tag>${project.version}</tag>
+                    <tag>latest</tag>
                 </configuration>
             </plugin>
         </plugins>

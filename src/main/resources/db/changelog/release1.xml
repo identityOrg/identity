@@ -55,6 +55,8 @@
                 <constraints nullable="false"/>
             </column>
             <column name="STATE" type="VARCHAR(50)"/>
+            <column name="CHALLENGE" type="VARCHAR(200)"/>
+            <column name="CHALLENGE_METHOD" type="VARCHAR(20)"/>
             <column name="USED" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
