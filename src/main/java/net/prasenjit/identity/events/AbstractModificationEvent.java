@@ -7,8 +7,8 @@ import org.springframework.context.ApplicationEvent;
 import java.time.LocalDateTime;
 
 public abstract class AbstractModificationEvent extends ApplicationEvent {
-
-    protected final String id;
+	private static final long serialVersionUID = -3909826132531495974L;
+	protected final String id;
     protected final ResourceType type;
 
     /**
