@@ -1,7 +1,6 @@
 package net.prasenjit.identity.model.api.user;
 
 import lombok.Data;
-import net.prasenjit.identity.entity.Status;
 
 @Data
 public class SearchUserRequest {

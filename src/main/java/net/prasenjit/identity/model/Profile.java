@@ -17,8 +17,8 @@ import java.util.List;
 
 @Data
 public class Profile implements UserDetails {
-
-    private LocalDateTime expiryDate;
+	private static final long serialVersionUID = -8616676872755665605L;
+	private LocalDateTime expiryDate;
     private LocalDateTime passwordExpiryDate;
     private List<SimpleGrantedAuthority> authorities;
     private LocalDateTime creationDate;
@@ -114,6 +114,7 @@ public class Profile implements UserDetails {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SimpleGrantedAuthority implements GrantedAuthority {
-        private String authority;
+		private static final long serialVersionUID = -5690245860071067474L;
+		private String authority;
     }
 }

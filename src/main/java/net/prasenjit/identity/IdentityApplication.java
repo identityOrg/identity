@@ -1,13 +1,31 @@
 package net.prasenjit.identity;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
-import net.minidev.json.JSONStyle;
+
 import net.prasenjit.crypto.TextEncryptor;
-import net.prasenjit.identity.entity.*;
+import net.prasenjit.identity.entity.ScopeEntity;
+import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.entity.user.UserAddress;
@@ -21,22 +39,6 @@ import net.prasenjit.identity.repository.ScopeRepository;
 import net.prasenjit.identity.repository.UserRepository;
 import net.prasenjit.identity.security.GrantType;
 import net.prasenjit.identity.security.ResponseType;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 
 @EnableAsync
 @SpringBootApplication

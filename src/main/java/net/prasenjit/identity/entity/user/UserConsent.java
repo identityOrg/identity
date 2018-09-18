@@ -30,7 +30,8 @@ public class UserConsent {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class UserConsentPK implements Serializable {
-        @Column(name = "USERNAME")
+		private static final long serialVersionUID = 7839471339955798852L;
+		@Column(name = "USERNAME")
         private String username;
         @Column(name = "CLIENT_ID")
         private String clientID;

@@ -17,7 +17,9 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ScopeEntity implements Serializable {
-    @Id
+	private static final long serialVersionUID = 648424861320420292L;
+
+	@Id
     @Column(name = "SCOPE_ID", length = 10, nullable = false, unique = true)
     @NotEmpty
     private String scopeId;
