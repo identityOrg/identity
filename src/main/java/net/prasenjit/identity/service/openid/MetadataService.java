@@ -13,6 +13,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.nimbusds.oauth2.sdk.as.AuthorizationServerMetadata;
+import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
+
 import java.util.stream.Collectors;
 
 @Service
@@ -74,4 +77,14 @@ public class MetadataService {
         serverPort = event.getWebServer().getPort();
         initialized = false;
     }
+
+	public OIDCProviderMetadata findOIDCConfiguration() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public AuthorizationServerMetadata findOAuthCConfiguration() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
