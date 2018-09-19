@@ -3,6 +3,8 @@ package net.prasenjit.identity.service.openid;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.util.Base64;
+import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
 import com.nimbusds.oauth2.sdk.id.Issuer;
@@ -178,5 +180,12 @@ public class MetadataService {
             initialized = true;
         }
         return metadata;
+    }
+
+    public URI findClientRegistrationURI(String clientId) {
+        Base64URL base64 = Base64URL.encode(clientId);
+        return ServletUriComponentsBuilder.fromHttpUrl(findOIDCConfiguration().getIssuer().getValue())
+                .pathSegment("api", "client-registration")
+                .pathSegment(base64.toString()).build().toUri();
     }
 }

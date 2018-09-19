@@ -10,6 +10,10 @@ import net.prasenjit.identity.model.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.stream.Collectors;
 
 public final class ValidationUtils {
@@ -77,5 +81,19 @@ public final class ValidationUtils {
             }
         }
         return filteredScopes;
+    }
+
+    public static Date convertToDate(LocalDateTime tdt) {
+        if (tdt == null) {
+            return null;
+        }
+        return Date.from(tdt.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    public static LocalDateTime convertToLocalDateTime(Date date) {
+        if (date == null) {
+            return null;
+        }
+        return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 }

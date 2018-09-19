@@ -149,8 +149,9 @@ public class CodeFactory {
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                     .subject(username)
                     .issuer(metadataService.findOIDCConfiguration().getIssuer().getValue())
-                    .issueTime(convertToDate(loginTime))
-                    .expirationTime(convertToDate(loginTime.plusDays(identityProperties.getRememberLoginDays())))
+                    .issueTime(ValidationUtils.convertToDate(loginTime))
+                    .expirationTime(ValidationUtils.convertToDate(
+                            loginTime.plusDays(identityProperties.getRememberLoginDays())))
                     .build();
             SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
             signedJWT.sign(macSigner);
@@ -173,7 +174,7 @@ public class CodeFactory {
                 return null;
             }
 
-            LocalDateTime creationTime = convertToLocalDateTime(claimsSet.getIssueTime());
+            LocalDateTime creationTime = ValidationUtils.convertToLocalDateTime(claimsSet.getIssueTime());
 
             return new UserAuthenticationToken(claimsSet.getSubject(),
                     userDetails.getPassword(), true, creationTime);
@@ -190,9 +191,9 @@ public class CodeFactory {
                     .subject(profile.getUsername())
                     .issuer(metadataService.findOIDCConfiguration().getIssuer().getValue())
                     .audience(clientId.getValue())
-                    .issueTime(convertToDate(issueTime))
-                    .expirationTime(convertToDate(issueTime.plus(idTokenValidity)))
-                    .claim("auth_time", convertToDate(loginTime))
+                    .issueTime(ValidationUtils.convertToDate(issueTime))
+                    .expirationTime(ValidationUtils.convertToDate(issueTime.plus(idTokenValidity)))
+                    .claim("auth_time", ValidationUtils.convertToDate(loginTime))
                     .claim("azp", clientId.getValue());
             if (nonce != null) {
                 claimsSetBuilder.claim("nonce", nonce.getValue());
@@ -230,19 +231,5 @@ public class CodeFactory {
         byte[] octate = new byte[digest.length / 2];
         System.arraycopy(digest, 0, octate, 0, octate.length);
         return Base64Utils.encodeToUrlSafeString(octate);
-    }
-
-    private Date convertToDate(LocalDateTime tdt) {
-        if (tdt == null) {
-            return null;
-        }
-        return Date.from(tdt.atZone(ZoneId.systemDefault()).toInstant());
-    }
-
-    private LocalDateTime convertToLocalDateTime(Date date) {
-        if (date == null) {
-            return null;
-        }
-        return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 }
