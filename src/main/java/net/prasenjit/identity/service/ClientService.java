@@ -66,14 +66,14 @@ public class ClientService implements UserDetailsService {
         client.setStatus(Status.LOCKED);
         LocalDateTime now = LocalDateTime.now();
         client.setCreationDate(now);
-        client.setClientSecret(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled user
+        client.setClientSecret(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled client
         //client.setRedirectUri(request.getRedirectUri().toString());
         client.setClientName(request.getClientName());
         client.setExpiryDate(request.getExpiryDate());
         client.setAccessTokenValidity(request.getAccessTokenValidity());
         client.setRefreshTokenValidity(request.getRefreshTokenValidity());
         client.setClientId(request.getClientId());
-        client.setScopes(request.getScopes());
+        //client.setScopes(request.getScopes());
 
         CreateEvent csEvent = new CreateEvent(this,
                 ResourceType.CLIENT, request.getClientId());
@@ -93,7 +93,7 @@ public class ClientService implements UserDetailsService {
         savedClient.setClientName(request.getClientName());
         savedClient.setRefreshTokenValidity(request.getRefreshTokenValidity());
         savedClient.setAccessTokenValidity(request.getAccessTokenValidity());
-        savedClient.setScopes(request.getScopes());
+        //savedClient.setScopes(request.getScopes());
         savedClient.setExpiryDate(request.getExpiryDate());
 
         UpdateEvent csEvent = new UpdateEvent(this,

@@ -27,12 +27,12 @@ import java.util.Date;
 
 import static org.junit.Assert.assertTrue;
 
-public class AuthenticationRequestJWTResolverTest extends HtmlPageTestBase {
+public class JWTResolverTest extends HtmlPageTestBase {
 
     @Autowired
     private ClientRepository clientRepository;
     @Autowired
-    private AuthenticationRequestJWTResolver requestJWTResolver;
+    private JWTResolver requestJWTResolver;
     @Autowired
     private CryptographyService cryptographyService;
 
@@ -40,8 +40,8 @@ public class AuthenticationRequestJWTResolverTest extends HtmlPageTestBase {
     @Transactional
     public void resolve() throws ParseException, java.text.ParseException, JOSEException, ResolveException {
         Client client = clientRepository.getOne("client");
-        System.out.println(client.getJwks());
-        JWKSet keySet = JWKSet.parse(client.getJwks());
+        System.out.println(client.getMetadata().getJWKSet());
+        JWKSet keySet = client.getMetadata().getJWKSet();
 
         JWK key = null;
         JWK encKey = null;
@@ -83,7 +83,7 @@ public class AuthenticationRequestJWTResolverTest extends HtmlPageTestBase {
                 .requestObject(JWTParser.parse(jweObject.serialize()))
                 .build();
 
-        AuthenticationRequest resolved = requestJWTResolver.resolve(request, client);
+        AuthenticationRequest resolved = requestJWTResolver.resolveAuthenticationRequest(request, client);
         assertTrue(resolved.getScope().contains(OIDCScopeValue.EMAIL));
     }
 }

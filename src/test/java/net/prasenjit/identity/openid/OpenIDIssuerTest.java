@@ -17,7 +17,7 @@ public class OpenIDIssuerTest extends HtmlPageTestBase {
         // The OpenID provider issuer URL
         Issuer issuer = new Issuer(getIssuerURI());
 
-        // Will resolve the OpenID provider metadata automatically
+        // Will resolveAuthenticationRequest the OpenID provider metadata automatically
         OIDCProviderConfigurationRequest request = new OIDCProviderConfigurationRequest(issuer);
 
         // Make HTTP request

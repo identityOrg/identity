@@ -59,12 +59,12 @@ public class RequestWithRequestObjectTest extends HtmlPageTestBase {
         assertNotNull(htmlPage);
     }
 
-    private JWT createRequestObject(Client client, ResponseType token) throws Exception {
-        JWKSet keySet = JWKSet.parse(client.getJwks());
+    private JWT createRequestObject(Client client, ResponseType responseType) throws Exception {
+        JWKSet keySet = client.getMetadata().getJWKSet();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().issuer(client.getClientId())
                 .audience(getIssuerURI().toString())
-                .claim("response_type", token.toString()).build();
+                .claim("response_type", responseType.toString()).build();
 
         SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claimsSet);
         RSASSASigner signer = new RSASSASigner((RSAKey) keySet.getKeyByKeyId("sign"));

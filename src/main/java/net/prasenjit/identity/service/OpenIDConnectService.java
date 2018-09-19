@@ -16,8 +16,7 @@ import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.UserConsentRepository;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
-import net.prasenjit.identity.service.openid.AuthenticationRequestJWTResolver;
-import org.apache.commons.lang3.ArrayUtils;
+import net.prasenjit.identity.service.openid.JWTResolver;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -36,7 +35,7 @@ public class OpenIDConnectService {
     private final UserConsentRepository userConsentRepository;
     private final OpenIDSessionContainer sessionContainer;
     private final CodeFactory codeFactory;
-    private final AuthenticationRequestJWTResolver requestJWTResolver;
+    private final JWTResolver jwtResolver;
 
     public AuthorizationResponse processAuthentication(ConsentModel consentModel,
                                                        AuthenticationRequest request)
@@ -51,7 +50,7 @@ public class OpenIDConnectService {
                     OAuth2Error.INVALID_CLIENT.setDescription(OAuthError.CLIENT_NOT_FOUND),
                     request.getState(), request.getResponseMode());
         } else {
-            request = requestJWTResolver.resolve(request, client.get());
+            request = jwtResolver.resolveAuthenticationRequest(request, client.get());
 
             // handle login hint
             IdentityViewResponse identityLoginView = new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
@@ -102,11 +101,12 @@ public class OpenIDConnectService {
             // End prompt and login status check
             consentModel.setClient(client.get());
             // Redirect URI validation start
-            String[] redirectUris = client.get().getRedirectUris();
-            if (!ArrayUtils.contains(redirectUris, request.getRedirectionURI().toString())) {
-                return new AuthorizationErrorResponse(request.getRedirectionURI(),
-                        OAuth2Error.INVALID_REQUEST.setDescription(OAuthError.INVALID_REDIRECT_URI),
-                        request.getState(), request.getResponseMode());
+            if (client.get().getMetadata().getRedirectionURIStrings() != null) {
+                if (!client.get().getMetadata().getRedirectionURIStrings().contains(request.getRedirectionURI().toString())) {
+                    return new AuthorizationErrorResponse(request.getRedirectionURI(),
+                            OAuth2Error.INVALID_REQUEST.setDescription(OAuthError.INVALID_REDIRECT_URI),
+                            request.getState(), request.getResponseMode());
+                }
             }
             // Redirect URI validation end
 

@@ -35,7 +35,9 @@ public class OpenIDPromtTest extends HtmlPageTestBase {
 
         String cookieToken = codeFactory.createCookieToken("admin", LocalDateTime.now());
         webClient.getCookieManager()
-                .addCookie(new Cookie(metadataService.findMetadata().getIssuer(), "S_CONTEXT", cookieToken));
+                .addCookie(new Cookie(
+                        metadataService.findOIDCConfiguration().getIssuer().getValue(),
+                        "S_CONTEXT", cookieToken));
 
         loginForConsentPage(request.toURI(), "admin", "admin");
     }

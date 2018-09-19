@@ -152,7 +152,7 @@ public abstract class HtmlPageTestBase {
 
     protected void setRememberLogin(String username) throws MalformedURLException {
         String cookieToken = codeFactory.createCookieToken(username, LocalDateTime.now());
-        URL issuer = new URL(metadataService.findMetadata().getIssuer());
+        URL issuer = new URL(metadataService.findOIDCConfiguration().getIssuer().getValue());
         webClient.getCookieManager()
                 .addCookie(new Cookie(issuer.getAuthority(), "S_CONTEXT", cookieToken));
     }

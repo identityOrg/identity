@@ -76,32 +76,18 @@
             <column name="CLIENT_NAME" type="VARCHAR(500)">
                 <constraints nullable="false"/>
             </column>
-            <column name="APPROVED_GRANTS" type="VARCHAR(100)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="APPROVED_RESPONSE_TYPE" type="VARCHAR(100)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="APPLICATION_TYPE" type="VARCHAR(30)">
-                <constraints nullable="false"/>
-            </column>
             <column name="CLIENT_SECRET" type="VARCHAR(50)"/>
-            <column name="CONTACTS" type="VARCHAR(1000)"/>
-            <column name="URI_CONTAINER" type="VARCHAR(2000)"/>
-            <column name="SECURITY_CONTAINER" type="VARCHAR(2000)"/>
-            <column name="JWKS_URI" type="VARCHAR(1000)"/>
-            <column name="JWKS" type="CLOB"/>
             <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="EXPIRY_DATE" type="TIMESTAMP"/>
-            <column name="REDIRECT_URI" type="VARCHAR(4000)">
-                <constraints nullable="false"/>
-            </column>
             <column name="REFRESH_TOKEN_VALIDITY" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
             <column name="STATUS" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="METADATA" type="CLOB">
                 <constraints nullable="false"/>
             </column>
         </createTable>

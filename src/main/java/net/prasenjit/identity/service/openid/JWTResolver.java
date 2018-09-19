@@ -19,13 +19,12 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.OIDCError;
 import com.nimbusds.openid.connect.sdk.op.AuthenticationRequestResolver;
 import com.nimbusds.openid.connect.sdk.op.ResolveException;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.client.Client;
-import net.prasenjit.identity.entity.client.SecurityInfoContainer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import javax.mail.internet.ContentType;
@@ -34,22 +33,22 @@ import java.net.URL;
 
 @Component
 @RequiredArgsConstructor
-public class AuthenticationRequestJWTResolver implements ResourceRetriever {
+public class JWTResolver implements ResourceRetriever {
 
     @Qualifier("cachingRestTemplate")
     private final RestTemplate restTemplate;
     private final CryptographyService cryptographyService;
 
-    public AuthenticationRequest resolve(AuthenticationRequest request, Client client)
+    public AuthenticationRequest resolveAuthenticationRequest(AuthenticationRequest request, Client client)
             throws ParseException, ResolveException {
         if (request.specifiesRequestObject()) {
-            SecurityInfoContainer securityContainer = client.getSecurityContainer();
-            if (securityContainer.getRequestObjectSigningAlgo() == null &&
-                    (securityContainer.getRequestObjectEncryptionAlgo() == null ||
-                            securityContainer.getRequestObjectEncryptionEnc() == null)) {
+            OIDCClientMetadata metadata = client.getMetadata();
+            if (metadata.getRequestObjectJWSAlg() == null &&
+                    (metadata.getRequestObjectJWEAlg() == null ||
+                            metadata.getRequestObjectJWEEnc() == null)) {
                 throw new ResolveException(OIDCError.REQUEST_NOT_SUPPORTED, request);
             }
-            JWTProcessor<SecurityContext> jwtProcessor = createJWTProcessor(client, securityContainer, request);
+            JWTProcessor<SecurityContext> jwtProcessor = createJWTProcessor(metadata, request);
             AuthenticationRequestResolver<SecurityContext> requestResolver =
                     new AuthenticationRequestResolver<>(jwtProcessor, this);
 
@@ -62,21 +61,20 @@ public class AuthenticationRequestJWTResolver implements ResourceRetriever {
         return request;
     }
 
-    private JWTProcessor<SecurityContext> createJWTProcessor(Client client,
-                                                             SecurityInfoContainer securityContainer,
+    private JWTProcessor<SecurityContext> createJWTProcessor(OIDCClientMetadata metadata,
                                                              AuthenticationRequest request)
             throws ParseException, ResolveException {
         JWEDecryptionKeySelector<SecurityContext> encKeySelector = null;
         JWSVerificationKeySelector<SecurityContext> signKeySelector = null;
-        if (securityContainer.getRequestObjectSigningAlgo() != null) {
-            JWSAlgorithm algo = securityContainer.getRequestObjectSigningAlgo().getValue();
-            JWKSource<SecurityContext> keySource = new ImmutableJWKSet<>(getClientJWKSet(client, request));
+        if (metadata.getRequestObjectJWSAlg() != null) {
+            JWSAlgorithm algo = metadata.getRequestObjectJWSAlg();
+            JWKSource<SecurityContext> keySource = new ImmutableJWKSet<>(getClientJWKSet(metadata, request));
             signKeySelector = new JWSVerificationKeySelector<>(algo, keySource);
         }
-        if (securityContainer.getRequestObjectEncryptionAlgo() != null
-                && securityContainer.getRequestObjectEncryptionEnc() != null) {
-            JWEAlgorithm jweAlg = securityContainer.getRequestObjectEncryptionAlgo().getValue();
-            EncryptionMethod jweEnc = securityContainer.getRequestObjectEncryptionEnc().getValue();
+        if (metadata.getRequestObjectJWEAlg() != null
+                && metadata.getRequestObjectJWEEnc() != null) {
+            JWEAlgorithm jweAlg = metadata.getRequestObjectJWEAlg();
+            EncryptionMethod jweEnc = metadata.getRequestObjectJWEEnc();
             JWKSource<SecurityContext> opKeySource = new ImmutableJWKSet<>(cryptographyService.loadJwkKeys());
             encKeySelector = new JWEDecryptionKeySelector<>(jweAlg, jweEnc, opKeySource);
         }
@@ -86,12 +84,12 @@ public class AuthenticationRequestJWTResolver implements ResourceRetriever {
         return processor;
     }
 
-    private JWKSet getClientJWKSet(Client client, AuthenticationRequest request) throws ParseException, ResolveException {
+    private JWKSet getClientJWKSet(OIDCClientMetadata metadata, AuthenticationRequest request) throws ParseException, ResolveException {
         try {
-            if (StringUtils.hasText(client.getJwks())) {
-                return JWKSet.parse(client.getJwks());
-            } else if (client.getJwksUri() != null) {
-                Resource jwksResource = retrieveResource(client.getJwksUri());
+            if (metadata.getJWKSet() != null) {
+                return metadata.getJWKSet();
+            } else if (metadata.getJWKSetURI() != null) {
+                Resource jwksResource = retrieveResource(metadata.getJWKSetURI().toURL());
                 return JWKSet.parse(jwksResource.getContent());
             } else {
                 throw new ResolveException(OIDCError.REQUEST_NOT_SUPPORTED

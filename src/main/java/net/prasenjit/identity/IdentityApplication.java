@@ -1,12 +1,29 @@
 package net.prasenjit.identity;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-
+import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.openid.connect.sdk.rp.ApplicationType;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
+import net.prasenjit.crypto.TextEncryptor;
+import net.prasenjit.identity.entity.ScopeEntity;
+import net.prasenjit.identity.entity.Status;
+import net.prasenjit.identity.entity.client.Client;
+import net.prasenjit.identity.entity.user.User;
+import net.prasenjit.identity.entity.user.UserAddress;
+import net.prasenjit.identity.entity.user.UserProfile;
+import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.repository.ScopeRepository;
+import net.prasenjit.identity.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.ApplicationArguments;
@@ -17,28 +34,14 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
-
-import net.prasenjit.crypto.TextEncryptor;
-import net.prasenjit.identity.entity.ScopeEntity;
-import net.prasenjit.identity.entity.Status;
-import net.prasenjit.identity.entity.client.Client;
-import net.prasenjit.identity.entity.user.User;
-import net.prasenjit.identity.entity.user.UserAddress;
-import net.prasenjit.identity.entity.user.UserProfile;
-import net.prasenjit.identity.model.openid.EncryptionAlgorithm;
-import net.prasenjit.identity.model.openid.EncryptionEnc;
-import net.prasenjit.identity.model.openid.SignatureAlgorithm;
-import net.prasenjit.identity.model.openid.registration.ApplicationType;
-import net.prasenjit.identity.repository.ClientRepository;
-import net.prasenjit.identity.repository.ScopeRepository;
-import net.prasenjit.identity.repository.UserRepository;
-import net.prasenjit.identity.security.GrantType;
-import net.prasenjit.identity.security.ResponseType;
+import java.net.URI;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @EnableAsync
 @SpringBootApplication
@@ -83,7 +86,7 @@ public class IdentityApplication implements ApplicationRunner {
 
     }
 
-    private Client createClient(String clientId, boolean secure) throws JOSEException {
+    private Client createClient(String clientId, boolean secure) throws JOSEException, ParseException {
         Client client = new Client();
         client.setClientId(clientId);
         if (secure)
@@ -91,21 +94,47 @@ public class IdentityApplication implements ApplicationRunner {
         client.setCreationDate(LocalDateTime.now());
         client.setStatus(Status.ACTIVE);
         client.setClientName("Test Client");
-        client.setScopes(new HashSet<>(scopeRepository.findAll()));
-        client.setRedirectUris(new String[]{"http://localhost:4200/callback"});
+        final OIDCClientMetadata metadata = client.getMetadata();
+        scopeRepository.findAll().stream()
+                .map(ScopeEntity::getScopeId)
+                .reduce((x, y) -> x + " " + y)
+                .map(Scope::parse)
+                .ifPresent(metadata::setScope);
+        metadata.setRedirectionURI(URI.create("http://localhost:4200/callback"));
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
-        client.setApplicationType(ApplicationType.WEB);
-        client.setApprovedGrants(GrantType.values());
-        client.setApprovedResponseTypes(ResponseType.values());
-        client.setJwks(createRandomJwks());
-        client.getSecurityContainer().setRequestObjectSigningAlgo(SignatureAlgorithm.RS256);
-        client.getSecurityContainer().setRequestObjectEncryptionAlgo(EncryptionAlgorithm.RSA_OAEP_256);
-        client.getSecurityContainer().setRequestObjectEncryptionEnc(EncryptionEnc.A128GCM);
+        metadata.setApplicationType(ApplicationType.getDefault());
+        metadata.setGrantTypes(getAllGrantTypes());
+        metadata.setResponseTypes(getAllResponseTypes());
+        metadata.setJWKSet(createRandomJwks());
+        metadata.setRequestObjectJWEAlg(JWEAlgorithm.RSA_OAEP_256);
+        metadata.setRequestObjectJWSAlg(JWSAlgorithm.RS256);
+        metadata.setRequestObjectJWEEnc(EncryptionMethod.A128GCM);
         return client;
     }
 
-    private String createRandomJwks() throws JOSEException {
+    private Set<ResponseType> getAllResponseTypes() throws ParseException {
+        HashSet<ResponseType> responseTypes = new HashSet<>();
+        responseTypes.add(ResponseType.parse("code"));
+        responseTypes.add(ResponseType.parse("id_token"));
+        responseTypes.add(ResponseType.parse("id_token token"));
+        responseTypes.add(ResponseType.parse("code id_token"));
+        responseTypes.add(ResponseType.parse("code token"));
+        responseTypes.add(ResponseType.parse("code id_token token"));
+        return responseTypes;
+    }
+
+    private Set<GrantType> getAllGrantTypes() {
+        Set<GrantType> grants = new HashSet<>();
+        grants.add(GrantType.AUTHORIZATION_CODE);
+        grants.add(GrantType.IMPLICIT);
+        grants.add(GrantType.REFRESH_TOKEN);
+        grants.add(GrantType.PASSWORD);
+        grants.add(GrantType.CLIENT_CREDENTIALS);
+        return grants;
+    }
+
+    private JWKSet createRandomJwks() throws JOSEException {
         List<JWK> keys = new ArrayList<>();
         RSAKeyGenerator generator = new RSAKeyGenerator(2048);
         generator.keyID("encr");
@@ -116,8 +145,7 @@ public class IdentityApplication implements ApplicationRunner {
         generator.keyUse(KeyUse.SIGNATURE);
         keys.add(generator.generate());
 
-        JWKSet jwkSet = new JWKSet(keys);
-        return jwkSet.toJSONObject(false).toJSONString();
+        return new JWKSet(keys);
     }
 
     private User createAdmin(String username) {

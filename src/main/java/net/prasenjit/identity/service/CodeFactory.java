@@ -148,7 +148,7 @@ public class CodeFactory {
         try {
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                     .subject(username)
-                    .issuer(metadataService.findMetadata().getIssuer())
+                    .issuer(metadataService.findOIDCConfiguration().getIssuer().getValue())
                     .issueTime(convertToDate(loginTime))
                     .expirationTime(convertToDate(loginTime.plusDays(identityProperties.getRememberLoginDays())))
                     .build();
@@ -188,13 +188,13 @@ public class CodeFactory {
             LocalDateTime issueTime = LocalDateTime.now();
             JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder()
                     .subject(profile.getUsername())
-                    .issuer(metadataService.findMetadata().getIssuer())
+                    .issuer(metadataService.findOIDCConfiguration().getIssuer().getValue())
                     .audience(clientId.getValue())
                     .issueTime(convertToDate(issueTime))
                     .expirationTime(convertToDate(issueTime.plus(idTokenValidity)))
                     .claim("auth_time", convertToDate(loginTime))
                     .claim("azp", clientId.getValue());
-            if (nonce!=null){
+            if (nonce != null) {
                 claimsSetBuilder.claim("nonce", nonce.getValue());
             }
             if (accessToken != null) {

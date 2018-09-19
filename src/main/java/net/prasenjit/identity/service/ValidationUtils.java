@@ -1,11 +1,12 @@
 package net.prasenjit.identity.service;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.Profile;
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.util.StringUtils;
 
@@ -46,24 +47,16 @@ public final class ValidationUtils {
 
     public static boolean invalidGrant(AuthorizationRequest request, Client client) {
         // Grant validation start
-        net.prasenjit.identity.security.GrantType[] approvedGrants = client.getApprovedGrants();
+        OIDCClientMetadata metadata = client.getMetadata();
         if (request.getResponseType().impliesCodeFlow()) {
-            if (!ArrayUtils.contains(approvedGrants, net.prasenjit.identity.security.GrantType.IMPLICIT)) {
-                return true;
-            }
+            return !metadata.getGrantTypes().contains(GrantType.AUTHORIZATION_CODE);
         }
         if (request.getResponseType().impliesImplicitFlow()) {
-            if (!ArrayUtils.contains(approvedGrants, net.prasenjit.identity.security.GrantType.AUTHORIZATION_CODE)) {
-                return true;
-            }
+            return !metadata.getGrantTypes().contains(GrantType.IMPLICIT);
         }
         if (request.getResponseType().impliesHybridFlow()) {
-            if (!ArrayUtils.contains(approvedGrants, net.prasenjit.identity.security.GrantType.AUTHORIZATION_CODE)) {
-                return true;
-            }
-            if (!ArrayUtils.contains(approvedGrants, net.prasenjit.identity.security.GrantType.IMPLICIT)) {
-                return true;
-            }
+            return !(metadata.getGrantTypes().contains(GrantType.IMPLICIT)
+                    && metadata.getGrantTypes().contains(GrantType.AUTHORIZATION_CODE));
         }
         // Grant validation end
         return false;

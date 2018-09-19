@@ -28,7 +28,6 @@ import net.prasenjit.identity.repository.*;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -43,6 +42,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -76,16 +76,16 @@ public class OAuth2Service {
             consentModel.setClient(client.get());
 
             // Redirect URI validation start
-            String[] redirectUris = client.get().getRedirectUris();
+            Set<String> redirectUris = client.get().getMetadata().getRedirectionURIStrings();
             if (request.getRedirectionURI() != null) {
-                if (!ArrayUtils.contains(redirectUris, request.getRedirectionURI().toString())) {
+                if (redirectUris == null || !redirectUris.contains(request.getRedirectionURI().toString())) {
                     return new AuthorizationErrorResponse(request.getRedirectionURI(),
                             OAuth2Error.INVALID_REQUEST.setDescription(OAuthError.INVALID_REDIRECT_URI),
                             request.getState(), request.getResponseMode());
                 }
                 redirectUri = request.getRedirectionURI();
-            } else if (redirectUris.length == 1) {
-                redirectUri = URI.create(redirectUris[0]);
+            } else if (redirectUris != null) {
+                redirectUri = client.get().getMetadata().getRedirectionURI();
             } else {
                 return new IdentityViewResponse(OAuth2Error.INVALID_REQUEST.setDescription("Redirect URI must be provided"));
             }
@@ -167,11 +167,7 @@ public class OAuth2Service {
 
     public URI getRedirectUriForClientId(String value) {
         Optional<Client> optionalClient = clientRepository.findById(value);
-        if (optionalClient.isPresent()) {
-            if (optionalClient.get().getRedirectUris() != null && optionalClient.get().getRedirectUris().length > 0) {
-                return URI.create(optionalClient.get().getRedirectUris()[0]);
-            }
-        }
+        optionalClient.ifPresent(client -> client.getMetadata().getRedirectionURI());
         return null;
     }
 
@@ -282,7 +278,7 @@ public class OAuth2Service {
                     clientId, client.getAccessTokenValidity(), filteredScopes, LocalDateTime.now());
 
             com.nimbusds.oauth2.sdk.token.RefreshToken refreshToken = null;
-            if (!client.supportsGrant(net.prasenjit.identity.security.GrantType.REFRESH_TOKEN)) {
+            if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
                 refreshToken = codeFactory.createRefreshToken(clientId, userProfile.getUsername(),
                         filteredScopes, LocalDateTime.now(), client.getRefreshTokenValidity(), false);
             }
@@ -336,7 +332,7 @@ public class OAuth2Service {
 
 
                                 RefreshToken refreshToken = null;
-                                if (client.supportsGrant(net.prasenjit.identity.security.GrantType.REFRESH_TOKEN)) {
+                                if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {
                                     refreshToken = codeFactory.createRefreshToken(clientId,
                                             associatedUser.get().getUsername(),
                                             accessToken.getScope(), authCode.getLoginDate(),
