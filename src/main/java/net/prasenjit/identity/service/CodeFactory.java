@@ -48,11 +48,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 
 //@Slf4j
 @Component
@@ -107,7 +104,7 @@ public class CodeFactory {
     }
 
     public BearerAccessToken createAccessToken(Profile user, ClientID clientId, Duration duration,
-                                               Scope scope, LocalDateTime loginDate) {
+                                               Scope scope, LocalDateTime loginDate, String refreshToken) {
         AccessTokenEntity accessToken = new AccessTokenEntity();
         accessToken.setAssessToken(RandomStringUtils.randomAlphanumeric(24));
         accessToken.setUsername(user.getUsername());
@@ -119,6 +116,7 @@ public class CodeFactory {
         if (scope != null) {
             accessToken.setScope(scope.toString());
         }
+        accessToken.setRefreshToken(refreshToken);
         accessToken.setLoginDate(loginDate);
         accessTokenRepository.saveAndFlush(accessToken);
         long lifetime = ChronoUnit.SECONDS.between(LocalDateTime.now(), accessToken.getExpiryDate());
@@ -126,7 +124,7 @@ public class CodeFactory {
     }
 
     RefreshToken createRefreshToken(ClientID clientId, String userName, Scope scope, LocalDateTime loginDate,
-                                    Duration duration, boolean openId) {
+                                    Duration duration, boolean openId, String parentRefreshToken) {
         RefreshTokenEntity refreshToken = new RefreshTokenEntity();
         refreshToken.setClientId(clientId.getValue());
         LocalDateTime creationDate = LocalDateTime.now();
@@ -140,6 +138,7 @@ public class CodeFactory {
         refreshToken.setOpenId(openId);
         refreshToken.setRefreshToken(RandomStringUtils.randomAlphanumeric(24));
         refreshToken.setUsed(false);
+        refreshToken.setParentRefreshToken(parentRefreshToken);
         refreshTokenRepository.saveAndFlush(refreshToken);
         return new RefreshToken(refreshToken.getRefreshToken());
     }

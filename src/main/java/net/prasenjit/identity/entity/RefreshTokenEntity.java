@@ -17,8 +17,14 @@ public class RefreshTokenEntity {
     @Column(name = "REFRESH_TOKEN", length = 50, nullable = false, unique = true)
     private String refreshToken;
 
+    @Column(name = "PARENT_REFRESH_TOKEN", length = 50)
+    private String parentRefreshToken;
+
     @Column(name = "USERNAME", length = 50, nullable = false)
     private String username;
+
+    @Column(name = "ACTIVE", nullable = false)
+    private boolean active = true;
 
     @Column(name = "CLIENT_ID", length = 50, nullable = false)
     private String clientId;
@@ -42,6 +48,6 @@ public class RefreshTokenEntity {
     private boolean openId;
 
     public boolean isValid() {
-        return LocalDateTime.now().isBefore(expiryDate) && !used;
+        return LocalDateTime.now().isBefore(expiryDate) && !used && active;
     }
 }

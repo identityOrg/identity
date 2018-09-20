@@ -3,7 +3,6 @@ package net.prasenjit.identity.service.openid;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
@@ -84,12 +83,24 @@ public class MetadataService {
 
             builder1 = builder.cloneBuilder();
             metadata.setTokenEndpointURI(builder1.pathSegment("oauth", "token").build().toUri());
+            List<ClientAuthenticationMethod> epAuthMethods = new ArrayList<>();
+            epAuthMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
+            epAuthMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_POST);
+            metadata.setTokenEndpointAuthMethods(epAuthMethods);
 
             builder1 = builder.cloneBuilder();
             metadata.setUserInfoEndpointURI(builder1.pathSegment("api", "me").build().toUri());
 
             builder1 = builder.cloneBuilder();
             metadata.setRegistrationEndpointURI(builder1.pathSegment("api", "client-registration").build().toUri());
+
+            builder1 = builder.cloneBuilder();
+            metadata.setIntrospectionEndpointURI(builder1.pathSegment("oauth", "introspection").build().toUri());
+            metadata.setIntrospectionEndpointAuthMethods(epAuthMethods);
+
+            builder1 = builder.cloneBuilder();
+            metadata.setRevocationEndpointURI(builder1.pathSegment("oauth", "revocation").build().toUri());
+            metadata.setRevocationEndpointAuthMethods(epAuthMethods);
 
             scopeRepository.findAll().stream()
                     .map(ScopeEntity::getScopeId)
@@ -172,11 +183,6 @@ public class MetadataService {
             responseModes.add(ResponseMode.FORM_POST);
             metadata.setResponseModes(responseModes);
 
-            List<ClientAuthenticationMethod> epAuthMethods = new ArrayList<>();
-            epAuthMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
-            epAuthMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_POST);
-            metadata.setTokenEndpointAuthMethods(epAuthMethods);
-
             initialized = true;
         }
         return metadata;
@@ -187,5 +193,9 @@ public class MetadataService {
         return ServletUriComponentsBuilder.fromHttpUrl(findOIDCConfiguration().getIssuer().getValue())
                 .pathSegment("api", "client-registration")
                 .pathSegment(base64.toString()).build().toUri();
+    }
+
+    public Issuer getIssuer() {
+        return findOIDCConfiguration().getIssuer();
     }
 }

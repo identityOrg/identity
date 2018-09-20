@@ -36,7 +36,7 @@ public class E2eTest extends HtmlPageTestBase {
         UserDetails client = clientService.loadUserByUsername(clientID.getValue());
         Scope openid = Scope.parse("openid");
         BearerAccessToken createAccessToken = codeFactory.createAccessToken(Profile.create(client), clientID, Duration.ofMinutes(1),
-                openid, LocalDateTime.now());
+                openid, LocalDateTime.now(), null);
 
         String token = createAccessToken.getValue();
         mockMvc.perform(get("/api/e2e")

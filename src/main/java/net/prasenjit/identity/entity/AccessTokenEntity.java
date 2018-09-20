@@ -12,11 +12,17 @@ import java.time.LocalDateTime;
 @Table(name = "T_ACCESS_TOKEN")
 public class AccessTokenEntity {
     @Id
-    @Column(name = "ACCESS_TOKEN", length = 50)
+    @Column(name = "ACCESS_TOKEN", length = 50, nullable = false)
     private String assessToken;
+
+    @Column(name = "REFRESH_TOKEN", length = 50)
+    private String refreshToken;
 
     @Column(name = "USERNAME", length = 50, nullable = false)
     private String username;
+
+    @Column(name = "ACTIVE", nullable = false)
+    private boolean active = true;
 
     @Lob
     @Column(name = "USER_PROFILE", nullable = false)
@@ -39,6 +45,6 @@ public class AccessTokenEntity {
     private LocalDateTime expiryDate;
 
     public boolean isValid() {
-        return LocalDateTime.now().isBefore(expiryDate);
+        return LocalDateTime.now().isBefore(expiryDate) && active;
     }
 }

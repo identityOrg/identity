@@ -10,6 +10,10 @@
             <column name="CLIENT_ID" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
+            <column name="REFRESH_TOKEN" type="VARCHAR(50)"/>
+            <column name="ACTIVE" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
             <column name="LOGIN_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
@@ -97,7 +101,11 @@
             <column name="REFRESH_TOKEN" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
+            <column name="PARENT_REFRESH_TOKEN" type="VARCHAR(50)"/>
             <column name="CLIENT_ID" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ACTIVE" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
             <column name="CREATION_DATE" type="TIMESTAMP">

@@ -6,16 +6,16 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
+import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
-import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
-import com.nimbusds.oauth2.sdk.token.RefreshToken;
-import com.nimbusds.oauth2.sdk.token.Tokens;
+import com.nimbusds.oauth2.sdk.token.*;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
 import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.entity.AccessTokenEntity;
 import net.prasenjit.identity.entity.AuthorizationCodeEntity;
 import net.prasenjit.identity.entity.RefreshTokenEntity;
 import net.prasenjit.identity.entity.client.Client;
@@ -28,6 +28,7 @@ import net.prasenjit.identity.repository.*;
 import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
+import net.prasenjit.identity.service.openid.MetadataService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -40,6 +41,7 @@ import org.springframework.util.StringUtils;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -54,9 +56,12 @@ public class OAuth2Service {
     private final CodeFactory codeFactory;
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AccessTokenRepository accessTokenRepository;
     private final UserRepository userRepository;
     private final AuthorizationCodeRepository codeRepository;
+    private final MetadataService metadataService;
 
+    @Transactional
     public AuthorizationResponse processAuthorization(ConsentModel consentModel,
                                                       AuthorizationRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -159,7 +164,7 @@ public class OAuth2Service {
         }
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {
             accessToken = codeFactory.createAccessToken(principal,
-                    request.getClientID(), client.getAccessTokenValidity(), filteredScope, loginTime);
+                    request.getClientID(), client.getAccessTokenValidity(), filteredScope, loginTime, null);
         }
         return new AuthorizationSuccessResponse(redirectUri, code, accessToken, request.getState(),
                 request.getResponseMode());
@@ -171,6 +176,7 @@ public class OAuth2Service {
         return null;
     }
 
+    @Transactional
     public TokenResponse handleTokenRequest(TokenRequest tokenRequest) {
         Client client;
         if (tokenRequest.getClientAuthentication() == null) {
@@ -193,7 +199,7 @@ public class OAuth2Service {
             } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
                 clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
             } else {
-                return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT.setDescription("Client authentication not supported"));
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.setDescription("Client authentication not supported"));
             }
 
             BasicAuthenticationToken authenticate;
@@ -223,6 +229,126 @@ public class OAuth2Service {
         }
     }
 
+    @Transactional(readOnly = true)
+    public TokenIntrospectionResponse introspectToken(TokenIntrospectionRequest request) {
+        ClientAuthentication authentication = request.getClientAuthentication();
+        if (authentication == null) {
+            return new TokenIntrospectionErrorResponse(OAuth2Error.ACCESS_DENIED);
+        } else {
+            ClientAuthentication clientAuthentication = request.getClientAuthentication();
+            String clientId = clientAuthentication.getClientID().getValue();
+            String clientSecret;
+            if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
+                clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
+            } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
+                clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
+            } else {
+                return new TokenIntrospectionErrorResponse(
+                        OAuth2Error.ACCESS_DENIED.setDescription("Client authentication not supported"));
+            }
+
+            BasicAuthenticationToken authenticate;
+            try {
+                authenticate = (BasicAuthenticationToken) authenticationManager.authenticate(
+                        new BasicAuthenticationToken(clientId, clientSecret));
+            } catch (AuthenticationException e) {
+                return new TokenIntrospectionErrorResponse(
+                        OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed"));
+            }
+            Profile clientProfile = (Profile) authenticate.getPrincipal();
+
+            Token token = request.getToken();
+            Optional<AccessTokenEntity> accessToken = accessTokenRepository.findById(token.getValue());
+            if (accessToken.isPresent()
+                    && accessToken.get().getClientId().equals(clientProfile.getUsername())
+                    && accessToken.get().isValid()) {
+                Profile userProfile = accessToken.get().getUserProfile();
+                Optional<User> optionalUser = userRepository.findById(userProfile.getUsername());
+                if (optionalUser.isPresent() && optionalUser.get().isValid()) {
+                    return new TokenIntrospectionSuccessResponse.Builder(true)
+                            .clientID(new ClientID(clientProfile.getUsername()))
+                            .issuer(metadataService.getIssuer())
+                            .username(userProfile.getUsername())
+                            .scope(Scope.parse(accessToken.get().getScope()))
+                            .tokenType(AccessTokenType.BEARER)
+                            .expirationTime(ValidationUtils.convertToDate(accessToken.get().getExpiryDate()))
+                            .issueTime(ValidationUtils.convertToDate(accessToken.get().getCreationDate()))
+                            .subject(new Subject(userProfile.getUsername()))
+                            .audience(Collections.singletonList(new Audience(clientProfile.getUsername())))
+                            .build();
+                }
+            }
+            Optional<RefreshTokenEntity> refreshToken = refreshTokenRepository.findById(token.getValue());
+            if (refreshToken.isPresent()) {
+                if (refreshToken.get().isValid() &&
+                        refreshToken.get().getClientId().equals(clientProfile.getUsername())) {
+                    String username = refreshToken.get().getUsername();
+                    Optional<User> optionalUser = userRepository.findById(username);
+                    if (optionalUser.isPresent() && optionalUser.get().isValid()) {
+                        Profile userProfile = Profile.create(optionalUser.get());
+                        return new TokenIntrospectionSuccessResponse.Builder(true)
+                                .clientID(new ClientID(clientProfile.getUsername()))
+                                .issuer(metadataService.getIssuer())
+                                .username(userProfile.getUsername())
+                                .scope(Scope.parse(refreshToken.get().getScope()))
+                                .expirationTime(ValidationUtils.convertToDate(refreshToken.get().getExpiryDate()))
+                                .issueTime(ValidationUtils.convertToDate(refreshToken.get().getCreationDate()))
+                                .subject(new Subject(userProfile.getUsername()))
+                                .audience(Collections.singletonList(new Audience(clientProfile.getUsername())))
+                                .build();
+                    }
+                }
+            }
+            return new TokenIntrospectionSuccessResponse.Builder(false).build();
+        }
+    }
+
+    @Transactional
+    public boolean revokeToken(TokenIntrospectionRequest request) {
+        ClientAuthentication authentication = request.getClientAuthentication();
+        if (authentication == null) {
+            return false;
+        } else {
+            ClientAuthentication clientAuthentication = request.getClientAuthentication();
+            String clientId = clientAuthentication.getClientID().getValue();
+            String clientSecret;
+            if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
+                clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
+            } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
+                clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
+            } else {
+                return false;
+            }
+
+            BasicAuthenticationToken authenticate;
+            try {
+                authenticate = (BasicAuthenticationToken) authenticationManager.authenticate(
+                        new BasicAuthenticationToken(clientId, clientSecret));
+            } catch (AuthenticationException e) {
+                return false;
+            }
+            final Profile clientProfile = (Profile) authenticate.getPrincipal();
+
+            Token token = request.getToken();
+            Optional<AccessTokenEntity> accessToken = accessTokenRepository.findById(token.getValue());
+            accessToken.filter(t -> t.getClientId().equals(clientProfile.getUsername()))
+                    .ifPresent(t -> t.setActive(false));
+
+            refreshTokenRepository.findById(token.getValue())
+                    .ifPresent(r -> revokeRefreshTokenRecursive(clientProfile, r));
+            return true;
+        }
+    }
+
+    private void revokeRefreshTokenRecursive(final Profile clientProfile, RefreshTokenEntity token) {
+        token.setActive(false);
+        accessTokenRepository.findByActiveTrueAndRefreshTokenEquals(token.getRefreshToken())
+                .forEach(a -> a.setActive(false));
+        refreshTokenRepository.findByActiveTrueAndParentRefreshTokenEquals(token.getRefreshToken())
+                .forEach(r -> revokeRefreshTokenRecursive(clientProfile, r));
+
+    }
+
     private TokenResponse handleGrantInternal(Client client, RefreshTokenGrant grant) {
         Optional<RefreshTokenEntity> tokenOptional = refreshTokenRepository.findById(grant.getRefreshToken().getValue());
         if (tokenOptional.isPresent()) {
@@ -236,11 +362,11 @@ public class OAuth2Service {
                         Scope scope = Scope.parse(tokenOptional.get().getScope());
                         BearerAccessToken accessToken = codeFactory.createAccessToken(userProfile,
                                 clientId, client.getAccessTokenValidity(), scope,
-                                tokenOptional.get().getLoginDate());
+                                tokenOptional.get().getLoginDate(), tokenOptional.get().getRefreshToken());
                         RefreshToken refreshToken = codeFactory.createRefreshToken(clientId,
                                 userOptional.get().getUsername(), scope,
                                 tokenOptional.get().getLoginDate(), client.getRefreshTokenValidity(),
-                                tokenOptional.get().isOpenId());
+                                tokenOptional.get().isOpenId(), tokenOptional.get().getRefreshToken());
 
                         if (tokenOptional.get().isOpenId()) {
                             JWT idToken = codeFactory.createIDToken(userProfile, tokenOptional.get().getLoginDate(),
@@ -275,12 +401,12 @@ public class OAuth2Service {
             Scope filteredScopes = ValidationUtils.filterScope(client.getApprovedScopes(), request.getScope());
             ClientID clientId = new ClientID(client.getClientId());
             BearerAccessToken accessToken = codeFactory.createAccessToken(userProfile,
-                    clientId, client.getAccessTokenValidity(), filteredScopes, LocalDateTime.now());
+                    clientId, client.getAccessTokenValidity(), filteredScopes, LocalDateTime.now(), null);
 
-            com.nimbusds.oauth2.sdk.token.RefreshToken refreshToken = null;
-            if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
+            RefreshToken refreshToken = null;
+            if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {
                 refreshToken = codeFactory.createRefreshToken(clientId, userProfile.getUsername(),
-                        filteredScopes, LocalDateTime.now(), client.getRefreshTokenValidity(), false);
+                        filteredScopes, LocalDateTime.now(), client.getRefreshTokenValidity(), false, null);
             }
 
             Tokens tokens = new Tokens(accessToken, refreshToken);
@@ -294,7 +420,7 @@ public class OAuth2Service {
         Scope filteredScope = ValidationUtils.filterScope(client.getApprovedScopes(), request.getScope());
         ClientID clientId = new ClientID(client.getClientId());
         BearerAccessToken accessToken = codeFactory.createAccessToken(Profile.create(client), clientId,
-                client.getAccessTokenValidity(), filteredScope, LocalDateTime.now());
+                client.getAccessTokenValidity(), filteredScope, LocalDateTime.now(), null);
 
         Tokens tokens = new Tokens(accessToken, null);
         return new AccessTokenResponse(tokens);
@@ -328,7 +454,7 @@ public class OAuth2Service {
 
                                 BearerAccessToken accessToken = codeFactory.createAccessToken(
                                         userProfile, clientId, client.getAccessTokenValidity(),
-                                        approvedScope, authCode.getLoginDate());
+                                        approvedScope, authCode.getLoginDate(), null);
 
 
                                 RefreshToken refreshToken = null;
@@ -336,7 +462,7 @@ public class OAuth2Service {
                                     refreshToken = codeFactory.createRefreshToken(clientId,
                                             associatedUser.get().getUsername(),
                                             accessToken.getScope(), authCode.getLoginDate(),
-                                            client.getRefreshTokenValidity(), authCode.isOpenId());
+                                            client.getRefreshTokenValidity(), authCode.isOpenId(), null);
                                 }
 
                                 JWT idToken;

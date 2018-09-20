@@ -52,6 +52,8 @@ public abstract class HtmlPageTestBase {
     private static final String TOKEN_URL = "http://localhost/oauth/token";
     private static final String REDIRECT_URL = "http://localhost:4200/callback";
     private static final String AUTHORIZE_URL = "http://localhost/oauth/authorize";
+    private static final String INTROSPECTION_URL = "http://localhost/oauth/introspection";
+    private static final String REVOCATION_URL = "http://localhost/oauth/revocation";
     private static final String ISSUER_URL = "http://localhost";
     protected WebClient webClient;
     protected MockMvc mockMvc;
@@ -185,6 +187,18 @@ public abstract class HtmlPageTestBase {
 
     protected URI getTokenURI() {
         return UriComponentsBuilder.fromHttpUrl(TOKEN_URL)
+                .port(this.port)
+                .build().toUri();
+    }
+
+    protected URI getIntrospectionURI() {
+        return UriComponentsBuilder.fromHttpUrl(INTROSPECTION_URL)
+                .port(this.port)
+                .build().toUri();
+    }
+
+    protected URI getRevocationURI() {
+        return UriComponentsBuilder.fromHttpUrl(REVOCATION_URL)
                 .port(this.port)
                 .build().toUri();
     }
