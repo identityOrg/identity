@@ -2,14 +2,17 @@ package net.prasenjit.identity.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.prasenjit.identity.entity.*;
+import net.prasenjit.identity.entity.AuditEvent;
+import net.prasenjit.identity.entity.AuthenticationType;
+import net.prasenjit.identity.entity.PrincipleType;
+import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.events.AbstractModificationEvent;
 import net.prasenjit.identity.model.Profile;
-import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.AuditEventRepository;
 import net.prasenjit.identity.repository.UserRepository;
+import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
@@ -127,6 +130,7 @@ public class AuditEventService {
     }
 
     private void fillDetailAuditInfo(Authentication authentication, AuditEvent audit) {
+        if (authentication == null) return;
         if (StringUtils.hasText(authentication.getName())) {
             audit.setPrincipleName(authentication.getName());
         } else if (authentication.getCredentials() instanceof String) {

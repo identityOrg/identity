@@ -18,5 +18,5 @@ public class IdentityProperties {
     private int lockUserOnErrorCount = 3;
     private int lockUserOn7DayErrorCount = 10;
     private int rememberLoginDays = 30;
-    private int clientSecretLength = 30;
+    private int clientSecretLength = 20;
 }

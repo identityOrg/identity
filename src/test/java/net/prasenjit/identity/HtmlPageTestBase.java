@@ -7,16 +7,30 @@ import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.auth.Secret;
+import com.nimbusds.oauth2.sdk.client.ClientInformation;
+import com.nimbusds.oauth2.sdk.client.ClientRegistrationResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.openid.connect.sdk.AuthenticationResponse;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
+import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
+import com.nimbusds.openid.connect.sdk.rp.ApplicationType;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientRegistrationRequest;
 import net.prasenjit.identity.entity.user.UserConsent;
 import net.prasenjit.identity.repository.UserConsentRepository;
 import net.prasenjit.identity.service.CodeFactory;
+import net.prasenjit.identity.service.openid.DynamicRegistrationService;
 import net.prasenjit.identity.service.openid.MetadataService;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -37,6 +51,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -59,20 +75,26 @@ public abstract class HtmlPageTestBase {
     protected MockMvc mockMvc;
     @Autowired
     protected CodeFactory codeFactory;
-    @Autowired
-    protected MetadataService metadataService;
     // The client identifier provisioned by the server
     protected ClientID clientID = new ClientID("client");
     protected Secret clientSecret = new Secret("client");
+    @Autowired
+    protected MetadataService metadataService;
     @Autowired
     private WebApplicationContext context;
     @Autowired
     private UserConsentRepository userConsentRepository;
     @LocalServerPort
     private int port;
+    private JWKSet jwkSet;
+    private OIDCProviderMetadata oidcConfiguration;
+    @Autowired
+    private DynamicRegistrationService dynamicRegistrationService;
+    protected ClientInformation clientInformation;
 
     @Before
-    public void setup() {
+    public void setup() throws JOSEException, ParseException {
+        oidcConfiguration = metadataService.findOIDCConfiguration();
         mockMvc = MockMvcBuilders
                 .webAppContextSetup(context)
                 .apply(springSecurity())
@@ -86,10 +108,48 @@ public abstract class HtmlPageTestBase {
                 // the following will use MockMvc for example.com and example.org as well
                 .useMockMvcForHosts("oid.prasenjit.net")
                 .build();
+
+        registerClient();
+    }
+
+    private void registerClient() throws JOSEException, ParseException {
+        System.err.println("Register Client");
+        OIDCClientMetadata metadata = new OIDCClientMetadata();
+        metadata.setRequestObjectJWSAlg(JWSAlgorithm.RS256);
+        metadata.setName("New Client");
+        metadata.setJWKSet(generateKey());
+        metadata.setRedirectionURI(getRedirectURI());
+        metadata.setScope(Scope.parse("openid profile address email"));
+        metadata.setApplicationType(ApplicationType.WEB);
+        metadata.setIDTokenJWSAlg(JWSAlgorithm.RS256);
+        metadata.setGrantTypes(new HashSet<>(oidcConfiguration.getGrantTypes()));
+        metadata.setResponseTypes(new HashSet<>(oidcConfiguration.getResponseTypes()));
+        metadata.setTokenEndpointAuthMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
+
+        OIDCClientRegistrationRequest registrationRequest = new OIDCClientRegistrationRequest(
+                oidcConfiguration.getRegistrationEndpointURI(), metadata, null);
+
+        ClientRegistrationResponse registrationResponse = dynamicRegistrationService.registerClient(registrationRequest);
+        clientInformation = registrationResponse.toSuccessResponse().getClientInformation();
+    }
+
+    private JWKSet generateKey() throws JOSEException {
+        List<JWK> keys = new ArrayList<>();
+        RSAKeyGenerator generator = new RSAKeyGenerator(2048);
+        generator.keyID("client-encr");
+        generator.keyUse(KeyUse.ENCRYPTION);
+        keys.add(generator.generate());
+        generator = new RSAKeyGenerator(2048);
+        generator.keyID("client-sign");
+        generator.keyUse(KeyUse.SIGNATURE);
+        keys.add(generator.generate());
+
+        jwkSet = new JWKSet(keys);
+        return jwkSet;
     }
 
 
-    protected URI acceptAllConcent(HtmlPage authHtml) throws IOException, URISyntaxException {
+    protected URI acceptAllConsent(HtmlPage authHtml) throws IOException, URISyntaxException {
         List<HtmlButton> validButtons = authHtml.getFormByName("auth").getButtonsByName("valid");
         for (HtmlButton b : validButtons) {
             if ("true".equals(b.getValueAttribute())) {

@@ -47,7 +47,7 @@ public class RequestWithRequestObjectTest extends HtmlPageTestBase {
         clearContext(true, true);
         URI startUrl = request.toURI();
         HtmlPage htmlPage = loginForConsentPage(startUrl, "admin", "admin");
-        URI uri = this.acceptAllConcent(htmlPage);
+        URI uri = this.acceptAllConsent(htmlPage);
 
         AuthenticationResponse response = AuthenticationResponseParser.parse(uri);
 

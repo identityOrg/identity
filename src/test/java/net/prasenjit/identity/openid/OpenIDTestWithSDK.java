@@ -43,7 +43,7 @@ public class OpenIDTestWithSDK extends HtmlPageTestBase {
 
         HtmlPage consentPage = loginForConsentPage(req.toURI(), "admin", "admin");
 
-        URI responseUri = acceptAllConcent(consentPage);
+        URI responseUri = acceptAllConsent(consentPage);
 
         AuthenticationResponse response = AuthenticationResponseParser.parse(responseUri);
         assertTrue(response.indicatesSuccess());
@@ -80,7 +80,7 @@ public class OpenIDTestWithSDK extends HtmlPageTestBase {
 
         HtmlPage consentPage = loginForConsentPage(req.toURI(), "admin", "admin");
 
-        URI responseUri = acceptAllConcent(consentPage);
+        URI responseUri = acceptAllConsent(consentPage);
 
         AuthenticationResponse response = AuthenticationResponseParser.parse(responseUri);
         assertTrue(response.indicatesSuccess());
@@ -110,7 +110,7 @@ public class OpenIDTestWithSDK extends HtmlPageTestBase {
 
         HtmlPage consentPage = loginForConsentPage(req.toURI(), "admin", "admin");
 
-        URI responseUri = acceptAllConcent(consentPage);
+        URI responseUri = acceptAllConsent(consentPage);
 
         AuthenticationResponse response = AuthenticationResponseParser.parse(responseUri);
         assertTrue(response.indicatesSuccess());

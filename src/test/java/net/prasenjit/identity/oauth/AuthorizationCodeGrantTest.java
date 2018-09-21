@@ -39,7 +39,7 @@ public class AuthorizationCodeGrantTest extends HtmlPageTestBase {
         clearContext(true, true);
 
         HtmlPage htmlPage = loginForConsentPage(authURI, "admin", "admin");
-        URI uri = acceptAllConcent(htmlPage);
+        URI uri = acceptAllConsent(htmlPage);
 
         // Parse the authorisation response from the callback URI
         AuthorizationResponse response = AuthorizationResponse.parse(uri);
@@ -90,7 +90,7 @@ public class AuthorizationCodeGrantTest extends HtmlPageTestBase {
         clearContext(true, true);
 
         HtmlPage htmlPage = loginForConsentPage(authURI, "admin", "admin");
-        URI uri = acceptAllConcent(htmlPage);
+        URI uri = acceptAllConsent(htmlPage);
 
         // Parse the authorisation response from the callback URI
         AuthorizationResponse response = AuthorizationResponse.parse(uri);
