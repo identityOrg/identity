@@ -26,7 +26,7 @@ public class AuthorizationCodeGrantTest extends HtmlPageTestBase {
 
         // Build the request
         AuthorizationRequest request = new AuthorizationRequest.Builder(
-                new ResponseType(ResponseType.Value.CODE), clientID)
+                new ResponseType(ResponseType.Value.CODE), clientInformation.getID())
                 .scope(scope)
                 .state(state)
                 .redirectionURI(getRedirectURI())
@@ -58,7 +58,7 @@ public class AuthorizationCodeGrantTest extends HtmlPageTestBase {
 
         AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, getRedirectURI());
 
-        ClientAuthentication clientAuth = new ClientSecretBasic(clientID, clientSecret);
+        ClientAuthentication clientAuth = new ClientSecretBasic(clientInformation.getID(), clientInformation.getSecret());
 
 
         // Make the token request
@@ -79,7 +79,7 @@ public class AuthorizationCodeGrantTest extends HtmlPageTestBase {
 
         // Build the request
         AuthorizationRequest request = new AuthorizationRequest.Builder(
-                new ResponseType(ResponseType.Value.CODE), clientID)
+                new ResponseType(ResponseType.Value.CODE), clientInformation.getID())
                 .scope(scope)
                 .endpointURI(getAuthorizeURI())
                 .build();
@@ -107,7 +107,7 @@ public class AuthorizationCodeGrantTest extends HtmlPageTestBase {
 
         AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, null);
 
-        ClientAuthentication clientAuth = new ClientSecretBasic(clientID, clientSecret);
+        ClientAuthentication clientAuth = new ClientSecretBasic(clientInformation.getID(), clientInformation.getSecret());
 
 
         // Make the token request

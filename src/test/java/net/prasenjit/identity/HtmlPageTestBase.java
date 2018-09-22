@@ -75,22 +75,19 @@ public abstract class HtmlPageTestBase {
     protected MockMvc mockMvc;
     @Autowired
     protected CodeFactory codeFactory;
-    // The client identifier provisioned by the server
-    protected ClientID clientID = new ClientID("client");
-    protected Secret clientSecret = new Secret("client");
     @Autowired
     protected MetadataService metadataService;
+    protected JWKSet jwkSet;
+    protected OIDCProviderMetadata oidcConfiguration;
+    protected ClientInformation clientInformation;
     @Autowired
     private WebApplicationContext context;
     @Autowired
     private UserConsentRepository userConsentRepository;
     @LocalServerPort
     private int port;
-    private JWKSet jwkSet;
-    private OIDCProviderMetadata oidcConfiguration;
     @Autowired
     private DynamicRegistrationService dynamicRegistrationService;
-    protected ClientInformation clientInformation;
 
     @Before
     public void setup() throws JOSEException, ParseException {
@@ -178,7 +175,7 @@ public abstract class HtmlPageTestBase {
         // Save consent
         UserConsent userConsent = new UserConsent();
         userConsent.setUsername(username);
-        userConsent.setClientID(clientID.getValue());
+        userConsent.setClientID(clientInformation.getID().getValue());
         userConsent.setApprovalDate(LocalDateTime.now());
         userConsent.setScopes(approvedScope);
         userConsentRepository.save(userConsent);

@@ -39,15 +39,13 @@ public class JWTResolverTest extends HtmlPageTestBase {
     @Test
     @Transactional
     public void resolve() throws ParseException, java.text.ParseException, JOSEException, ResolveException {
-        Client client = clientRepository.getOne("client");
-        System.out.println(client.getMetadata().getJWKSet());
-        JWKSet keySet = client.getMetadata().getJWKSet();
+        Client client = clientRepository.getOne(clientInformation.getID().getValue());
 
         JWK key = null;
         JWK encKey = null;
         RSASSASigner signer = null;
         RSAEncrypter encrypter = null;
-        for (JWK jwk : keySet.getKeys()) {
+        for (JWK jwk : jwkSet.getKeys()) {
             if (jwk.getKeyUse() == KeyUse.SIGNATURE) {
                 key = jwk;
                 signer = new RSASSASigner((RSAKey) jwk);
@@ -62,7 +60,7 @@ public class JWTResolverTest extends HtmlPageTestBase {
 
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .audience("")
-                .issuer(clientID.getValue())
+                .issuer(clientInformation.getID().getValue())
                 .issueTime(new Date())
                 .claim("scope", "openid email")
                 .build();
@@ -79,7 +77,7 @@ public class JWTResolverTest extends HtmlPageTestBase {
 
         AuthenticationRequest request = new AuthenticationRequest.Builder(ResponseType.parse("code"),
                 Scope.parse("openid"),
-                clientID, getRedirectURI())
+                clientInformation.getID(), getRedirectURI())
                 .requestObject(JWTParser.parse(jweObject.serialize()))
                 .build();
 

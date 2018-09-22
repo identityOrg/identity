@@ -4,7 +4,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -33,9 +32,9 @@ public class RequestWithRequestObjectTest extends HtmlPageTestBase {
     @Test
     @Transactional(readOnly = true)
     public void teJwksObject() throws Exception {
-        Client client = clientRepository.getOne(clientID.getValue());
+        Client client = clientRepository.getOne(clientInformation.getID().getValue());
         AuthenticationRequest.Builder requestBuilder = new AuthenticationRequest.Builder(ResponseType.parse("code"),
-                Scope.parse("openid"), clientID, getRedirectURI())
+                Scope.parse("openid"), clientInformation.getID(), getRedirectURI())
                 .state(new State())
                 .nonce(new Nonce())
                 .endpointURI(getAuthorizeURI());
@@ -60,14 +59,13 @@ public class RequestWithRequestObjectTest extends HtmlPageTestBase {
     }
 
     private JWT createRequestObject(Client client, ResponseType responseType) throws Exception {
-        JWKSet keySet = client.getMetadata().getJWKSet();
 
-        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().issuer(client.getClientId())
+        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().issuer(clientInformation.getID().getValue())
                 .audience(getIssuerURI().toString())
                 .claim("response_type", responseType.toString()).build();
 
         SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claimsSet);
-        RSASSASigner signer = new RSASSASigner((RSAKey) keySet.getKeyByKeyId("sign"));
+        RSASSASigner signer = new RSASSASigner((RSAKey) this.jwkSet.getKeyByKeyId("client-sign"));
 
         signedJWT.sign(signer);
 

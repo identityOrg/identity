@@ -34,7 +34,7 @@ public class OpenIDTestWithSDK extends HtmlPageTestBase {
                 getAuthorizeURI(),
                 new ResponseType("code"),
                 Scope.parse("openid"),
-                clientID,
+                clientInformation.getID(),
                 getRedirectURI(),
                 state,
                 nonce);
@@ -51,7 +51,7 @@ public class OpenIDTestWithSDK extends HtmlPageTestBase {
         assertTrue(state.equals(response.toSuccessResponse().getState()));
 
 
-        TokenResponse tokenResponse = executeTokenResponse(clientID, clientSecret, response);
+        TokenResponse tokenResponse = executeTokenResponse(clientInformation.getID(), clientInformation.getSecret(), response);
 
         assertTrue(tokenResponse.indicatesSuccess());
         assertNotNull(tokenResponse.toSuccessResponse().getTokens().getAccessToken());
@@ -71,7 +71,7 @@ public class OpenIDTestWithSDK extends HtmlPageTestBase {
                 getAuthorizeURI(),
                 new ResponseType("id_token"),
                 Scope.parse("openid"),
-                clientID,
+                clientInformation.getID(),
                 getRedirectURI(),
                 state,
                 nonce);
@@ -101,7 +101,7 @@ public class OpenIDTestWithSDK extends HtmlPageTestBase {
                 getAuthorizeURI(),
                 new ResponseType("id_token", "token"),
                 Scope.parse("openid"),
-                clientID,
+                clientInformation.getID(),
                 getRedirectURI(),
                 state,
                 nonce);

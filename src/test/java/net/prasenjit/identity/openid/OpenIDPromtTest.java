@@ -24,7 +24,7 @@ public class OpenIDPromtTest extends HtmlPageTestBase {
         Nonce nonce = new Nonce();
         AuthenticationRequest request = new AuthenticationRequest.Builder(ResponseType.parse("code"),
                 new Scope("openid"),
-                clientID,
+                clientInformation.getID(),
                 getRedirectURI())
                 .nonce(nonce)
                 .prompt(Prompt.parse("login"))
@@ -48,7 +48,7 @@ public class OpenIDPromtTest extends HtmlPageTestBase {
         Nonce nonce = new Nonce();
         AuthenticationRequest request = new AuthenticationRequest.Builder(ResponseType.parse("code"),
                 new Scope("openid"),
-                clientID,
+                clientInformation.getID(),
                 getRedirectURI())
                 .nonce(nonce)
                 .prompt(Prompt.parse("none"))
@@ -70,7 +70,7 @@ public class OpenIDPromtTest extends HtmlPageTestBase {
         Nonce nonce = new Nonce();
         AuthenticationRequest request = new AuthenticationRequest.Builder(ResponseType.parse("code"),
                 new Scope("openid"),
-                clientID,
+                clientInformation.getID(),
                 getRedirectURI())
                 .nonce(nonce)
                 .prompt(Prompt.parse("none"))
@@ -92,7 +92,7 @@ public class OpenIDPromtTest extends HtmlPageTestBase {
         Nonce nonce = new Nonce();
         AuthenticationRequest request = new AuthenticationRequest.Builder(ResponseType.parse("code"),
                 new Scope("openid"),
-                clientID,
+                clientInformation.getID(),
                 getRedirectURI())
                 .nonce(nonce)
                 .prompt(Prompt.parse("none"))
@@ -114,7 +114,7 @@ public class OpenIDPromtTest extends HtmlPageTestBase {
         Nonce nonce = new Nonce();
         AuthenticationRequest request = new AuthenticationRequest.Builder(ResponseType.parse("code"),
                 new Scope("openid"),
-                clientID,
+                clientInformation.getID(),
                 getRedirectURI())
                 .nonce(nonce)
                 .prompt(Prompt.parse("consent"))

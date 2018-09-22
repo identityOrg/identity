@@ -18,7 +18,7 @@ public class IntrospectionRevocationTest extends HtmlPageTestBase {
 
     @Test
     public void testSuccess() throws IOException, ParseException {
-        ClientAuthentication clientAuth = new ClientSecretBasic(clientID, clientSecret);
+        ClientAuthentication clientAuth = new ClientSecretBasic(clientInformation.getID(), clientInformation.getSecret());
         AuthorizationGrant grant = new ResourceOwnerPasswordCredentialsGrant("admin", new Secret("admin"));
         Scope scope = Scope.parse("openid");
         TokenRequest passwordTokenRequest = new TokenRequest(getTokenURI(), clientAuth, grant, scope);
@@ -54,7 +54,7 @@ public class IntrospectionRevocationTest extends HtmlPageTestBase {
     public void testSuccessWithRefreshTokenRevoke() throws IOException, ParseException {
 
         // get a token
-        ClientAuthentication clientAuth = new ClientSecretBasic(clientID, clientSecret);
+        ClientAuthentication clientAuth = new ClientSecretBasic(clientInformation.getID(), clientInformation.getSecret());
         AuthorizationGrant grant = new ResourceOwnerPasswordCredentialsGrant("admin", new Secret("admin"));
         Scope scope = Scope.parse("openid");
         TokenRequest passwordTokenRequest = new TokenRequest(getTokenURI(), clientAuth, grant, scope);
