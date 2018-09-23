@@ -1,15 +1,16 @@
 package net.prasenjit.identity.service.openid;
 
+import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.util.Base64URL;
-import com.nimbusds.oauth2.sdk.ErrorObject;
-import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.Secret;
-import com.nimbusds.oauth2.sdk.client.ClientDeleteRequest;
-import com.nimbusds.oauth2.sdk.client.ClientReadRequest;
-import com.nimbusds.oauth2.sdk.client.ClientRegistrationErrorResponse;
-import com.nimbusds.oauth2.sdk.client.ClientRegistrationResponse;
+import com.nimbusds.oauth2.sdk.client.*;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
+import com.nimbusds.openid.connect.sdk.SubjectType;
+import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.rp.*;
 import lombok.RequiredArgsConstructor;
 import net.minidev.json.JSONObject;
@@ -20,6 +21,7 @@ import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.events.CreateEvent;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.repository.ScopeRepository;
 import net.prasenjit.identity.service.ValidationUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,12 +29,15 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -42,21 +47,25 @@ public class DynamicRegistrationService {
     private final ClientRepository clientRepository;
     private final MetadataService metadataService;
     private final ApplicationEventPublisher eventPublisher;
+    private final ScopeRepository scopeRepository;
 
-    @Autowired
-    @Qualifier("client-password")
     private TextEncryptor textEncryptor;
 
     @Transactional
     public ClientRegistrationResponse registerClient(OIDCClientRegistrationRequest request) throws ParseException {
         OIDCClientMetadata clientMetadata = request.getOIDCClientMetadata();
         clientMetadata.applyDefaults();
+
+        ClientRegistrationResponse errorResponse = validateClientMetadata(clientMetadata);
+        if (errorResponse != null) {
+            return errorResponse;
+        }
+
         Client client = new Client();
         client.setClientName(clientMetadata.getName());
         client.setMetadata(clientMetadata);
         client.setStatus(Status.ACTIVE);
         JSONObject customParameters = clientMetadata.getCustomFields();
-
         try {
             long validity = JSONObjectUtils.getLong(customParameters, "access_token_validity_minute");
             client.setAccessTokenValidity(Duration.ofSeconds(validity));
@@ -158,4 +167,129 @@ public class DynamicRegistrationService {
         return new OIDCClientInformationResponse(clientInfo);
     }
 
+    private ClientRegistrationResponse validateClientMetadata(OIDCClientMetadata clientMetadata) throws ParseException {
+        OIDCProviderMetadata serverMetadata = metadataService.findOIDCConfiguration();
+
+        // Grant validation
+        Set<GrantType> grantTypes = clientMetadata.getGrantTypes();
+        if (CollectionUtils.isEmpty(grantTypes)) {
+            clientMetadata.setGrantTypes(Collections.singleton(GrantType.AUTHORIZATION_CODE));
+        } else {
+            if (grantTypes.stream().anyMatch(gt -> !serverMetadata.getGrantTypes().contains(gt))) {
+                return new ClientRegistrationErrorResponse(
+                        RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Grant"));
+            }
+        }
+
+        // Req Obj EncryptionMethod validation
+        EncryptionMethod encMethod = clientMetadata.getRequestObjectJWEEnc();
+        if (encMethod != null && !serverMetadata.getRequestObjectJWEEncs().contains(encMethod)) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported request object encryption method"));
+        }
+
+        // Req Obj EncryptionMethod validation
+        JWEAlgorithm encAlgo = clientMetadata.getRequestObjectJWEAlg();
+        if (encAlgo != null && !serverMetadata.getRequestObjectJWEAlgs().contains(encAlgo)) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported request object encryption algorithm"));
+        }
+
+        // Req Obj EncryptionMethod validation
+        JWSAlgorithm sigAlgo = clientMetadata.getRequestObjectJWSAlg();
+        if (sigAlgo != null && !serverMetadata.getRequestObjectJWSAlgs().contains(sigAlgo)) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported request object signing algorithm"));
+        }
+
+        // IDToken EncryptionMethod validation
+        encMethod = clientMetadata.getIDTokenJWEEnc();
+        if (encMethod != null && !serverMetadata.getIDTokenJWEEncs().contains(encMethod)) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported id token encryption method"));
+        }
+
+        // IDToken EncryptionMethod validation
+        encAlgo = clientMetadata.getIDTokenJWEAlg();
+        if (encAlgo != null && !serverMetadata.getIDTokenJWEAlgs().contains(encAlgo)) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported id token encryption algorithm"));
+        }
+
+        // IDToken EncryptionMethod validation
+        sigAlgo = clientMetadata.getIDTokenJWSAlg();
+        if (sigAlgo == null) {
+            clientMetadata.setIDTokenJWSAlg(JWSAlgorithm.RS256);
+        } else if (!serverMetadata.getIDTokenJWSAlgs().contains(sigAlgo)) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported id token signing algorithm"));
+        }
+
+        // IDToken EncryptionMethod validation
+        encMethod = clientMetadata.getUserInfoJWEEnc();
+        if (encMethod != null && !serverMetadata.getUserInfoJWEEncs().contains(encMethod)) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported user info encryption method"));
+        }
+
+        // IDToken EncryptionMethod validation
+        encAlgo = clientMetadata.getUserInfoJWEAlg();
+        if (encAlgo != null && !serverMetadata.getUserInfoJWEAlgs().contains(encAlgo)) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported user info encryption algorithm"));
+        }
+
+        // IDToken EncryptionMethod validation
+        sigAlgo = clientMetadata.getUserInfoJWSAlg();
+        if (sigAlgo != null && !serverMetadata.getUserInfoJWSAlgs().contains(sigAlgo)) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported user info signing algorithm"));
+        }
+
+        // Scope validation
+        Scope scope = clientMetadata.getScope();
+        if (CollectionUtils.isEmpty(scope)) {
+            clientMetadata.setScope(Scope.parse("openid"));
+        } else {
+            if (scope.stream().anyMatch(s -> !serverMetadata.getScopes().contains(s.getValue()))) {
+                return new ClientRegistrationErrorResponse(
+                        RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Scope"));
+            }
+        }
+
+        // Response type validation
+        Set<ResponseType> responseTypes = clientMetadata.getResponseTypes();
+        if (CollectionUtils.isEmpty(responseTypes)) {
+            clientMetadata.setResponseTypes(Collections.singleton(ResponseType.parse("code")));
+        } else {
+            if (responseTypes.stream().anyMatch(rt -> !serverMetadata.getResponseTypes().contains(rt))) {
+                return new ClientRegistrationErrorResponse(
+                        RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Response Type"));
+            }
+        }
+
+        SubjectType subjectType = clientMetadata.getSubjectType();
+        if (subjectType == null) {
+            clientMetadata.setSubjectType(SubjectType.PUBLIC);
+        } else if (subjectType == SubjectType.PAIRWISE) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Subject Type"));
+        }
+        return null;
+    }
+
+    @Autowired
+    @Qualifier("client-password")
+    public void setTextEncryptor(TextEncryptor textEncryptor) {
+        this.textEncryptor = textEncryptor;
+    }
 }
