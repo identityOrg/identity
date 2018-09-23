@@ -30,6 +30,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.net.URI;
 import java.time.Duration;
@@ -65,22 +66,7 @@ public class DynamicRegistrationService {
         client.setClientName(clientMetadata.getName());
         client.setMetadata(clientMetadata);
         client.setStatus(Status.ACTIVE);
-        JSONObject customParameters = clientMetadata.getCustomFields();
-        try {
-            long validity = JSONObjectUtils.getLong(customParameters, "access_token_validity_minute");
-            client.setAccessTokenValidity(Duration.ofSeconds(validity));
-        } catch (ParseException e) {
-            int tokenValidity = identityProperties.getCodeProperty().getAccessTokenValidityMinute();
-            client.setAccessTokenValidity(Duration.ofMinutes(tokenValidity));
-        }
-
-        try {
-            long validity = JSONObjectUtils.getLong(customParameters, "refresh_token_validity_minute");
-            client.setRefreshTokenValidity(Duration.ofSeconds(validity));
-        } catch (ParseException e) {
-            int tokenValidity = identityProperties.getCodeProperty().getRefreshTokenValidity();
-            client.setRefreshTokenValidity(Duration.ofMinutes(tokenValidity));
-        }
+        validateTokenValidity(clientMetadata, client);
 
         client.setCreationDate(LocalDateTime.now());
 
@@ -97,33 +83,45 @@ public class DynamicRegistrationService {
         eventPublisher.publishEvent(csEvent);
         clientRepository.saveAndFlush(client);
 
-        //TODO client information validation to be done
-
         return generateClientInfoResponse(client, clientMetadata);
     }
 
     @Transactional
     public ClientRegistrationResponse updateClient(String id, OIDCClientUpdateRequest request) throws ParseException {
+        ClientID clientID = request.getClientID();
         Base64URL clientIdb64 = new Base64URL(id);
+        if (!clientID.getValue().equals(clientIdb64.decodeToString())) {
+            ErrorObject error = new ErrorObject("invalid_client", "Client ID did not match", 401);
+            return new ClientRegistrationErrorResponse(error);
+        }
         Optional<Client> clientOptional = clientRepository.findById(clientIdb64.decodeToString());
         if (clientOptional.isPresent()) {
+            OIDCClientMetadata clientMetadata = request.getOIDCClientMetadata();
+            ClientRegistrationResponse errorResponse = validateClientMetadata(clientMetadata);
+            if (errorResponse != null) {
+                return errorResponse;
+            }
+
             Client client = clientOptional.get();
-            OIDCClientMetadata clientMetadata = client.getMetadata();
+            Secret clientSecret = request.getClientSecret();
+            if (clientSecret != null && StringUtils.hasText(client.getClientSecret())) {
+                if (textEncryptor.encrypt(clientSecret.getValue()).equals(client.getClientSecret())) {
+                    String secret = RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength());
+                    client.setClientSecret(textEncryptor.encrypt(secret));
+                } else {
+                    ErrorObject error = new ErrorObject("invalid_client", "Client secret did not match", 401);
+                    return new ClientRegistrationErrorResponse(error);
+                }
+            }
 
-            JSONObject customParameters = clientMetadata.getCustomFields();
-
-            long validity = JSONObjectUtils.getLong(customParameters, "access_token_validity_minute");
-            client.setAccessTokenValidity(Duration.ofSeconds(validity));
-
-            validity = JSONObjectUtils.getLong(customParameters, "refresh_token_validity_minute");
-            client.setRefreshTokenValidity(Duration.ofSeconds(validity));
+            validateTokenValidity(clientMetadata, client);
 
             client.setMetadata(clientMetadata);
             client.setClientSecret(RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength()));
 
             return generateClientInfoResponse(client, clientMetadata);
         } else {
-            ErrorObject error = new ErrorObject("invalid_uri", "Registration uri is invalid", 404);
+            ErrorObject error = new ErrorObject("invalid_client", "Registration uri is invalid", 401);
             return new ClientRegistrationErrorResponse(error);
         }
     }
@@ -165,6 +163,28 @@ public class DynamicRegistrationService {
         OIDCClientInformation clientInfo = new OIDCClientInformation(clientId, issueDate, clientMetadata, secret,
                 registrationUri, null);
         return new OIDCClientInformationResponse(clientInfo);
+    }
+
+    private void validateTokenValidity(OIDCClientMetadata clientMetadata, Client client) {
+
+        JSONObject customParameters = clientMetadata.getCustomFields();
+        try {
+            long validity = JSONObjectUtils.getLong(customParameters, "access_token_validity_minute");
+            client.setAccessTokenValidity(Duration.ofSeconds(validity));
+        } catch (ParseException e) {
+            int tokenValidity = identityProperties.getCodeProperty().getAccessTokenValidityMinute();
+            client.setAccessTokenValidity(Duration.ofMinutes(tokenValidity));
+            clientMetadata.setCustomField("access_token_validity_minute", tokenValidity);
+        }
+
+        try {
+            long validity = JSONObjectUtils.getLong(customParameters, "refresh_token_validity_minute");
+            client.setRefreshTokenValidity(Duration.ofSeconds(validity));
+        } catch (ParseException e) {
+            int tokenValidity = identityProperties.getCodeProperty().getRefreshTokenValidity();
+            client.setRefreshTokenValidity(Duration.ofMinutes(tokenValidity));
+            clientMetadata.setCustomField("refresh_token_validity_minute", tokenValidity);
+        }
     }
 
     private ClientRegistrationResponse validateClientMetadata(OIDCClientMetadata clientMetadata) throws ParseException {
