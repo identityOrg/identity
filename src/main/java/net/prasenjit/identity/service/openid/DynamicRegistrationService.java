@@ -1,28 +1,13 @@
 package net.prasenjit.identity.service.openid;
 
-import com.nimbusds.jose.EncryptionMethod;
-import com.nimbusds.jose.JWEAlgorithm;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.util.Base64URL;
-import com.nimbusds.oauth2.sdk.*;
-import com.nimbusds.oauth2.sdk.auth.Secret;
-import com.nimbusds.oauth2.sdk.client.*;
-import com.nimbusds.oauth2.sdk.id.ClientID;
-import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
-import com.nimbusds.openid.connect.sdk.SubjectType;
-import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
-import com.nimbusds.openid.connect.sdk.rp.*;
-import lombok.RequiredArgsConstructor;
-import net.minidev.json.JSONObject;
-import net.prasenjit.crypto.TextEncryptor;
-import net.prasenjit.identity.entity.ResourceType;
-import net.prasenjit.identity.entity.Status;
-import net.prasenjit.identity.entity.client.Client;
-import net.prasenjit.identity.events.CreateEvent;
-import net.prasenjit.identity.properties.IdentityProperties;
-import net.prasenjit.identity.repository.ClientRepository;
-import net.prasenjit.identity.repository.ScopeRepository;
-import net.prasenjit.identity.service.ValidationUtils;
+import java.net.URI;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Optional;
+import java.util.Set;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,284 +17,301 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.net.URI;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Optional;
-import java.util.Set;
+import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.oauth2.sdk.ErrorObject;
+import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.auth.Secret;
+import com.nimbusds.oauth2.sdk.client.ClientDeleteRequest;
+import com.nimbusds.oauth2.sdk.client.ClientReadRequest;
+import com.nimbusds.oauth2.sdk.client.ClientRegistrationErrorResponse;
+import com.nimbusds.oauth2.sdk.client.ClientRegistrationResponse;
+import com.nimbusds.oauth2.sdk.client.RegistrationError;
+import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
+import com.nimbusds.openid.connect.sdk.SubjectType;
+import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientInformation;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientInformationResponse;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientRegistrationRequest;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientUpdateRequest;
+
+import lombok.RequiredArgsConstructor;
+import net.minidev.json.JSONObject;
+import net.prasenjit.crypto.TextEncryptor;
+import net.prasenjit.identity.entity.ResourceType;
+import net.prasenjit.identity.entity.Status;
+import net.prasenjit.identity.entity.client.Client;
+import net.prasenjit.identity.events.CreateEvent;
+import net.prasenjit.identity.properties.IdentityProperties;
+import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.service.ValidationUtils;
 
 @Service
 @RequiredArgsConstructor
 public class DynamicRegistrationService {
 
-    private final IdentityProperties identityProperties;
-    private final ClientRepository clientRepository;
-    private final MetadataService metadataService;
-    private final ApplicationEventPublisher eventPublisher;
-    private final ScopeRepository scopeRepository;
+	private final IdentityProperties identityProperties;
+	private final ClientRepository clientRepository;
+	private final MetadataService metadataService;
+	private final ApplicationEventPublisher eventPublisher;
 
-    private TextEncryptor textEncryptor;
+	private TextEncryptor textEncryptor;
 
-    @Transactional
-    public ClientRegistrationResponse registerClient(OIDCClientRegistrationRequest request) throws ParseException {
-        OIDCClientMetadata clientMetadata = request.getOIDCClientMetadata();
-        clientMetadata.applyDefaults();
+	@Transactional
+	public ClientRegistrationResponse registerClient(OIDCClientRegistrationRequest request) throws ParseException {
+		OIDCClientMetadata clientMetadata = request.getOIDCClientMetadata();
+		clientMetadata.applyDefaults();
 
-        ClientRegistrationResponse errorResponse = validateClientMetadata(clientMetadata);
-        if (errorResponse != null) {
-            return errorResponse;
-        }
+		ClientRegistrationResponse errorResponse = validateClientMetadata(clientMetadata);
+		if (errorResponse != null) {
+			return errorResponse;
+		}
 
-        Client client = new Client();
-        client.setClientName(clientMetadata.getName());
-        client.setMetadata(clientMetadata);
-        client.setStatus(Status.ACTIVE);
-        validateTokenValidity(clientMetadata, client);
+		Client client = new Client();
+		client.setClientName(clientMetadata.getName());
+		client.setMetadata(clientMetadata);
+		client.setStatus(Status.ACTIVE);
+		validateTokenValidity(clientMetadata, client);
 
-        client.setCreationDate(LocalDateTime.now());
+		client.setCreationDate(LocalDateTime.now());
 
-        Optional<Client> optional;
-        do {
-            client.setClientId(RandomStringUtils.randomAlphanumeric(10));
-            optional = clientRepository.findById(client.getClientId());
-        } while (optional.isPresent());
+		Optional<Client> optional;
+		do {
+			client.setClientId(RandomStringUtils.randomAlphanumeric(10));
+			optional = clientRepository.findById(client.getClientId());
+		} while (optional.isPresent());
 
-        String clientSecret = RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength());
-        client.setClientSecret(textEncryptor.encrypt(clientSecret));
+		String clientSecret = RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength());
+		client.setClientSecret(textEncryptor.encrypt(clientSecret));
 
-        CreateEvent csEvent = new CreateEvent(this, ResourceType.CLIENT, client.getClientId());
-        eventPublisher.publishEvent(csEvent);
-        clientRepository.saveAndFlush(client);
+		CreateEvent csEvent = new CreateEvent(this, ResourceType.CLIENT, client.getClientId());
+		eventPublisher.publishEvent(csEvent);
+		clientRepository.saveAndFlush(client);
 
-        return generateClientInfoResponse(client, clientMetadata);
-    }
+		return generateClientInfoResponse(client, clientMetadata);
+	}
 
-    @Transactional
-    public ClientRegistrationResponse updateClient(String id, OIDCClientUpdateRequest request) throws ParseException {
-        ClientID clientID = request.getClientID();
-        Base64URL clientIdb64 = new Base64URL(id);
-        if (!clientID.getValue().equals(clientIdb64.decodeToString())) {
-            ErrorObject error = new ErrorObject("invalid_client", "Client ID did not match", 401);
-            return new ClientRegistrationErrorResponse(error);
-        }
-        Optional<Client> clientOptional = clientRepository.findById(clientIdb64.decodeToString());
-        if (clientOptional.isPresent()) {
-            OIDCClientMetadata clientMetadata = request.getOIDCClientMetadata();
-            ClientRegistrationResponse errorResponse = validateClientMetadata(clientMetadata);
-            if (errorResponse != null) {
-                return errorResponse;
-            }
+	@Transactional
+	public ClientRegistrationResponse updateClient(String id, OIDCClientUpdateRequest request) throws ParseException {
+		ClientID clientID = request.getClientID();
+		Base64URL clientIdb64 = new Base64URL(id);
+		if (!clientID.getValue().equals(clientIdb64.decodeToString())) {
+			ErrorObject error = new ErrorObject("invalid_client", "Client ID did not match", 401);
+			return new ClientRegistrationErrorResponse(error);
+		}
+		Optional<Client> clientOptional = clientRepository.findById(clientIdb64.decodeToString());
+		if (clientOptional.isPresent()) {
+			OIDCClientMetadata clientMetadata = request.getOIDCClientMetadata();
+			ClientRegistrationResponse errorResponse = validateClientMetadata(clientMetadata);
+			if (errorResponse != null) {
+				return errorResponse;
+			}
 
-            Client client = clientOptional.get();
-            Secret clientSecret = request.getClientSecret();
-            if (clientSecret != null && StringUtils.hasText(client.getClientSecret())) {
-                if (textEncryptor.encrypt(clientSecret.getValue()).equals(client.getClientSecret())) {
-                    String secret = RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength());
-                    client.setClientSecret(textEncryptor.encrypt(secret));
-                } else {
-                    ErrorObject error = new ErrorObject("invalid_client", "Client secret did not match", 401);
-                    return new ClientRegistrationErrorResponse(error);
-                }
-            }
+			Client client = clientOptional.get();
+			Secret clientSecret = request.getClientSecret();
+			if (clientSecret != null && StringUtils.hasText(client.getClientSecret())) {
+				if (textEncryptor.decrypt(client.getClientSecret()).equals(clientSecret.getValue())) {
+					String secret = RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength());
+					client.setClientSecret(textEncryptor.encrypt(secret));
+				} else {
+					ErrorObject error = new ErrorObject("invalid_client", "Client secret did not match", 401);
+					return new ClientRegistrationErrorResponse(error);
+				}
+			}
 
-            validateTokenValidity(clientMetadata, client);
+			validateTokenValidity(clientMetadata, client);
 
-            client.setMetadata(clientMetadata);
-            client.setClientSecret(RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength()));
+			client.setMetadata(clientMetadata);
 
-            return generateClientInfoResponse(client, clientMetadata);
-        } else {
-            ErrorObject error = new ErrorObject("invalid_client", "Registration uri is invalid", 401);
-            return new ClientRegistrationErrorResponse(error);
-        }
-    }
+			return generateClientInfoResponse(client, clientMetadata);
+		} else {
+			ErrorObject error = new ErrorObject("invalid_client", "Registration uri is invalid", 401);
+			return new ClientRegistrationErrorResponse(error);
+		}
+	}
 
-    @Transactional(readOnly = true)
-    public ClientRegistrationResponse readClient(String id, ClientReadRequest request) {
-        Base64URL clientIdb64 = new Base64URL(id);
-        Optional<Client> clientOptional = clientRepository.findById(clientIdb64.decodeToString());
-        if (clientOptional.isPresent()) {
-            Client client = clientOptional.get();
-            OIDCClientMetadata metadata = client.getMetadata();
-            metadata.setCustomField("access_token_validity_minute", client.getAccessTokenValidity().toMinutes());
-            metadata.setCustomField("refresh_token_validity_minute", client.getRefreshTokenValidity().toMinutes());
+	@Transactional(readOnly = true)
+	public ClientRegistrationResponse readClient(String id, ClientReadRequest request) {
+		Base64URL clientIdb64 = new Base64URL(id);
+		Optional<Client> clientOptional = clientRepository.findById(clientIdb64.decodeToString());
+		if (clientOptional.isPresent()) {
+			Client client = clientOptional.get();
+			OIDCClientMetadata metadata = client.getMetadata();
+			metadata.setCustomField("access_token_validity_minute", client.getAccessTokenValidity().toMinutes());
+			metadata.setCustomField("refresh_token_validity_minute", client.getRefreshTokenValidity().toMinutes());
 
-            return generateClientInfoResponse(client, metadata);
-        } else {
-            ErrorObject error = new ErrorObject("invalid_uri", "Registration uri is invalid", 404);
-            return new ClientRegistrationErrorResponse(error);
-        }
-    }
+			return generateClientInfoResponse(client, metadata);
+		} else {
+			ErrorObject error = new ErrorObject("invalid_uri", "Registration uri is invalid", 404);
+			return new ClientRegistrationErrorResponse(error);
+		}
+	}
 
-    @Transactional
-    public ClientRegistrationResponse deleteClient(String id, ClientDeleteRequest request) {
-        Base64URL clientIdb64 = new Base64URL(id);
-        Optional<Client> clientOptional = clientRepository.findById(clientIdb64.decodeToString());
-        if (clientOptional.isPresent()) {
-            return null;
-        } else {
-            ErrorObject error = new ErrorObject("invalid_uri", "Registration uri is invalid", 404);
-            return new ClientRegistrationErrorResponse(error);
-        }
-    }
+	@Transactional
+	public int deleteClient(String id, ClientDeleteRequest request) {
+		Base64URL clientIdb64 = new Base64URL(id);
+		Optional<Client> clientOptional = clientRepository.findById(clientIdb64.decodeToString());
+		if (clientOptional.isPresent()) {
+			clientRepository.delete(clientOptional.get());
+			return 200;
+		} else {
+			return 401;
+		}
+	}
 
-    private ClientRegistrationResponse generateClientInfoResponse(Client client, OIDCClientMetadata clientMetadata) {
-        ClientID clientId = new ClientID(client.getClientId());
-        Date issueDate = ValidationUtils.convertToDate(client.getCreationDate());
-        Secret secret = new Secret(textEncryptor.decrypt(client.getClientSecret()));
-        URI registrationUri = metadataService.findClientRegistrationURI(client.getClientId());
-        OIDCClientInformation clientInfo = new OIDCClientInformation(clientId, issueDate, clientMetadata, secret,
-                registrationUri, null);
-        return new OIDCClientInformationResponse(clientInfo);
-    }
+	private ClientRegistrationResponse generateClientInfoResponse(Client client, OIDCClientMetadata clientMetadata) {
+		ClientID clientId = new ClientID(client.getClientId());
+		Date issueDate = ValidationUtils.convertToDate(client.getCreationDate());
+		Secret secret = new Secret(textEncryptor.decrypt(client.getClientSecret()));
+		URI registrationUri = metadataService.findClientRegistrationURI(client.getClientId());
+		OIDCClientInformation clientInfo = new OIDCClientInformation(clientId, issueDate, clientMetadata, secret,
+				registrationUri, null);
+		return new OIDCClientInformationResponse(clientInfo);
+	}
 
-    private void validateTokenValidity(OIDCClientMetadata clientMetadata, Client client) {
+	private void validateTokenValidity(OIDCClientMetadata clientMetadata, Client client) {
 
-        JSONObject customParameters = clientMetadata.getCustomFields();
-        try {
-            long validity = JSONObjectUtils.getLong(customParameters, "access_token_validity_minute");
-            client.setAccessTokenValidity(Duration.ofSeconds(validity));
-        } catch (ParseException e) {
-            int tokenValidity = identityProperties.getCodeProperty().getAccessTokenValidityMinute();
-            client.setAccessTokenValidity(Duration.ofMinutes(tokenValidity));
-            clientMetadata.setCustomField("access_token_validity_minute", tokenValidity);
-        }
+		JSONObject customParameters = clientMetadata.getCustomFields();
+		try {
+			long validity = JSONObjectUtils.getLong(customParameters, "access_token_validity_minute");
+			client.setAccessTokenValidity(Duration.ofSeconds(validity));
+		} catch (ParseException e) {
+			int tokenValidity = identityProperties.getCodeProperty().getAccessTokenValidityMinute();
+			client.setAccessTokenValidity(Duration.ofMinutes(tokenValidity));
+			clientMetadata.setCustomField("access_token_validity_minute", tokenValidity);
+		}
 
-        try {
-            long validity = JSONObjectUtils.getLong(customParameters, "refresh_token_validity_minute");
-            client.setRefreshTokenValidity(Duration.ofSeconds(validity));
-        } catch (ParseException e) {
-            int tokenValidity = identityProperties.getCodeProperty().getRefreshTokenValidity();
-            client.setRefreshTokenValidity(Duration.ofMinutes(tokenValidity));
-            clientMetadata.setCustomField("refresh_token_validity_minute", tokenValidity);
-        }
-    }
+		try {
+			long validity = JSONObjectUtils.getLong(customParameters, "refresh_token_validity_minute");
+			client.setRefreshTokenValidity(Duration.ofSeconds(validity));
+		} catch (ParseException e) {
+			int tokenValidity = identityProperties.getCodeProperty().getRefreshTokenValidity();
+			client.setRefreshTokenValidity(Duration.ofMinutes(tokenValidity));
+			clientMetadata.setCustomField("refresh_token_validity_minute", tokenValidity);
+		}
+	}
 
-    private ClientRegistrationResponse validateClientMetadata(OIDCClientMetadata clientMetadata) throws ParseException {
-        OIDCProviderMetadata serverMetadata = metadataService.findOIDCConfiguration();
+	private ClientRegistrationResponse validateClientMetadata(OIDCClientMetadata clientMetadata) throws ParseException {
+		OIDCProviderMetadata serverMetadata = metadataService.findOIDCConfiguration();
 
-        // Grant validation
-        Set<GrantType> grantTypes = clientMetadata.getGrantTypes();
-        if (CollectionUtils.isEmpty(grantTypes)) {
-            clientMetadata.setGrantTypes(Collections.singleton(GrantType.AUTHORIZATION_CODE));
-        } else {
-            if (grantTypes.stream().anyMatch(gt -> !serverMetadata.getGrantTypes().contains(gt))) {
-                return new ClientRegistrationErrorResponse(
-                        RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Grant"));
-            }
-        }
+		// Grant validation
+		Set<GrantType> grantTypes = clientMetadata.getGrantTypes();
+		if (CollectionUtils.isEmpty(grantTypes)) {
+			clientMetadata.setGrantTypes(Collections.singleton(GrantType.AUTHORIZATION_CODE));
+		} else {
+			if (grantTypes.stream().anyMatch(gt -> !serverMetadata.getGrantTypes().contains(gt))) {
+				return new ClientRegistrationErrorResponse(
+						RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Grant"));
+			}
+		}
 
-        // Req Obj EncryptionMethod validation
-        EncryptionMethod encMethod = clientMetadata.getRequestObjectJWEEnc();
-        if (encMethod != null && !serverMetadata.getRequestObjectJWEEncs().contains(encMethod)) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA
-                            .appendDescription(": Unsupported request object encryption method"));
-        }
+		// Req Obj EncryptionMethod validation
+		EncryptionMethod encMethod = clientMetadata.getRequestObjectJWEEnc();
+		if (encMethod != null && !serverMetadata.getRequestObjectJWEEncs().contains(encMethod)) {
+			return new ClientRegistrationErrorResponse(RegistrationError.INVALID_CLIENT_METADATA
+					.appendDescription(": Unsupported request object encryption method"));
+		}
 
-        // Req Obj EncryptionMethod validation
-        JWEAlgorithm encAlgo = clientMetadata.getRequestObjectJWEAlg();
-        if (encAlgo != null && !serverMetadata.getRequestObjectJWEAlgs().contains(encAlgo)) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA
-                            .appendDescription(": Unsupported request object encryption algorithm"));
-        }
+		// Req Obj EncryptionMethod validation
+		JWEAlgorithm encAlgo = clientMetadata.getRequestObjectJWEAlg();
+		if (encAlgo != null && !serverMetadata.getRequestObjectJWEAlgs().contains(encAlgo)) {
+			return new ClientRegistrationErrorResponse(RegistrationError.INVALID_CLIENT_METADATA
+					.appendDescription(": Unsupported request object encryption algorithm"));
+		}
 
-        // Req Obj EncryptionMethod validation
-        JWSAlgorithm sigAlgo = clientMetadata.getRequestObjectJWSAlg();
-        if (sigAlgo != null && !serverMetadata.getRequestObjectJWSAlgs().contains(sigAlgo)) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA
-                            .appendDescription(": Unsupported request object signing algorithm"));
-        }
+		// Req Obj EncryptionMethod validation
+		JWSAlgorithm sigAlgo = clientMetadata.getRequestObjectJWSAlg();
+		if (sigAlgo != null && !serverMetadata.getRequestObjectJWSAlgs().contains(sigAlgo)) {
+			return new ClientRegistrationErrorResponse(RegistrationError.INVALID_CLIENT_METADATA
+					.appendDescription(": Unsupported request object signing algorithm"));
+		}
 
-        // IDToken EncryptionMethod validation
-        encMethod = clientMetadata.getIDTokenJWEEnc();
-        if (encMethod != null && !serverMetadata.getIDTokenJWEEncs().contains(encMethod)) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA
-                            .appendDescription(": Unsupported id token encryption method"));
-        }
+		// IDToken EncryptionMethod validation
+		encMethod = clientMetadata.getIDTokenJWEEnc();
+		if (encMethod != null && !serverMetadata.getIDTokenJWEEncs().contains(encMethod)) {
+			return new ClientRegistrationErrorResponse(RegistrationError.INVALID_CLIENT_METADATA
+					.appendDescription(": Unsupported id token encryption method"));
+		}
 
-        // IDToken EncryptionMethod validation
-        encAlgo = clientMetadata.getIDTokenJWEAlg();
-        if (encAlgo != null && !serverMetadata.getIDTokenJWEAlgs().contains(encAlgo)) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA
-                            .appendDescription(": Unsupported id token encryption algorithm"));
-        }
+		// IDToken EncryptionMethod validation
+		encAlgo = clientMetadata.getIDTokenJWEAlg();
+		if (encAlgo != null && !serverMetadata.getIDTokenJWEAlgs().contains(encAlgo)) {
+			return new ClientRegistrationErrorResponse(RegistrationError.INVALID_CLIENT_METADATA
+					.appendDescription(": Unsupported id token encryption algorithm"));
+		}
 
-        // IDToken EncryptionMethod validation
-        sigAlgo = clientMetadata.getIDTokenJWSAlg();
-        if (sigAlgo == null) {
-            clientMetadata.setIDTokenJWSAlg(JWSAlgorithm.RS256);
-        } else if (!serverMetadata.getIDTokenJWSAlgs().contains(sigAlgo)) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA
-                            .appendDescription(": Unsupported id token signing algorithm"));
-        }
+		// IDToken EncryptionMethod validation
+		sigAlgo = clientMetadata.getIDTokenJWSAlg();
+		if (sigAlgo == null) {
+			clientMetadata.setIDTokenJWSAlg(JWSAlgorithm.RS256);
+		} else if (!serverMetadata.getIDTokenJWSAlgs().contains(sigAlgo)) {
+			return new ClientRegistrationErrorResponse(RegistrationError.INVALID_CLIENT_METADATA
+					.appendDescription(": Unsupported id token signing algorithm"));
+		}
 
-        // IDToken EncryptionMethod validation
-        encMethod = clientMetadata.getUserInfoJWEEnc();
-        if (encMethod != null && !serverMetadata.getUserInfoJWEEncs().contains(encMethod)) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA
-                            .appendDescription(": Unsupported user info encryption method"));
-        }
+		// IDToken EncryptionMethod validation
+		encMethod = clientMetadata.getUserInfoJWEEnc();
+		if (encMethod != null && !serverMetadata.getUserInfoJWEEncs().contains(encMethod)) {
+			return new ClientRegistrationErrorResponse(RegistrationError.INVALID_CLIENT_METADATA
+					.appendDescription(": Unsupported user info encryption method"));
+		}
 
-        // IDToken EncryptionMethod validation
-        encAlgo = clientMetadata.getUserInfoJWEAlg();
-        if (encAlgo != null && !serverMetadata.getUserInfoJWEAlgs().contains(encAlgo)) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA
-                            .appendDescription(": Unsupported user info encryption algorithm"));
-        }
+		// IDToken EncryptionMethod validation
+		encAlgo = clientMetadata.getUserInfoJWEAlg();
+		if (encAlgo != null && !serverMetadata.getUserInfoJWEAlgs().contains(encAlgo)) {
+			return new ClientRegistrationErrorResponse(RegistrationError.INVALID_CLIENT_METADATA
+					.appendDescription(": Unsupported user info encryption algorithm"));
+		}
 
-        // IDToken EncryptionMethod validation
-        sigAlgo = clientMetadata.getUserInfoJWSAlg();
-        if (sigAlgo != null && !serverMetadata.getUserInfoJWSAlgs().contains(sigAlgo)) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA
-                            .appendDescription(": Unsupported user info signing algorithm"));
-        }
+		// IDToken EncryptionMethod validation
+		sigAlgo = clientMetadata.getUserInfoJWSAlg();
+		if (sigAlgo != null && !serverMetadata.getUserInfoJWSAlgs().contains(sigAlgo)) {
+			return new ClientRegistrationErrorResponse(RegistrationError.INVALID_CLIENT_METADATA
+					.appendDescription(": Unsupported user info signing algorithm"));
+		}
 
-        // Scope validation
-        Scope scope = clientMetadata.getScope();
-        if (CollectionUtils.isEmpty(scope)) {
-            clientMetadata.setScope(Scope.parse("openid"));
-        } else {
-            if (scope.stream().anyMatch(s -> !serverMetadata.getScopes().contains(s.getValue()))) {
-                return new ClientRegistrationErrorResponse(
-                        RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Scope"));
-            }
-        }
+		// Scope validation
+		Scope scope = clientMetadata.getScope();
+		if (CollectionUtils.isEmpty(scope)) {
+			clientMetadata.setScope(Scope.parse("openid"));
+		} else {
+			if (scope.stream().anyMatch(s -> !serverMetadata.getScopes().contains(s.getValue()))) {
+				return new ClientRegistrationErrorResponse(
+						RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Scope"));
+			}
+		}
 
-        // Response type validation
-        Set<ResponseType> responseTypes = clientMetadata.getResponseTypes();
-        if (CollectionUtils.isEmpty(responseTypes)) {
-            clientMetadata.setResponseTypes(Collections.singleton(ResponseType.parse("code")));
-        } else {
-            if (responseTypes.stream().anyMatch(rt -> !serverMetadata.getResponseTypes().contains(rt))) {
-                return new ClientRegistrationErrorResponse(
-                        RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Response Type"));
-            }
-        }
+		// Response type validation
+		Set<ResponseType> responseTypes = clientMetadata.getResponseTypes();
+		if (CollectionUtils.isEmpty(responseTypes)) {
+			clientMetadata.setResponseTypes(Collections.singleton(ResponseType.parse("code")));
+		} else {
+			if (responseTypes.stream().anyMatch(rt -> !serverMetadata.getResponseTypes().contains(rt))) {
+				return new ClientRegistrationErrorResponse(
+						RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Response Type"));
+			}
+		}
 
-        SubjectType subjectType = clientMetadata.getSubjectType();
-        if (subjectType == null) {
-            clientMetadata.setSubjectType(SubjectType.PUBLIC);
-        } else if (subjectType == SubjectType.PAIRWISE) {
-            return new ClientRegistrationErrorResponse(
-                    RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Subject Type"));
-        }
-        return null;
-    }
+		SubjectType subjectType = clientMetadata.getSubjectType();
+		if (subjectType == null) {
+			clientMetadata.setSubjectType(SubjectType.PUBLIC);
+		} else if (subjectType == SubjectType.PAIRWISE) {
+			return new ClientRegistrationErrorResponse(
+					RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Subject Type"));
+		}
+		return null;
+	}
 
-    @Autowired
-    @Qualifier("client-password")
-    public void setTextEncryptor(TextEncryptor textEncryptor) {
-        this.textEncryptor = textEncryptor;
-    }
+	@Autowired
+	@Qualifier("client-password")
+	public void setTextEncryptor(TextEncryptor textEncryptor) {
+		this.textEncryptor = textEncryptor;
+	}
 }

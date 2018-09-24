@@ -189,7 +189,7 @@ public abstract class HtmlPageTestBase {
         loginForm.getInputByName("username").setValueAttribute(username);
         loginForm.getInputByName("password").setValueAttribute(password);
         try {
-            Page nextPage = loginForm.getButtonByName("submit").click();
+            loginForm.getButtonByName("submit").click();
         } catch (FailingHttpStatusCodeException ex) {
             assertEquals(404, ex.getStatusCode());
             return ex.getResponse().getWebRequest().getUrl().toURI();
