@@ -21,6 +21,7 @@ import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.*;
 import com.nimbusds.openid.connect.sdk.op.ResolveException;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.user.UserConsent;
@@ -69,6 +70,7 @@ public class OpenIDConnectService {
                     request.getState(), request.getResponseMode());
         } else {
             request = jwtResolver.resolveAuthenticationRequest(request, client.get());
+            OIDCClientMetadata clientMetadata = client.get().getMetadata();
 
             // handle login hint
             IdentityViewResponse identityLoginView = new IdentityViewResponse(IdentityViewResponse.ViewType.LOGIN);
@@ -81,7 +83,7 @@ public class OpenIDConnectService {
                 }
                 identityLoginView.getAttributes().put("loginHint", loginHint);
             }
-            // handle id token hint
+            // TODO handle id token hint
 
 
             // Check prompt and login status
@@ -101,9 +103,10 @@ public class OpenIDConnectService {
                 }
             } else {
                 // max age check
-                if (request.getMaxAge() > 0) {
+                if (request.getMaxAge() > 0 || clientMetadata.getDefaultMaxAge() > 0) {
+                    int maxAge = request.getMaxAge() > 0 ? request.getMaxAge() : clientMetadata.getDefaultMaxAge();
                     LocalDateTime loginTime = ((UserAuthenticationToken) authentication).getLoginTime();
-                    if (loginTime.plusSeconds(request.getMaxAge()).isBefore(LocalDateTime.now())) {
+                    if (loginTime.plusSeconds(maxAge).isBefore(LocalDateTime.now())) {
                         if (prompt.contains(Prompt.Type.NONE)) {
                             return new AuthenticationErrorResponse(request.getRedirectionURI(), OIDCError.LOGIN_REQUIRED,
                                     request.getState(), request.getResponseMode());
@@ -119,8 +122,8 @@ public class OpenIDConnectService {
             // End prompt and login status check
             consentModel.setClient(client.get());
             // Redirect URI validation start
-            if (client.get().getMetadata().getRedirectionURIStrings() != null) {
-                if (!client.get().getMetadata().getRedirectionURIStrings().contains(request.getRedirectionURI().toString())) {
+            if (clientMetadata.getRedirectionURIStrings() != null) {
+                if (!clientMetadata.getRedirectionURIStrings().contains(request.getRedirectionURI().toString())) {
                     return new AuthorizationErrorResponse(request.getRedirectionURI(),
                             OAuth2Error.INVALID_REQUEST.setDescription(OAuthError.INVALID_REDIRECT_URI),
                             request.getState(), request.getResponseMode());
@@ -133,6 +136,13 @@ public class OpenIDConnectService {
 
             if (ValidationUtils.invalidGrant(request, client.get())) {
                 return new AuthorizationErrorResponse(request.getRedirectionURI(), OAuth2Error.INVALID_GRANT,
+                        request.getState(), request.getResponseMode());
+            }
+
+            // response type validation
+            ResponseType responseType = request.getResponseType();
+            if (!clientMetadata.getResponseTypes().contains(responseType)) {
+                return new AuthorizationErrorResponse(request.getRedirectionURI(), OAuth2Error.UNSUPPORTED_RESPONSE_TYPE,
                         request.getState(), request.getResponseMode());
             }
 
@@ -164,7 +174,7 @@ public class OpenIDConnectService {
                 }
             }
 
-            // Check for already approved scopes
+            // Check for already approved consent
             Optional<UserConsent> consent = userConsentRepository.findById(new UserConsent.UserConsentPK(
                     principal.getUsername(), client.get().getClientId()));
 

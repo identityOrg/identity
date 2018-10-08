@@ -52,6 +52,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.net.URI;
@@ -98,15 +99,17 @@ public class OAuth2Service {
 
             // Redirect URI validation start
             Set<String> redirectUris = client.get().getMetadata().getRedirectionURIStrings();
-            if (request.getRedirectionURI() != null) {
-                if (redirectUris == null || !redirectUris.contains(request.getRedirectionURI().toString())) {
-                    return new AuthorizationErrorResponse(request.getRedirectionURI(),
-                            OAuth2Error.INVALID_REQUEST.setDescription(OAuthError.INVALID_REDIRECT_URI),
-                            request.getState(), request.getResponseMode());
+            if (!CollectionUtils.isEmpty(redirectUris)) {
+                if (request.getRedirectionURI() != null) {
+                    if (!redirectUris.contains(request.getRedirectionURI().toString())) {
+                        return new AuthorizationErrorResponse(request.getRedirectionURI(),
+                                OAuth2Error.INVALID_REQUEST.setDescription(OAuthError.INVALID_REDIRECT_URI),
+                                request.getState(), request.getResponseMode());
+                    }
+                    redirectUri = request.getRedirectionURI();
+                } else {
+                    redirectUri = client.get().getMetadata().getRedirectionURI();
                 }
-                redirectUri = request.getRedirectionURI();
-            } else if (redirectUris != null) {
-                redirectUri = client.get().getMetadata().getRedirectionURI();
             } else {
                 return new IdentityViewResponse(OAuth2Error.INVALID_REQUEST.setDescription("Redirect URI must be provided"));
             }
