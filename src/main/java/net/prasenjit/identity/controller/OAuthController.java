@@ -133,7 +133,7 @@ public class OAuthController {
             response = new AuthorizationErrorResponse(e.getRedirectionURI(), e.getErrorObject(), e.getState(),
                     e.getResponseMode());
         } else if (e.getClientID() != null) {
-            URI redirectUri = oAuth2Service.getRedirectUriForClientId(e.getClientID().getValue());
+            URI redirectUri = oAuth2Service.getRedirectUriForClientId(e.getClientID());
             if (redirectUri != null) {
                 response = new AuthorizationErrorResponse(redirectUri, e.getErrorObject(), e.getState(),
                         e.getResponseMode());

@@ -170,9 +170,11 @@ public class OAuth2Service {
                 request.getResponseMode());
     }
 
-    public URI getRedirectUriForClientId(String value) {
-        Optional<Client> optionalClient = clientRepository.findById(value);
-        optionalClient.ifPresent(client -> client.getMetadata().getRedirectionURI());
+    public URI getRedirectUriForClientId(ClientID clientID) {
+        Optional<Client> optionalClient = clientRepository.findById(clientID.getValue());
+        if (optionalClient.isPresent()) {
+            return optionalClient.get().getMetadata().getRedirectionURI();
+        }
         return null;
     }
 
@@ -350,6 +352,11 @@ public class OAuth2Service {
     }
 
     private TokenResponse handleGrantInternal(Client client, RefreshTokenGrant grant) {
+
+        if (!client.supportsGrant(GrantType.REFRESH_TOKEN)) {
+            return new TokenErrorResponse(OAuth2Error.INVALID_GRANT
+                    .setDescription("Client doesn't support requested grant"));
+        }
         Optional<RefreshTokenEntity> tokenOptional = refreshTokenRepository.findById(grant.getRefreshToken().getValue());
         if (tokenOptional.isPresent()) {
             if (tokenOptional.get().isValid()) {
@@ -394,6 +401,11 @@ public class OAuth2Service {
     private TokenResponse handleGrantInternal(Client client, TokenRequest request,
                                               ResourceOwnerPasswordCredentialsGrant grant) {
 
+        if (!client.supportsGrant(GrantType.PASSWORD)) {
+            return new TokenErrorResponse(OAuth2Error.INVALID_GRANT
+                    .setDescription("Client doesn't support requested grant"));
+        }
+
         Authentication authToken = new UserAuthenticationToken(grant.getUsername(), grant.getPassword().getValue());
         try {
             authToken = authenticationManager.authenticate(authToken);
@@ -417,6 +429,11 @@ public class OAuth2Service {
     }
 
     private TokenResponse handleGrantInternal(Client client, TokenRequest request) {
+
+        if (!client.supportsGrant(GrantType.CLIENT_CREDENTIALS)) {
+            return new TokenErrorResponse(OAuth2Error.INVALID_GRANT
+                    .setDescription("Client doesn't support requested grant"));
+        }
         Scope filteredScope = ValidationUtils.filterScope(client.getApprovedScopes(), request.getScope());
         ClientID clientId = new ClientID(client.getClientId());
         BearerAccessToken accessToken = codeFactory.createAccessToken(Profile.create(client), clientId,

@@ -8,7 +8,6 @@ import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.Profile;
 import org.springframework.security.core.Authentication;
-import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -29,11 +28,10 @@ public final class ValidationUtils {
         return null;
     }
 
-    public static Scope filterScopeToMap(String approved, Scope requestedScope, ConsentModel authorizationModel) {
-        if (!StringUtils.hasText(approved)) {
+    public static Scope filterScopeToMap(Scope approvedScopes, Scope requestedScope, ConsentModel authorizationModel) {
+        if (approvedScopes == null) {
             return new Scope();
         }
-        Scope approvedScopes = Scope.parse(approved);
         if (requestedScope == null || requestedScope.isEmpty()) {
             authorizationModel.setFilteredScopes(approvedScopes.toStringList().stream()
                     .collect(Collectors.toMap(s -> s, s -> Boolean.TRUE)));
@@ -66,11 +64,10 @@ public final class ValidationUtils {
         return false;
     }
 
-    public static Scope filterScope(String approved, Scope requestedScope) {
-        if (!StringUtils.hasText(approved)) {
+    public static Scope filterScope(Scope approvedScopes, Scope requestedScope) {
+        if (approvedScopes == null) {
             return new Scope();
         }
-        Scope approvedScopes = Scope.parse(approved);
         if (requestedScope == null || requestedScope.isEmpty()) {
             return approvedScopes;
         }

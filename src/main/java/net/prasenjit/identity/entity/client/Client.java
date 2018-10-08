@@ -2,6 +2,7 @@ package net.prasenjit.identity.entity.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import lombok.Data;
 import net.prasenjit.identity.entity.Status;
@@ -52,8 +53,8 @@ public class Client {
         return getMetadata().getGrantTypes().contains(grant);
     }
 
-    public String getApprovedScopes() {
-        return getMetadata().getScope().toString(); //TODO remove to String
+    public Scope getApprovedScopes() {
+        return getMetadata().getScope();
     }
 
 }
