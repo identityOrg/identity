@@ -214,25 +214,31 @@ public class OAuth2Service {
         } else {
             ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
             String clientId = clientAuthentication.getClientID().getValue();
+            Optional<Client> optionalClient = clientRepository.findById(clientId);
+            if (!optionalClient.isPresent()) {
+                return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT);
+            }
+            client = optionalClient.get();
             String clientSecret;
-            if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
-                clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
-            } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
-                clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
+            if (clientAuthentication.getMethod().equals(client.getMetadata().getTokenEndpointAuthMethod())) {
+                if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
+                    clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
+                } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
+                    clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
+                } else {
+                    return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED
+                            .setDescription("Client authentication not supported"));
+                }
             } else {
-                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.setDescription("Client authentication not supported"));
+                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED
+                        .setDescription("Client authentication not supported"));
             }
 
-            BasicAuthenticationToken authenticate;
             try {
-                authenticate = (BasicAuthenticationToken) authenticationManager.authenticate(
-                        new BasicAuthenticationToken(clientId, clientSecret));
+                authenticationManager.authenticate(new BasicAuthenticationToken(clientId, clientSecret));
             } catch (AuthenticationException e) {
                 return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed"));
             }
-
-            Profile clientProfile = (Profile) authenticate.getPrincipal();
-            client = clientRepository.getOne(clientProfile.getUsername());
         }
         if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.AUTHORIZATION_CODE)) {
             return handleGrantInternal(client,
