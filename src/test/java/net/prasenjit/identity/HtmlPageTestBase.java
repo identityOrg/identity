@@ -23,7 +23,9 @@ import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
+import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -129,6 +131,8 @@ public abstract class HtmlPageTestBase {
         System.err.println("Register Client");
         OIDCClientMetadata metadata = new OIDCClientMetadata();
         metadata.setRequestObjectJWSAlg(JWSAlgorithm.RS256);
+        metadata.setRequestObjectJWEAlg(JWEAlgorithm.RSA_OAEP_256);
+        metadata.setRequestObjectJWEEnc(EncryptionMethod.A128GCM);
         metadata.setName("New Client");
         metadata.setJWKSet(generateKey());
         metadata.setRedirectionURI(getRedirectURI());
