@@ -179,8 +179,9 @@
             <column name="LOCKED" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
-            <column name="FIRST_NAME" type="VARCHAR(255)"/>
-            <column name="LAST_NAME" type="VARCHAR(255)"/>
+            <column name="PROFILE" type="CLOB">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-7">

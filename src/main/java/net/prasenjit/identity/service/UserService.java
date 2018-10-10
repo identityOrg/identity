@@ -79,8 +79,8 @@ public class UserService implements UserDetailsService {
         user.setCreationDate(now);
         user.setAdmin(request.isAdmin());
         user.setPassword(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled user
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
+        //TODO user.setFirstName(request.getFirstName());
+        //TODO user.setLastName(request.getLastName());
         user.setUsername(request.getUsername());
         user.setExpiryDate(request.getExpiryDate());
 
@@ -97,8 +97,8 @@ public class UserService implements UserDetailsService {
             throw new ItemNotFoundException("User doesn't exist.");
         }
         User savedUser = optionalUser.get();
-        savedUser.setFirstName(user.getFirstName());
-        savedUser.setLastName(user.getLastName());
+        //TODO savedUser.setFirstName(user.getFirstName());
+        //TODO savedUser.setLastName(user.getLastName());
         savedUser.setExpiryDate(user.getExpiryDate());
         savedUser.setAdmin(user.getAdmin());
 
