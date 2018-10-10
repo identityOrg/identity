@@ -18,6 +18,8 @@ package net.prasenjit.identity.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -54,8 +56,9 @@ public class Profile implements UserDetails {
 
     private Profile(User user) {
         this.username = user.getUsername();
-        this.firstName = user.getFirstName();
-        this.lastName = user.getLastName();
+        UserInfo userInfo = user.getUserInfo();
+		this.firstName = userInfo.getGivenName();
+        this.lastName = userInfo.getFamilyName();
         this.creationDate = user.getCreationDate();
         this.expiryDate = user.getExpiryDate();
         this.passwordExpiryDate = user.getPasswordExpiryDate();

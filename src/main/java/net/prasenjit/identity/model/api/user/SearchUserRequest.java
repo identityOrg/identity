@@ -24,6 +24,4 @@ public class SearchUserRequest {
     private Boolean locked;
     private Boolean active;
     private Boolean admin;
-    private String firstName;
-    private String lastName;
 }

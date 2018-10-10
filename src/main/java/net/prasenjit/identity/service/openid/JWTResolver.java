@@ -16,6 +16,16 @@
 
 package net.prasenjit.identity.service.openid;
 
+import java.io.IOException;
+import java.net.URL;
+
+import javax.mail.internet.ContentType;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -36,17 +46,12 @@ import com.nimbusds.openid.connect.sdk.OIDCError;
 import com.nimbusds.openid.connect.sdk.op.AuthenticationRequestResolver;
 import com.nimbusds.openid.connect.sdk.op.ResolveException;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
+
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.client.Client;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
-import javax.mail.internet.ContentType;
-import java.io.IOException;
-import java.net.URL;
-
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JWTResolver implements ResourceRetriever {
@@ -59,11 +64,6 @@ public class JWTResolver implements ResourceRetriever {
             throws ParseException, ResolveException {
         if (request.specifiesRequestObject()) {
             OIDCClientMetadata metadata = client.getMetadata();
-            if (metadata.getRequestObjectJWSAlg() == null &&
-                    (metadata.getRequestObjectJWEAlg() == null ||
-                            metadata.getRequestObjectJWEEnc() == null)) {
-                throw new ResolveException(OIDCError.REQUEST_NOT_SUPPORTED, request);
-            }
             JWTProcessor<SecurityContext> jwtProcessor = createJWTProcessor(metadata, request);
             AuthenticationRequestResolver<SecurityContext> requestResolver =
                     new AuthenticationRequestResolver<>(jwtProcessor, this);
@@ -112,11 +112,13 @@ public class JWTResolver implements ResourceRetriever {
                         .appendDescription(":Registered client doesnot have key set"), request);
             }
         } catch (java.text.ParseException e) {
+        	log.debug("Failed to parse client key set", e);
             throw new ParseException("Client keyset has error",
                     OIDCError.REQUEST_NOT_SUPPORTED.appendDescription(":Registered client key set is invalid"),
                     request.getClientID(), request.getRedirectionURI(), request.getResponseMode(),
                     request.getState());
         } catch (IOException e) {
+        	log.debug("Failed to retrieve client key set", e);
             throw new ResolveException(OIDCError.REQUEST_NOT_SUPPORTED
                     .appendDescription(":Registered client key set retrieval failed"), request);
         }

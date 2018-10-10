@@ -16,6 +16,24 @@
 
 package net.prasenjit.identity;
 
+import java.net.URI;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -28,36 +46,21 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.id.Subject;
+import com.nimbusds.openid.connect.sdk.claims.Address;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import com.nimbusds.openid.connect.sdk.rp.ApplicationType;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
+
+import net.minidev.json.JSONObject;
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.ScopeEntity;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.user.User;
-import net.prasenjit.identity.entity.user.UserAddress;
-import net.prasenjit.identity.entity.user.UserProfile;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
 import net.prasenjit.identity.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.net.URI;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @EnableAsync
 @SpringBootApplication
@@ -177,12 +180,12 @@ public class IdentityApplication implements ApplicationRunner {
         return user;
     }
 
-    private UserProfile createClaims(String username) {
-        UserProfile userProfile = new UserProfile();
-        userProfile.setSub(username);
-        userProfile.setAddress(new UserAddress());
-        userProfile.getAddress().setCountry("India");
-        userProfile.setBirthdate(LocalDate.of(0, 11, 9));
-        return userProfile;
+    private JSONObject createClaims(String username) {
+        UserInfo userProfile = new UserInfo(new Subject(username));
+        Address address=new Address();
+        address.setCountry("India");
+		userProfile.setAddress(address);
+        userProfile.setBirthdate("1984-09-11");
+        return userProfile.toJSONObject();
     }
 }

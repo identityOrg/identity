@@ -47,8 +47,6 @@ public class UserController implements UserApi {
         User user = new User();
         user.setLocked(request.getLocked());
         user.setActive(request.getActive());
-        user.setLastName(request.getLastName());
-        user.setFirstName(request.getFirstName());
         user.setAdmin(request.getAdmin());
         user.setUsername(request.getUsername());
 
