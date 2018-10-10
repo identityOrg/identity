@@ -231,7 +231,7 @@ public class OAuth2Service {
                 }
             } else {
                 return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED
-                        .setDescription("Client authentication not supported"));
+                        .setDescription("Client authentication not allowed"));
             }
 
             try {
