@@ -18,7 +18,7 @@ package net.prasenjit.identity.controller.scope;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import net.prasenjit.identity.entity.ScopeEntity;
+import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.model.api.scope.UpdateScopeRequest;
 
 import java.util.List;

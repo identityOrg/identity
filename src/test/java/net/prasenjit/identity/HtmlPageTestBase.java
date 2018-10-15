@@ -128,7 +128,6 @@ public abstract class HtmlPageTestBase {
     }
 
     private void registerClient() throws JOSEException, ParseException {
-        System.err.println("Register Client");
         OIDCClientMetadata metadata = new OIDCClientMetadata();
         metadata.setRequestObjectJWSAlg(JWSAlgorithm.RS256);
         metadata.setRequestObjectJWEAlg(JWEAlgorithm.RSA_OAEP_256);

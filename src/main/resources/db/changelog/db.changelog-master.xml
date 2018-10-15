@@ -22,4 +22,5 @@
     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.1.xsd">
     <include file="db/changelog/release1.xml"/>
     <include file="db/changelog/audit.xml"/>
+    <include file="db/changelog/scope-and-data.xml"/>
 </databaseChangeLog>

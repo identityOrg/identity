@@ -34,8 +34,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import lombok.Data;
-import net.minidev.json.JSONObject;
-import net.prasenjit.identity.entity.converter.JSONObjectConverter;
+import net.prasenjit.identity.entity.converter.UserInfoConverter;
 
 @Data
 @Entity
@@ -71,8 +70,8 @@ public class User implements UserDetails {
 
 	@Lob
 	@Column(name = "PROFILE", nullable = false)
-	@Convert(converter = JSONObjectConverter.class)
-	private JSONObject userProfile;
+	@Convert(converter = UserInfoConverter.class)
+	private UserInfo userInfo;
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -113,13 +112,4 @@ public class User implements UserDetails {
 		return isAccountNonExpired() && isAccountNonLocked() && isEnabled();
 	}
 
-	public UserInfo getUserInfo() {
-		JSONObject clone = new JSONObject();
-		clone.putAll(userProfile);
-		return new UserInfo(clone);
-	}
-
-	public void setUserInfo(UserInfo userInfo) {
-		userProfile = userInfo.toJSONObject();
-	}
 }

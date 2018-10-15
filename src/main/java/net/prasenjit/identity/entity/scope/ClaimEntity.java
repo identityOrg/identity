@@ -14,30 +14,25 @@
  *    limitations under the License.
  */
 
-package net.prasenjit.identity.entity;
+package net.prasenjit.identity.entity.scope;
 
 import lombok.Data;
 
 import javax.persistence.*;
-import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "T_JWK_KEY")
-public class JWKKey {
+@Table(name = "T_CLAIM")
+public class ClaimEntity {
     @Id
-    @Column(name = "ID", nullable = false)
     @GeneratedValue(strategy = GenerationType.TABLE)
-    private Long id;
+    @Column(name = "CLAIM_ID")
+    private Integer id;
 
-    @Column(name = "CREATION_DATE", nullable = false)
-    private LocalDateTime creationDate;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "TYPE", length = 20, nullable = false)
+    private ClaimType claimType;
 
-    @Lob
-    @Column(name = "PRIVATE_KEY", nullable = false)
-    private String privateKey;
-
-    @Lob
-    @Column(name = "PUBLIC_KEY", nullable = false)
-    private String publicKey;
+    @Column(name = "STANDARD_ATTRIBUTE", length = 256)
+    private String standardAttribute;
 }

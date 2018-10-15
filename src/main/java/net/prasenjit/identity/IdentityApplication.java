@@ -16,24 +16,6 @@
 
 package net.prasenjit.identity;
 
-import java.net.URI;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -51,16 +33,31 @@ import com.nimbusds.openid.connect.sdk.claims.Address;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import com.nimbusds.openid.connect.sdk.rp.ApplicationType;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
-
-import net.minidev.json.JSONObject;
 import net.prasenjit.crypto.TextEncryptor;
-import net.prasenjit.identity.entity.ScopeEntity;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.client.Client;
+import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
 import net.prasenjit.identity.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.net.URI;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @EnableAsync
 @SpringBootApplication
@@ -84,12 +81,7 @@ public class IdentityApplication implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
-        scopeRepository.save(new ScopeEntity("scope1", "Scope 1"));
-        scopeRepository.save(new ScopeEntity("scope2", "Scope 2"));
-        scopeRepository.save(new ScopeEntity("openid", "OpenID Scope"));
-        scopeRepository.save(new ScopeEntity("profile", "OpenID Profile"));
-        scopeRepository.save(new ScopeEntity("email", "OpenID Email"));
-        scopeRepository.save(new ScopeEntity("address", "OpenID Address"));
+        if (userRepository.count() > 0) return;
 
         User admin = createAdmin("admin");
         userRepository.saveAndFlush(admin);
@@ -176,16 +168,16 @@ public class IdentityApplication implements ApplicationRunner {
         user.setActive(true);
         user.setLocked(false);
         user.setPasswordExpiryDate(LocalDateTime.now().plusDays(1));
-        user.setUserProfile(createClaims(username));
+        user.setUserInfo(createClaims(username));
         return user;
     }
 
-    private JSONObject createClaims(String username) {
+    private UserInfo createClaims(String username) {
         UserInfo userProfile = new UserInfo(new Subject(username));
-        Address address=new Address();
+        Address address = new Address();
         address.setCountry("India");
-		userProfile.setAddress(address);
+        userProfile.setAddress(address);
         userProfile.setBirthdate("1984-09-11");
-        return userProfile.toJSONObject();
+        return userProfile;
     }
 }

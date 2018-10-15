@@ -121,6 +121,7 @@ public class CodeFactory {
 
     public BearerAccessToken createAccessToken(Profile user, ClientID clientId, Duration duration,
                                                Scope scope, LocalDateTime loginDate, String refreshToken) {
+        user.setAssociatedClient(clientId.getValue());
         AccessTokenEntity accessToken = new AccessTokenEntity();
         accessToken.setAssessToken(RandomStringUtils.randomAlphanumeric(24));
         accessToken.setUsername(user.getUsername());
