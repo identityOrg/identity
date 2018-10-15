@@ -14,32 +14,34 @@
  *    limitations under the License.
  */
 
-package net.prasenjit.identity.entity;
+package net.prasenjit.identity.entity.scope;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import net.prasenjit.identity.entity.scope.ClaimEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
 import java.io.Serializable;
+import java.util.Set;
 
 @Data
 @Entity
 @Table(name = "T_SCOPE")
-@NoArgsConstructor
-@AllArgsConstructor
 public class ScopeEntity implements Serializable {
-	private static final long serialVersionUID = 648424861320420292L;
+    private static final long serialVersionUID = 648424861320420292L;
 
-	@Id
-    @Column(name = "SCOPE_ID", length = 10, nullable = false, unique = true)
+    @Id
+    @Column(name = "SCOPE_ID", length = 50, nullable = false, unique = true)
     @NotEmpty
     private String scopeId;
 
     @Column(name = "SCOPE_NAME", length = 50, nullable = false, unique = true)
     private String scopeName;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "T_SCOPE_CLAIM",
+            joinColumns = @JoinColumn(name = "SCOPE_ID", referencedColumnName = "SCOPE_ID"),
+            inverseJoinColumns = @JoinColumn(name = "CLAIM_ID", referencedColumnName = "CLAIM_ID"))
+    private Set<ClaimEntity> claims;
+
 }

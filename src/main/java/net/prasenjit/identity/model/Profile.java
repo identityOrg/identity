@@ -49,6 +49,7 @@ public class Profile implements UserDetails {
     private Boolean locked;
     private Boolean active;
     private boolean client;
+    private String associatedClient;
 
     @JsonCreator
     public Profile() {

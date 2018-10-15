@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 @Table(name = "T_AUTH_AUDIT")
 public class AuditEvent {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.TABLE)
     @Column(name = "ID", updatable = false)
     private Long id;
 

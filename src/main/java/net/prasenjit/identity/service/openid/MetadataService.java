@@ -28,7 +28,7 @@ import com.nimbusds.openid.connect.sdk.SubjectType;
 import com.nimbusds.openid.connect.sdk.claims.ClaimType;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.ScopeEntity;
+import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.model.openid.discovery.DiscoveryResponse;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.properties.ServerMetadata;
@@ -105,7 +105,7 @@ public class MetadataService {
             metadata.setTokenEndpointAuthMethods(epAuthMethods);
 
             builder1 = builder.cloneBuilder();
-            metadata.setUserInfoEndpointURI(builder1.pathSegment("api", "me").build().toUri());
+            metadata.setUserInfoEndpointURI(builder1.pathSegment("oauth", "userinfo").build().toUri());
 
             builder1 = builder.cloneBuilder();
             metadata.setRegistrationEndpointURI(builder1.pathSegment("api", "client-registration").build().toUri());

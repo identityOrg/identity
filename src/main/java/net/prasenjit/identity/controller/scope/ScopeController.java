@@ -19,7 +19,7 @@ package net.prasenjit.identity.controller.scope;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.ResourceType;
-import net.prasenjit.identity.entity.ScopeEntity;
+import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.events.CreateEvent;
 import net.prasenjit.identity.events.UpdateEvent;
 import net.prasenjit.identity.exception.ConflictException;

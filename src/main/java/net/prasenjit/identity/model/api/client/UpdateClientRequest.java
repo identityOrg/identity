@@ -18,7 +18,7 @@ package net.prasenjit.identity.model.api.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
-import net.prasenjit.identity.entity.ScopeEntity;
+import net.prasenjit.identity.entity.scope.ScopeEntity;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotEmpty;

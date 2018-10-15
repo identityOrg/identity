@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~    Copyright 2018 prasenjit-net
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+    <changeSet author="prasenjit-net" id="03032018-5">
+        <createTable tableName="T_SCOPE">
+            <column name="SCOPE_ID" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SCOPE_NAME" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="T_SCOPE_CLAIM">
+            <column name="SCOPE_ID" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CLAIM_ID" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="T_CLAIM">
+            <column name="CLAIM_ID" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TYPE" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STANDARD_ATTRIBUTE" type="VARCHAR(256)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="prasenjit-net" id="03032018-24">
+        <addPrimaryKey columnNames="SCOPE_ID" constraintName="T_SCOPEPK" tableName="T_SCOPE"/>
+        <addUniqueConstraint columnNames="SCOPE_NAME" constraintName="UC_T_SCOPESCOPE_NAME_COL" tableName="T_SCOPE"/>
+        <addPrimaryKey columnNames="CLAIM_ID" constraintName="T_CLAIMPK" tableName="T_CLAIM"/>
+        <addForeignKeyConstraint baseTableName="T_SCOPE_CLAIM" baseColumnNames="CLAIM_ID"
+                                 constraintName="FK_CLAIM_SCOPE_1"
+                                 referencedTableName="T_CLAIM"
+                                 referencedColumnNames="CLAIM_ID"/>
+        <addForeignKeyConstraint baseTableName="T_SCOPE_CLAIM" baseColumnNames="SCOPE_ID"
+                                 constraintName="FK_CLAIM_SCOPE_2"
+                                 referencedTableName="T_SCOPE"
+                                 referencedColumnNames="SCOPE_ID"/>
+        <addPrimaryKey tableName="T_SCOPE_CLAIM" columnNames="SCOPE_ID, CLAIM_ID" constraintName="T_SCOPE_CLAIM_PKEY"/>
+    </changeSet>
+    <changeSet id="scope insert data" author="prasenjit-net">
+        <insert tableName="T_SCOPE">
+            <column name="scope_id" value="openid"/>
+            <column name="scope_name" value="OpenID Scope"/>
+        </insert>
+        <insert tableName="T_SCOPE">
+            <column name="scope_id" value="profile"/>
+            <column name="scope_name" value="OpenID Profile"/>
+        </insert>
+        <insert tableName="T_SCOPE">
+            <column name="scope_id" value="email"/>
+            <column name="scope_name" value="OpenID Email"/>
+        </insert>
+        <insert tableName="T_SCOPE">
+            <column name="scope_id" value="address"/>
+            <column name="scope_name" value="OpenID Address"/>
+        </insert>
+        <insert tableName="T_SCOPE">
+            <column name="scope_id" value="scope1"/>
+            <column name="scope_name" value="Scope 1"/>
+        </insert>
+        <insert tableName="T_SCOPE">
+            <column name="scope_id" value="scope2"/>
+            <column name="scope_name" value="Scope 2"/>
+        </insert>
+    </changeSet>
+    <changeSet id="claim insert data" author="prasenjit-net">
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000001"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="sub"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000002"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="name"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000003"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="given_name"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000004"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="family_name"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000005"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="middle_name"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000006"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="nickname"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000007"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="preferred_username"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000008"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="profile"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000009"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="picture"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000010"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="website"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000011"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="email"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000012"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="email_verified"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000013"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="gender"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000014"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="birthdate"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000015"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="zoneinfo"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000016"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="locale"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000017"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="phone_number"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000018"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="phone_number_verified"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000019"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="address"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000020"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="STANDARD_ATTRIBUTE" value="updated_at"/>
+        </insert>
+    </changeSet>
+    <changeSet id="claim scope mapping data" author="prasenjit-net">
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000001"/>
+            <column name="SCOPE_ID" value="openid"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000002"/>
+            <column name="SCOPE_ID" value="openid"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000003"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000004"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000005"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000006"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000007"/>
+            <column name="SCOPE_ID" value="openid"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000008"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000009"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000010"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000011"/>
+            <column name="SCOPE_ID" value="email"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000012"/>
+            <column name="SCOPE_ID" value="email"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000013"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000014"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000015"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000016"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000017"/>
+            <column name="SCOPE_ID" value="address"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000018"/>
+            <column name="SCOPE_ID" value="address"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000019"/>
+            <column name="SCOPE_ID" value="address"/>
+        </insert>
+        <insert tableName="T_SCOPE_CLAIM">
+            <column name="CLAIM_ID" value="5000020"/>
+            <column name="SCOPE_ID" value="profile"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

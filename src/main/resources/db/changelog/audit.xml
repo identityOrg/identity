@@ -44,17 +44,6 @@
             <column name="AUTH_TYPE" type="VARCHAR(100)"/>
         </createTable>
     </changeSet>
-    <changeSet id="26062018-2" author="prasenjit-net">
-        <createSequence sequenceName="hibernate_sequence"/>
-        <createTable tableName="hibernate_sequences">
-            <column name="sequence_name" type="VARCHAR(100)">
-                <constraints primaryKey="true"/>
-            </column>
-            <column name="next_val" type="INTEGER">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
     <changeSet author="prasenjit-net" id="26062018-3">
         <addPrimaryKey columnNames="ID"
                        constraintName="T_AUTH_AUDITPK" tableName="T_AUTH_AUDIT"/>

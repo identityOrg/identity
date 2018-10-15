@@ -18,6 +18,16 @@
 <databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+    <changeSet id="26062018-2" author="prasenjit-net">
+        <createTable tableName="hibernate_sequences">
+            <column name="sequence_name" type="VARCHAR(100)">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="next_val" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
     <changeSet author="prasenjit-net" id="03032018-1">
         <createTable tableName="T_ACCESS_TOKEN">
             <column name="ACCESS_TOKEN" type="VARCHAR(50)">
@@ -147,16 +157,6 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-5">
-        <createTable tableName="T_SCOPE">
-            <column name="SCOPE_ID" type="VARCHAR(10)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="SCOPE_NAME" type="VARCHAR(50)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
     <changeSet author="prasenjit-net" id="03032018-6">
         <createTable tableName="T_USER">
             <column name="USERNAME" type="VARCHAR(50)">
@@ -219,47 +219,6 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-8">
-        <createTable tableName="T_CLIENT_SCOPE">
-            <column name="CLIENT_ID" type="VARCHAR(50)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="SCOPE_ID" type="VARCHAR(10)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-9">
-        <createTable tableName="T_STANDARD_CLAIM">
-            <column name="SUBJECT" type="VARCHAR(50)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="NAME" type="VARCHAR(255)"/>
-            <column name="GIVEN_NAME" type="VARCHAR(255)"/>
-            <column name="FAMILY_NAME" type="VARCHAR(255)"/>
-            <column name="MIDDLE_NAME" type="VARCHAR(255)"/>
-            <column name="NICKNAME" type="VARCHAR(50)"/>
-            <column name="PREFERRED_USERNAME" type="VARCHAR(50)"/>
-            <column name="PROFILE" type="VARCHAR(255)"/>
-            <column name="PICTURE" type="VARCHAR(255)"/>
-            <column name="WEBSITE" type="VARCHAR(255)"/>
-            <column name="EMAIL" type="VARCHAR(255)"/>
-            <column name="NAME_VERIFIED" type="BOOLEAN"/>
-            <column name="GENDER" type="VARCHAR(30)"/>
-            <column name="BIRTH_DATE" type="DATE"/>
-            <column name="ZONE_INFO" type="VARCHAR(100)"/>
-            <column name="LOCALE" type="VARCHAR(20)"/>
-            <column name="PHONE_NUMBER" type="VARCHAR(50)"/>
-            <column name="PHONE_NUMBER_VERIFIED" type="BOOLEAN"/>
-            <column name="ADDRESS_FORMATTED" type="VARCHAR(400)"/>
-            <column name="ADDRESS_STREET" type="VARCHAR(100)"/>
-            <column name="ADDRESS_LOCALITY" type="VARCHAR(100)"/>
-            <column name="ADDRESS_REGION" type="VARCHAR(100)"/>
-            <column name="ADDRESS_POSTAL_CODE" type="VARCHAR(15)"/>
-            <column name="ADDRESS_COUNTRY" type="VARCHAR(100)"/>
-            <column name="UPDATED_AT" type="TIMESTAMP"/>
-        </createTable>
-    </changeSet>
     <changeSet author="prasenjit-net" id="03032018-10">
         <createTable tableName="T_USER_CONSENT">
             <column name="USERNAME" type="VARCHAR(50)">
@@ -277,49 +236,24 @@
         </createTable>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-20">
-        <addPrimaryKey columnNames="ACCESS_TOKEN"
-                       constraintName="T_ACCESS_TOKENPK" tableName="T_ACCESS_TOKEN"/>
+        <addPrimaryKey columnNames="ACCESS_TOKEN" constraintName="T_ACCESS_TOKENPK" tableName="T_ACCESS_TOKEN"/>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-21">
         <addPrimaryKey columnNames="AUTHORIZATION_CODE"
                        constraintName="T_AUTHORIZATION_CODEPK" tableName="T_AUTHORIZATION_CODE"/>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-22">
-        <addPrimaryKey columnNames="CLIENT_ID" constraintName="T_CLIENTPK"
-                       tableName="T_CLIENT"/>
+        <addPrimaryKey columnNames="CLIENT_ID" constraintName="T_CLIENTPK" tableName="T_CLIENT"/>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-23">
-        <addPrimaryKey columnNames="REFRESH_TOKEN"
-                       constraintName="T_REFRESH_TOKENPK" tableName="T_REFRESH_TOKEN"/>
-    </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-24">
-        <addPrimaryKey columnNames="SCOPE_ID" constraintName="T_SCOPEPK"
-                       tableName="T_SCOPE"/>
+        <addPrimaryKey columnNames="REFRESH_TOKEN" constraintName="T_REFRESH_TOKENPK" tableName="T_REFRESH_TOKEN"/>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-25">
-        <addPrimaryKey columnNames="USERNAME" constraintName="T_USERPK"
-                       tableName="T_USER"/>
-    </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-26">
-        <addUniqueConstraint columnNames="SCOPE_NAME"
-                             constraintName="UC_T_SCOPESCOPE_NAME_COL" tableName="T_SCOPE"/>
+        <addPrimaryKey columnNames="USERNAME" constraintName="T_USERPK" tableName="T_USER"/>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-27">
         <addPrimaryKey columnNames="ASSOCIATION, USER_TYPE" constraintName="T_E2E_KEYPK" tableName="T_E2E_KEY"/>
         <addPrimaryKey columnNames="ID" constraintName="T_JWK_KEYPK" tableName="T_JWK_KEY"/>
-    </changeSet>
-    <changeSet author="prasenjit-net" id="03032018-28">
-        <addForeignKeyConstraint baseTableName="T_CLIENT_SCOPE" baseColumnNames="CLIENT_ID"
-                                 constraintName="FK_CLIENT_SCOPE_CLIENT"
-                                 referencedTableName="T_CLIENT"
-                                 referencedColumnNames="CLIENT_ID"/>
-        <addForeignKeyConstraint baseTableName="T_CLIENT_SCOPE" baseColumnNames="SCOPE_ID"
-                                 constraintName="FK_CLIENT_SCOPE_SCOPE"
-                                 referencedTableName="T_SCOPE"
-                                 referencedColumnNames="SCOPE_ID"/>
-    </changeSet>
-    <changeSet id="30072018-01" author="prasenjit-net">
-        <addPrimaryKey tableName="T_STANDARD_CLAIM" columnNames="SUBJECT" constraintName="PK_T_STANDARD_CLAIM"/>
     </changeSet>
     <changeSet id="30072018-02" author="prasenjit-net">
         <addPrimaryKey tableName="T_USER_CONSENT" columnNames="USERNAME, CLIENT_ID" constraintName="PK_T_USER_CONSENT"/>
