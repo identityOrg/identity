@@ -24,9 +24,9 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.entity.scope.ClaimEntity;
+import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.repository.ClientRepository;
@@ -36,6 +36,7 @@ import net.prasenjit.identity.security.bearer.BearerAuthenticationToken;
 import net.prasenjit.identity.service.openid.CryptographyService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -69,7 +70,7 @@ public class UserInfoService {
             Optional<User> userOptional = userRepository.findById(userProfile.getUsername());
             if (userOptional.isPresent()) {
                 UserInfo userInfo = userOptional.get().getUserInfo();
-                for (Profile.SimpleGrantedAuthority authority : userProfile.getAuthorities()) {
+                for (GrantedAuthority authority : authenticationToken.getAuthorities()) {
                     Optional<ScopeEntity> optionalScope = scopeRepository.findById(authority.getAuthority());
                     if (optionalScope.isPresent()) {
                         ScopeEntity scope = optionalScope.get();

@@ -35,12 +35,12 @@ public class ResourceSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.requestMatchers().antMatchers("/api/**", "/.well-known/**")
+        http.requestMatchers().antMatchers("/api/**", "/.well-known/**", "/oauth/userinfo")
                 .and().cors().and()
                 .csrf().disable()
                 .addFilterBefore(createBearerFilter(), BasicAuthenticationFilter.class)
                 .authorizeRequests()
-                .antMatchers("/.well-known/**", "/api/keys")
+                .antMatchers("/.well-known/**", "/api/keys", "/oauth/userinfo")
                 .permitAll()
                 .anyRequest().authenticated()
                 .and()

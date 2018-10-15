@@ -88,6 +88,7 @@ public abstract class HtmlPageTestBase {
     private static final String AUTHORIZE_URL = "http://localhost/oauth/authorize";
     private static final String INTROSPECTION_URL = "http://localhost/oauth/introspection";
     private static final String REVOCATION_URL = "http://localhost/oauth/revocation";
+    private static final String USERINFO_URL = "http://localhost/oauth/userinfo";
     private static final String ISSUER_URL = "http://localhost";
     protected WebClient webClient;
     protected MockMvc mockMvc;
@@ -292,6 +293,12 @@ public abstract class HtmlPageTestBase {
 
     protected URI getIssuerURI() {
         return UriComponentsBuilder.fromHttpUrl(ISSUER_URL)
+                .port(this.port)
+                .build().toUri();
+    }
+
+    protected URI getUserInfoURI() {
+        return UriComponentsBuilder.fromHttpUrl(USERINFO_URL)
                 .port(this.port)
                 .build().toUri();
     }
