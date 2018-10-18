@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!--
+  ~    Copyright 2018 prasenjit-net
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+
+    <link rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" id="bootstrap-css">
+    <link rel="stylesheet" th:href="@{/css/style-login.css}">
+    <!------ Include the above in your HEAD tag ---------->
+    <title>Identity - Error</title>
+</head>
+<body id="LoginForm">
+<div class="container">
+    <div class="login-form">
+        <div class="main-div">
+            <div class="panel">
+                <h2>Identity Error</h2>
+                <p>You are seeing this error page since we have no way resolve the redirect URI.</p>
+            </div>
+            <div class="card text-left">
+                <div class="card-body">
+                    <!--/*@thymesVar id="error" type="com.nimbusds.oauth2.sdk.ErrorObject"*/-->
+                    <h5 class="card-title" th:text="${error.code}">Card title</h5>
+                    <p class="card-text" th:text="${error.description}">Some quick example</p>
+                    <a th:if="${error.URI}" th:href="${error.URI}" class="card-link">More</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script th:src="@{/webjars/jquery/jquery.min.js}"></script>
+<script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+</body>
+</html>

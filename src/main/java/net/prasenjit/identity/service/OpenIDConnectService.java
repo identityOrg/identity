@@ -147,7 +147,7 @@ public class OpenIDConnectService {
             }
 
             // if consent prompt is must
-            if (prompt.contains(Prompt.Type.CONSENT)) {
+            if (prompt.contains(Prompt.Type.CONSENT) && !consentModel.isConsentSubmitted()) {
                 return new IdentityViewResponse(IdentityViewResponse.ViewType.CONSENT);
             }
 

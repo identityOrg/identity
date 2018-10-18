@@ -61,7 +61,7 @@ public class IdentityViewResponse extends AuthorizationResponse {
 
     public enum ViewType {
         LOGIN("login"),
-        CONSENT("authorize-new"),
+        CONSENT("authorize"),
         ERROR("req-error");
 
         @Getter
