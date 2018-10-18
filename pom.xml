@@ -152,8 +152,14 @@
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>3.1.0</version><!--$NO-MVN-MAN-VER$-->
+            <version>4.1.3</version>
         </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery</artifactId>
+            <version>3.3.1-1</version>
+        </dependency>
+        <!-- End UI dependencies -->
 
         <dependency>
             <groupId>com.h2database</groupId>

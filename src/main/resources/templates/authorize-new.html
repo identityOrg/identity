@@ -15,31 +15,62 @@
   ~    limitations under the License.
   -->
 
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Authorize Access</title>
+
+    <link rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" id="bootstrap-css">
+    <link rel="stylesheet" th:href="@{/css/style-login.css}">
+    <!------ Include the above in your HEAD tag ---------->
+    <title>Identity - Consent</title>
 </head>
-<body>
+<body id="LoginForm">
 <!--/*@thymesVar id="model" type="net.prasenjit.identity.model.ConsentModel"*/-->
-<h1>Client
-    <b th:text="${model.client.clientName}"></b> is trying to access your resource</h1>
-<h2>If you recognise the activity please approve</h2>
-<span th:text="${model.client.clientName}"></span>
-will get access to.
-<form th:action="${#mvc.url('OAC#submitConsent').build()}" th:object="${model}" method="post" name="auth">
-    <div th:each="s : *{filteredScopes}">
-        <label th:for="${#ids.next('scope')}" th:text="${s.key}"></label>
-        <input th:id="${#ids.seq('scope')}" type="checkbox" th:field="*{filteredScopes[__${s.key}__]}">
+<div class="container">
+    <div class="login-form">
+        <div class="main-div-consent">
+            <div class="panel">
+                <h2>Authorize Access</h2>
+                <p><b th:text="${model.client.clientName}"></b> is trying to access your resource</p>
+
+                <form id="Login" th:action="${#mvc.url('OAC#submitConsent').build()}" th:object="${model}"
+                      method="post">
+                    <div class="accordion" id="accordionExample">
+                        <div class="card text-left" th:each="s : *{filteredScopes}">
+                            <div class="card-header" id="headingOne">
+                                <h5 class="mb-0">
+                                    <input th:id="${#ids.seq('scope')}" type="checkbox" th:field="*{filteredScopes[__${s.key}__]}">
+                                    <button class="btn btn-link" type="button" data-toggle="collapse"
+                                            th:attr='data-target=${"#" + #ids.next("scope-tab")}' aria-controls="collapseOne" th:text="${s.key}">
+                                        openid
+                                    </button>
+                                </h5>
+                            </div>
+
+                            <div th:id="${#ids.seq('scope-tab')}" class="collapse" aria-labelledby="headingOne"
+                                 data-parent="#accordionExample">
+                                <div class="card-body">
+                                    Scope description
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btn-group full-width mt-3" role="group">
+                        <button type="submit" name="valid" class="btn btn-success btn-50" value="true">Approve</button>
+                        <button type="submit" name="valid" class="btn btn-danger btn-50" value="false">Disapprove
+                        </button>
+                    </div>
+                    <input type="hidden" th:field="*{requestUri}">
+                    <input type="hidden" th:field="*{openid}">
+                    <input type="hidden" th:field="*{redirectUriUsed}">
+                    <input type="hidden" name="consentSubmitted" value="true">
+                </form>
+            </div>
+        </div>
     </div>
-    <div>
-        <button type="submit" name="valid" value="true">Approve</button>
-        <button type="submit" name="valid" value="false">Disapprove</button>
-    </div>
-    <input type="hidden" th:field="*{requestUri}">
-    <input type="hidden" th:field="*{openid}">
-    <input type="hidden" th:field="*{redirectUriUsed}">
-    <input type="hidden" name="consentSubmitted" value="true">
-</form>
+</div>
+
+
+<script th:src="@{/webjars/jquery/jquery.min.js}"></script>
+<script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 </body>
 </html>

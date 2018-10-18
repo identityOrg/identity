@@ -46,7 +46,7 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/login", "/webjars/**", "/swagger-resources/**")
                 .permitAll()
-                .mvcMatchers("/oauth/authorize", "/oauth/connect")
+                .mvcMatchers("/oauth/authorize", "/js/**", "/css/**", "/images/**")
                 .permitAll()
                 .antMatchers("/*.png", "/*.ico", "/*.xml", "/*.svg", "/*.webmanifest")
                 .permitAll()
