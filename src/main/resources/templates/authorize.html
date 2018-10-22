@@ -33,7 +33,7 @@
                 <p><b th:text="${model.client.clientName}"></b> is trying to access your resource</p>
 
                 <form id="Login" th:action="${#mvc.url('OAC#submitConsent').build()}" th:object="${model}"
-                      method="post">
+                      method="post" name="auth">
                     <div class="accordion" id="accordionExample">
                         <div class="card text-left" th:each="s : *{filteredScopes}">
                             <div class="card-header" id="headingOne">

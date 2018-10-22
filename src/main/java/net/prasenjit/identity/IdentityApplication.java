@@ -33,6 +33,7 @@ import com.nimbusds.openid.connect.sdk.claims.Address;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import com.nimbusds.openid.connect.sdk.rp.ApplicationType;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
+import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.Status;
 import net.prasenjit.identity.entity.client.Client;
@@ -59,6 +60,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @EnableAsync
 @SpringBootApplication
 public class IdentityApplication implements ApplicationRunner {
@@ -83,11 +85,17 @@ public class IdentityApplication implements ApplicationRunner {
 
         if (userRepository.count() > 0) return;
 
+        log.info("Creating default users");
+
         User admin = createAdmin("admin");
         userRepository.saveAndFlush(admin);
 
         admin = createAdmin("user");
         userRepository.saveAndFlush(admin);
+
+        if (clientRepository.count() > 0) return;
+
+        log.info("Creating default clients");
 
         Client client = createClient("client", true);
         clientRepository.saveAndFlush(client);
@@ -105,7 +113,8 @@ public class IdentityApplication implements ApplicationRunner {
         client.setCreationDate(LocalDateTime.now());
         client.setStatus(Status.ACTIVE);
         client.setClientName("Test Client");
-        final OIDCClientMetadata metadata = client.getMetadata();
+        final OIDCClientMetadata metadata = new OIDCClientMetadata();
+        client.setMetadata(metadata);
         scopeRepository.findAll().stream()
                 .map(ScopeEntity::getScopeId)
                 .reduce((x, y) -> x + " " + y)

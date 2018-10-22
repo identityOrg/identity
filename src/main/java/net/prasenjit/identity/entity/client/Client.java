@@ -63,7 +63,7 @@ public class Client {
     @Lob
     @Column(name = "METADATA", nullable = false)
     @Convert(converter = MetadataConverter.class)
-    private OIDCClientMetadata metadata = new OIDCClientMetadata();
+    private OIDCClientMetadata metadata;
 
     public boolean supportsGrant(GrantType grant) {
         return getMetadata().getGrantTypes().contains(grant);
