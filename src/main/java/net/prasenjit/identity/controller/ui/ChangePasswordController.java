@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package net.prasenjit.identity.controller;
+package net.prasenjit.identity.controller.ui;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.exception.InvalidRequestException;
@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
+import static net.prasenjit.identity.properties.ApplicationConstants.PASSWORD_CHANGE_FORCED_FOR;
 import static net.prasenjit.identity.properties.ApplicationConstants.PREVIOUS_URL;
 
 @Controller
@@ -46,7 +47,7 @@ public class ChangePasswordController {
 
     @GetMapping("change-password")
     public String displayUI(HttpSession httpSession, Model model) {
-        String username = (String) httpSession.getAttribute("password-change-forced-for");
+        String username = (String) httpSession.getAttribute(PASSWORD_CHANGE_FORCED_FOR);
         if (StringUtils.hasText(username)) {
             model.addAttribute("forced", true);
             model.addAttribute("username", username);
@@ -61,7 +62,7 @@ public class ChangePasswordController {
     @PostMapping("change-password")
     public String changePassword(@ModelAttribute @Valid ChangePassword changePassword, HttpSession httpSession,
                                  HttpServletRequest request, HttpServletResponse response, Model model) {
-        String username = (String) httpSession.getAttribute("password-change-forced-for");
+        String username = (String) httpSession.getAttribute(PASSWORD_CHANGE_FORCED_FOR);
         try {
             if (StringUtils.hasText(username)) {
                 userService.changePassword(username, changePassword.getOldPassword(), changePassword.getNewPassword());

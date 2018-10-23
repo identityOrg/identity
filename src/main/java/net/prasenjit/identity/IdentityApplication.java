@@ -187,6 +187,7 @@ public class IdentityApplication implements ApplicationRunner {
         address.setCountry("India");
         userProfile.setAddress(address);
         userProfile.setBirthdate("1984-09-11");
+        userProfile.setName("Admin");
         return userProfile;
     }
 }

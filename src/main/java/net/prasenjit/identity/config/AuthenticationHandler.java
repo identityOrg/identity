@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 
 import static net.prasenjit.identity.properties.ApplicationConstants.LOGIN_TIME;
+import static net.prasenjit.identity.properties.ApplicationConstants.PASSWORD_CHANGE_FORCED_FOR;
 import static net.prasenjit.identity.properties.ApplicationConstants.PREVIOUS_URL;
 
 @Component
@@ -46,7 +47,7 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler, Auth
         if (exception instanceof CredentialsExpiredException) {
             HttpSession httpSession = request.getSession();
             String username = request.getParameter("username");
-            httpSession.setAttribute("password-change-forced-for", username);
+            httpSession.setAttribute(PASSWORD_CHANGE_FORCED_FOR, username);
             response.sendRedirect("/change-password");
         } else {
             response.sendRedirect("/login?error");
