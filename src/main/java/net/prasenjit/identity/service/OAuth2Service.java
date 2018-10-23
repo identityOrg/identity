@@ -41,7 +41,6 @@ import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.repository.*;
-import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import net.prasenjit.identity.service.openid.MetadataService;
@@ -89,8 +88,7 @@ public class OAuth2Service {
         if (!client.isPresent()) {
             if (request.getRedirectionURI() != null) {
                 return new AuthorizationErrorResponse(request.getRedirectionURI(),
-                        OAuth2Error.INVALID_CLIENT.setDescription(OAuthError.CLIENT_NOT_FOUND),
-                        request.getState(), request.getResponseMode());
+                        OAuth2Error.INVALID_CLIENT, request.getState(), request.getResponseMode());
             }
             return new IdentityViewResponse(OAuth2Error.INVALID_CLIENT);
         } else {
@@ -103,7 +101,7 @@ public class OAuth2Service {
                 if (request.getRedirectionURI() != null) {
                     if (!redirectUris.contains(request.getRedirectionURI().toString())) {
                         return new AuthorizationErrorResponse(request.getRedirectionURI(),
-                                OAuth2Error.INVALID_REQUEST.setDescription(OAuthError.INVALID_REDIRECT_URI),
+                                OAuth2Error.INVALID_REQUEST.setDescription("Invalid redirect URI"),
                                 request.getState(), request.getResponseMode());
                     }
                     redirectUri = request.getRedirectionURI();

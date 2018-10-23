@@ -31,7 +31,6 @@ import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.UserConsentRepository;
-import net.prasenjit.identity.security.OAuthError;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import net.prasenjit.identity.service.openid.JWTResolver;
 import org.springframework.security.core.Authentication;
@@ -66,8 +65,7 @@ public class OpenIDConnectService {
 
         if (!client.isPresent()) {
             return new AuthorizationErrorResponse(request.getRedirectionURI(),
-                    OAuth2Error.INVALID_CLIENT.setDescription(OAuthError.CLIENT_NOT_FOUND),
-                    request.getState(), request.getResponseMode());
+                    OAuth2Error.INVALID_CLIENT, request.getState(), request.getResponseMode());
         } else {
             request = jwtResolver.resolveAuthenticationRequest(request, client.get());
             OIDCClientMetadata clientMetadata = client.get().getMetadata();
@@ -125,7 +123,7 @@ public class OpenIDConnectService {
             if (clientMetadata.getRedirectionURIStrings() != null) {
                 if (!clientMetadata.getRedirectionURIStrings().contains(request.getRedirectionURI().toString())) {
                     return new AuthorizationErrorResponse(request.getRedirectionURI(),
-                            OAuth2Error.INVALID_REQUEST.setDescription(OAuthError.INVALID_REDIRECT_URI),
+                            OAuth2Error.INVALID_REQUEST.setDescription("Invalid redirect URI"),
                             request.getState(), request.getResponseMode());
                 }
             }
