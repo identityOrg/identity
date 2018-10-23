@@ -162,17 +162,20 @@ public class CodeFactory {
 
     public String createCookieToken(String username, LocalDateTime loginTime) {
         try {
+            UserDetails userDetails = userService.loadUserByUsername(username);
+            String hash = generateHash(userDetails.getPassword());
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                     .subject(username)
                     .issuer(metadataService.findOIDCConfiguration().getIssuer().getValue())
                     .issueTime(ValidationUtils.convertToDate(loginTime))
                     .expirationTime(ValidationUtils.convertToDate(
                             loginTime.plusDays(identityProperties.getRememberLoginDays())))
+                    .claim("p_hash", hash)
                     .build();
             SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
             signedJWT.sign(macSigner);
             return signedJWT.serialize();
-        } catch (JOSEException e) {
+        } catch (JOSEException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
     }
@@ -189,12 +192,16 @@ public class CodeFactory {
                     || !userDetails.isCredentialsNonExpired() || !userDetails.isEnabled()) {
                 return null;
             }
+            String hash = generateHash(userDetails.getPassword());
+            if (!hash.equals(claimsSet.getClaim("p_hash"))) {
+                return null;
+            }
 
             LocalDateTime creationTime = ValidationUtils.convertToLocalDateTime(claimsSet.getIssueTime());
 
             return new UserAuthenticationToken(claimsSet.getSubject(),
                     userDetails.getPassword(), true, creationTime);
-        } catch (ParseException | JOSEException e) {
+        } catch (ParseException | JOSEException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
     }

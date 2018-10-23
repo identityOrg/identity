@@ -50,6 +50,8 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
                 .permitAll()
                 .antMatchers("/*.png", "/*.ico", "/*.xml", "/*.svg", "/*.webmanifest")
                 .permitAll()
+                .mvcMatchers("/change-password")
+                .permitAll()
                 .anyRequest()
                 .hasAuthority("ADMIN")
                 .and()

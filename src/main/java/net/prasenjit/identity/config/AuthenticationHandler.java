@@ -29,6 +29,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
@@ -41,9 +42,12 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler, Auth
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException, ServletException {
+                                        AuthenticationException exception) throws IOException {
         if (exception instanceof CredentialsExpiredException) {
-            response.sendRedirect("/changePassword");
+            HttpSession httpSession = request.getSession();
+            String username = request.getParameter("username");
+            httpSession.setAttribute("password-change-forced-for", username);
+            response.sendRedirect("/change-password");
         } else {
             response.sendRedirect("/login?error");
         }
@@ -51,7 +55,7 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler, Auth
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException {
         String requestURI = (String) request.getSession().getAttribute(PREVIOUS_URL);
         request.getSession().setAttribute(LOGIN_TIME, LocalDateTime.now());
         if (requestURI != null) {

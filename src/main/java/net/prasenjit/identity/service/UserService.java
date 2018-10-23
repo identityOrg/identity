@@ -43,6 +43,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -146,11 +147,14 @@ public class UserService implements UserDetailsService {
         } else {
             if (passwordEncoder.matches(oldPassword, optionalUser.get().getPassword())) {
                 optionalUser.get().setPassword(passwordEncoder.encode(newPassword));
+                Duration userPasswordValidity = identityProperties.getUserPasswordValidity();
+                optionalUser.get().setPasswordExpiryDate(LocalDateTime.now().plus(userPasswordValidity));
+                optionalUser.get().setLocked(false);
 
                 ChangePasswordEvent cpEvent = new ChangePasswordEvent(this, ResourceType.USER, username);
                 eventPublisher.publishEvent(cpEvent);
             } else {
-                throw new InvalidRequestException("Old password doesnt match");
+                throw new InvalidRequestException("Old password didn't match");
             }
         }
         return optionalUser.get();
