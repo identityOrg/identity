@@ -19,13 +19,18 @@ package net.prasenjit.identity.controller.ui;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.exception.ItemNotFoundException;
+import net.prasenjit.identity.model.ui.UserInfoModify;
 import net.prasenjit.identity.repository.UserRepository;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
+import net.prasenjit.identity.service.UserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 
+import javax.validation.Valid;
 import java.util.Optional;
 
 @Controller
@@ -33,6 +38,7 @@ import java.util.Optional;
 public class DashboardController {
 
     private final UserRepository userRepository;
+    private final UserService userService;
 
     @GetMapping("/")
     public String dashboard(Authentication principal, Model model) {
@@ -47,5 +53,11 @@ public class DashboardController {
             return "dashboard";
         }
         throw new ItemNotFoundException("User not found");
+    }
+
+    @PostMapping("/")
+    public String modifyProfile(Authentication principal, @ModelAttribute @Valid UserInfoModify userInfoModify) {
+        userService.modifyUser(principal.getName(), userInfoModify);
+        return "redirect:/";
     }
 }

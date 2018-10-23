@@ -65,6 +65,9 @@
                                             <div class="text-muted">
                                                 <small>Birthday <span th:text="${userInfo.birthdate}"></span></small>
                                             </div>
+                                            <div class="text-muted">
+                                                <small><a href="/change-password">Change Password</a></small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -76,12 +79,12 @@
                                         <a class="nav-item nav-link" id="user-address-tab-head" data-toggle="tab"
                                            href="#address-tab" role="tab" aria-controls="nav-profile"
                                            aria-selected="false">User Address</a>
-                                        <a class="nav-item nav-link" id="change-passwrd-tab-head" data-toggle="tab"
+                                        <a class="nav-item nav-link" id="contact-info-tab-head" data-toggle="tab"
                                            href="#contact-info-tab" role="tab" aria-controls="nav-contact"
                                            aria-selected="false">Contact Info</a>
                                     </div>
                                 </nav>
-                                <form class="form" novalidate="" th:object="${userInfo}">
+                                <form class="form" method="post" th:action="${#mvc.url('DC#modifyProfile').build()}" th:object="${userInfo}">
                                     <div class="tab-content pt-3">
                                         <div class="tab-pane fade show active" role="tabpanel" id="userInfo-tab">
                                             <div class="row">

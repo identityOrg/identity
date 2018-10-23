@@ -16,6 +16,8 @@
 
 package net.prasenjit.identity.service;
 
+import com.nimbusds.openid.connect.sdk.claims.Address;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.Status;
@@ -30,6 +32,7 @@ import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.exception.OperationIgnoredException;
 import net.prasenjit.identity.model.api.user.CreateUserRequest;
 import net.prasenjit.identity.model.api.user.UpdateUserRequest;
+import net.prasenjit.identity.model.ui.UserInfoModify;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.UserRepository;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -42,6 +45,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -158,5 +162,48 @@ public class UserService implements UserDetailsService {
             }
         }
         return optionalUser.get();
+    }
+
+    @Transactional
+    public void modifyUser(String username, UserInfoModify userInfoModify) {
+        Optional<User> optionalUser = userRepository.findById(username);
+        if (!optionalUser.isPresent()) {
+            throw new ItemNotFoundException("User doesn't exist.");
+        } else {
+            UserInfo userInfo = optionalUser.get().getUserInfo();
+            userInfo.setGivenName(userInfoModify.getGivenName());
+            userInfo.setMiddleName(userInfoModify.getMiddleName());
+            userInfo.setFamilyName(userInfoModify.getFamilyName());
+            userInfo.setNickname(userInfoModify.getNickname());
+            userInfo.setPreferredUsername(userInfoModify.getPreferredUsername());
+            userInfo.setName(userInfoModify.getGivenName() + " " + userInfoModify.getMiddleName() + " " + userInfoModify.getFamilyName());
+
+            if ((StringUtils.hasText(userInfo.getEmailAddress())
+                    && !userInfo.getEmailAddress().equals(userInfoModify.getEmailAddress())) ||
+                    !StringUtils.hasText(userInfoModify.getEmailAddress())) {
+                userInfo.setEmailAddress(userInfoModify.getEmailAddress());
+                userInfo.setEmailVerified(false);
+            }
+
+            if ((StringUtils.hasText(userInfo.getPhoneNumber())
+                    && !userInfo.getPhoneNumber().equals(userInfoModify.getPhoneNumber())) ||
+                    !StringUtils.hasText(userInfoModify.getPhoneNumber())) {
+                userInfo.setPhoneNumber(userInfoModify.getPhoneNumber());
+                userInfo.setPhoneNumberVerified(false);
+            }
+
+            Address address = new Address();
+            UserInfoModify.UserAddress userAddress = userInfoModify.getAddress();
+            address.setStreetAddress(userAddress.getStreetAddress());
+            address.setCountry(userAddress.getCountry());
+            address.setLocality(userAddress.getLocality());
+            address.setRegion(userAddress.getRegion());
+            address.setPostalCode(userAddress.getPostalCode());
+            address.setFormatted(userAddress.getStreetAddress() + "\n"
+                    + userAddress.getLocality() + ", " + userAddress.getRegion() + "\n"
+                    + userAddress.getCountry() + " PIN:" + userAddress.getPostalCode());
+
+            userInfo.setAddress(address);
+        }
     }
 }
