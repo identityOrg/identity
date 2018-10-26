@@ -192,9 +192,11 @@ public class CodeFactory {
                     || !userDetails.isCredentialsNonExpired() || !userDetails.isEnabled()) {
                 return null;
             }
-            String hash = generateHash(userDetails.getPassword());
-            if (!hash.equals(claimsSet.getClaim("p_hash"))) {
-                return null;
+            if (identityProperties.isDetectPasswordChangeForRememberMe()) {
+                String hash = generateHash(userDetails.getPassword());
+                if (!hash.equals(claimsSet.getClaim("p_hash"))) {
+                    return null;
+                }
             }
 
             LocalDateTime creationTime = ValidationUtils.convertToLocalDateTime(claimsSet.getIssueTime());

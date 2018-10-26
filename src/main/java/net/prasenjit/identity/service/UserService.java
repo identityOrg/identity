@@ -180,14 +180,16 @@ public class UserService implements UserDetailsService {
 
             if ((StringUtils.hasText(userInfo.getEmailAddress())
                     && !userInfo.getEmailAddress().equals(userInfoModify.getEmailAddress())) ||
-                    !StringUtils.hasText(userInfoModify.getEmailAddress())) {
+                    StringUtils.hasText(userInfoModify.getEmailAddress())
+                            && !userInfoModify.getEmailAddress().equals(userInfo.getEmailAddress())) {
                 userInfo.setEmailAddress(userInfoModify.getEmailAddress());
                 userInfo.setEmailVerified(false);
             }
 
             if ((StringUtils.hasText(userInfo.getPhoneNumber())
                     && !userInfo.getPhoneNumber().equals(userInfoModify.getPhoneNumber())) ||
-                    !StringUtils.hasText(userInfoModify.getPhoneNumber())) {
+                    StringUtils.hasText(userInfoModify.getPhoneNumber())
+                            && !userInfoModify.getPhoneNumber().equals(userInfo.getPhoneNumber())) {
                 userInfo.setPhoneNumber(userInfoModify.getPhoneNumber());
                 userInfo.setPhoneNumberVerified(false);
             }
