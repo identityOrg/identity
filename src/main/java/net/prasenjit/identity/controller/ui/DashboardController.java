@@ -16,48 +16,62 @@
 
 package net.prasenjit.identity.controller.ui;
 
-import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.entity.user.User;
-import net.prasenjit.identity.exception.ItemNotFoundException;
-import net.prasenjit.identity.model.ui.UserInfoModify;
-import net.prasenjit.identity.repository.UserRepository;
-import net.prasenjit.identity.security.user.UserAuthenticationToken;
-import net.prasenjit.identity.service.UserService;
+import java.util.Optional;
+
+import javax.validation.Valid;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.validation.Valid;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.entity.AuditEvent;
+import net.prasenjit.identity.entity.user.User;
+import net.prasenjit.identity.exception.ItemNotFoundException;
+import net.prasenjit.identity.model.ui.UserInfoModify;
+import net.prasenjit.identity.repository.AuditEventRepository;
+import net.prasenjit.identity.repository.UserRepository;
+import net.prasenjit.identity.security.user.UserAuthenticationToken;
+import net.prasenjit.identity.service.UserService;
 
 @Controller
 @RequiredArgsConstructor
 public class DashboardController {
 
-    private final UserRepository userRepository;
-    private final UserService userService;
+	private final UserRepository userRepository;
+	private final AuditEventRepository eventRepository;
+	private final UserService userService;
 
-    @GetMapping("/")
-    public String dashboard(Authentication principal, Model model) {
-        Optional<User> optionalUser = userRepository.findById(principal.getName());
-        if (optionalUser.isPresent()) {
-            UserAuthenticationToken token = (UserAuthenticationToken) principal;
-            model.addAttribute("user", optionalUser.get());
-            model.addAttribute("userInfo", optionalUser.get().getUserInfo());
-            model.addAttribute("loginTime", token.getLoginTime());
-            boolean admin = token.getAuthorities().stream().anyMatch(ga -> ga.getAuthority().equals("ADMIN"));
-            model.addAttribute("admin", admin);
-            return "dashboard";
-        }
-        throw new ItemNotFoundException("User not found");
-    }
+	@GetMapping("/")
+	public String dashboard(Authentication principal, Model model, Pageable pageable) {
+		Optional<User> optionalUser = userRepository.findById(principal.getName());
+		if (optionalUser.isPresent()) {
+			UserAuthenticationToken token = (UserAuthenticationToken) principal;
+			model.addAttribute("user", optionalUser.get());
+			model.addAttribute("userInfo", optionalUser.get().getUserInfo());
+			model.addAttribute("loginTime", token.getLoginTime());
+			boolean admin = token.getAuthorities().stream().anyMatch(ga -> ga.getAuthority().equals("ADMIN"));
+			model.addAttribute("admin", admin);
+			findAudits(pageable, model);
+			return "dashboard";
+		}
+		throw new ItemNotFoundException("User not found");
+	}
 
-    @PostMapping("/")
-    public String modifyProfile(Authentication principal, @ModelAttribute @Valid UserInfoModify userInfoModify) {
-        userService.modifyUser(principal.getName(), userInfoModify);
-        return "redirect:/";
-    }
+	private void findAudits(Pageable pageable, Model model) {
+		Page<AuditEvent> events = eventRepository.findByDisplayLevelGreaterThan(-5, pageable);
+		model.addAttribute("events", events);
+	}
+
+	@PostMapping("/")
+	public String modifyProfile(Authentication principal, @ModelAttribute @Valid UserInfoModify userInfoModify) {
+		userService.modifyUser(principal.getName(), userInfoModify);
+		return "redirect:/";
+	}
 }

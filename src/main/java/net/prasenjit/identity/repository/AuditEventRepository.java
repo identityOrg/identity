@@ -16,13 +16,16 @@
 
 package net.prasenjit.identity.repository;
 
-import net.prasenjit.identity.entity.AuditEvent;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import net.prasenjit.identity.entity.AuditEvent;
 
 @Repository("AuditEventRepository")
 public interface AuditEventRepository extends JpaRepository<AuditEvent, String> {
@@ -31,4 +34,6 @@ public interface AuditEventRepository extends JpaRepository<AuditEvent, String> 
     List<AuditEvent> last7DaysEventForUserFormLogin(String principle, LocalDateTime eventTime);
 
     List<AuditEvent> findByDisplayLevelGreaterThan(int displayLevel);
+
+    Page<AuditEvent> findByDisplayLevelGreaterThan(int displayLevel, Pageable pageable);
 }

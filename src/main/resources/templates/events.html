@@ -1,0 +1,18 @@
+<table class="table" xmlns:th="http://www.thymeleaf.org">
+	<thead>
+		<tr>
+			<th scope="col">#</th>
+			<th scope="col">Name</th>
+			<th scope="col">Time</th>
+			<th scope="col">Message</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr th:each="s : ${events}">
+			<th scope="row" th:text="${s.id}">1</th>
+			<td th:text="${s.eventName}">Mark</td>
+			<td th:text="${s.eventTime}">Otto</td>
+			<td th:text="${s.message}">@mdo</td>
+		</tr>
+	</tbody>
+</table>

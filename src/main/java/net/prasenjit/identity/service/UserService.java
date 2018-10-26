@@ -204,6 +204,9 @@ public class UserService implements UserDetailsService {
                     + userAddress.getCountry() + " PIN:" + userAddress.getPostalCode());
 
             userInfo.setAddress(address);
+
+            UpdateEvent csEvent = new UpdateEvent(this, ResourceType.USER, username);
+            eventPublisher.publishEvent(csEvent);
         }
     }
 }
