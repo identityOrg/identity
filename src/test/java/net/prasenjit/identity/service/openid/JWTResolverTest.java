@@ -20,7 +20,6 @@ import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -54,7 +53,7 @@ public class JWTResolverTest extends HtmlPageTestBase {
 
     @Test
     @Transactional
-    public void resolve() throws ParseException, java.text.ParseException, JOSEException, ResolveException {
+    public void testJWTResolve() throws ParseException, java.text.ParseException, JOSEException, ResolveException {
         Client client = clientRepository.getOne(clientInformation.getID().getValue());
 
         JWK key = null;

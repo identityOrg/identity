@@ -29,7 +29,7 @@ import java.time.temporal.ChronoUnit;
 public class HttpCacheTest {
 
     @Test
-    public void cacheTest() {
+    public void testHTTPCache() {
         RestTemplate restTemplate = getTemplate();
         LocalDateTime startTime = LocalDateTime.now();
         restTemplate.getForObject("https://www.prasenjit.net/", String.class);

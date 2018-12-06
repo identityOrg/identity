@@ -151,7 +151,7 @@ public class JwtTest {
     }
 
     @Test
-    public void JWTValidationTest() throws Exception {
+    public void testJWTValidation() throws Exception {
         KeyGenerator generator = KeyGenerator.getInstance("AES");
         generator.init(256);
         SecretKey secretKey = generator.generateKey();

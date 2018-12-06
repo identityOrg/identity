@@ -47,7 +47,7 @@ public class RequestWithRequestObjectTest extends HtmlPageTestBase {
 
     @Test
     @Transactional
-    public void teJwksObject() throws Exception {
+    public void testJwksObject() throws Exception {
         Client client = clientRepository.getOne(clientInformation.getID().getValue());
         AuthenticationRequest.Builder requestBuilder = new AuthenticationRequest.Builder(ResponseType.parse("code"),
                 Scope.parse("openid"), clientInformation.getID(), getRedirectURI())

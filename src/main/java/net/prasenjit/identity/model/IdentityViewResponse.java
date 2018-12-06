@@ -19,10 +19,12 @@ package net.prasenjit.identity.model;
 import com.nimbusds.oauth2.sdk.AuthorizationResponse;
 import com.nimbusds.oauth2.sdk.ErrorObject;
 import com.nimbusds.oauth2.sdk.ResponseMode;
+import com.nimbusds.oauth2.sdk.id.State;
 import lombok.Getter;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class IdentityViewResponse extends AuthorizationResponse {
@@ -35,7 +37,7 @@ public class IdentityViewResponse extends AuthorizationResponse {
     private Map<String, String> attributes = new HashMap<>();
 
     public IdentityViewResponse(ViewType viewType) {
-        super(URI.create("http://localhost"), null, null);
+        super(URI.create("http://localhost"), (State) null, null);
         this.viewType = viewType;
     }
 
@@ -50,7 +52,7 @@ public class IdentityViewResponse extends AuthorizationResponse {
     }
 
     @Override
-    public Map<String, String> toParameters() {
+    public Map<String, List<String>> toParameters() {
         return null;
     }
 

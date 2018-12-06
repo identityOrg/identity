@@ -16,6 +16,8 @@
 
 package net.prasenjit.identity.config;
 
+import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.service.openid.MetadataService;
 import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -26,20 +28,20 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
-import static net.prasenjit.identity.properties.ApplicationConstants.LOGIN_TIME;
-import static net.prasenjit.identity.properties.ApplicationConstants.PASSWORD_CHANGE_FORCED_FOR;
-import static net.prasenjit.identity.properties.ApplicationConstants.PREVIOUS_URL;
+import static net.prasenjit.identity.properties.ApplicationConstants.*;
 
 @Component
+@RequiredArgsConstructor
 public class AuthenticationHandler implements AuthenticationSuccessHandler, AuthenticationFailureHandler,
         AuthenticationEntryPoint {
+
+    private final MetadataService metadataService;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
@@ -48,9 +50,9 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler, Auth
             HttpSession httpSession = request.getSession();
             String username = request.getParameter("username");
             httpSession.setAttribute(PASSWORD_CHANGE_FORCED_FOR, username);
-            response.sendRedirect("/change-password");
+            response.sendRedirect(resolveFullPath("/change-password"));
         } else {
-            response.sendRedirect("/login?error");
+            response.sendRedirect(resolveFullPath("/login?error"));
         }
     }
 
@@ -62,15 +64,23 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler, Auth
         if (requestURI != null) {
             response.sendRedirect(requestURI);
         } else {
-            response.sendRedirect("/");
+            response.sendRedirect(resolveFullPath("/"));
         }
     }
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
-                         AuthenticationException authException) throws IOException, ServletException {
+                         AuthenticationException authException) throws IOException {
         UriComponentsBuilder builder = ServletUriComponentsBuilder.fromRequest(request);
         request.getSession().setAttribute(PREVIOUS_URL, builder.build().toString());
-        response.sendRedirect("/login");
+        response.sendRedirect(resolveFullPath("/login"));
+    }
+
+    private String resolveFullPath(String relativePath) {
+        String issuer = metadataService.findOIDCConfiguration().getIssuer().getValue();
+        return UriComponentsBuilder.fromHttpUrl(issuer)
+                .path(relativePath)
+                .build()
+                .toString();
     }
 }

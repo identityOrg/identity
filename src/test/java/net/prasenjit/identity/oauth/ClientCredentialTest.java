@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 public class ClientCredentialTest extends HtmlPageTestBase {
 
     @Test
-    public void clientCredentialGrant() throws ParseException, IOException {
+    public void testClientCredentialGrant() throws ParseException, IOException {
         ClientAuthentication clientAuth = new ClientSecretBasic(clientInformation.getID(), clientInformation.getSecret());
         ClientCredentialsGrant grant = new ClientCredentialsGrant();
         Scope scope = Scope.parse("scope1");

@@ -21,9 +21,12 @@
     <title>Auto Submit Form</title>
 </head>
 <body onload="javascript:document.forms[0].submit()">
-<!--/*@thymesVar id="map" type="java.util.Map"*/-->
-<form th:action="${map['redirect_uri']}" method="post" name="auth">
-    <div th:each="s : *{map}">
+<h3>This page will refresh automatically</h3>
+<!--/*@thymesVar id="redirect_uri" type="java.net.URI"*/-->
+<form th:action="${redirect_uri}" method="post" name="auth">
+    <!--/*@thymesVar id="paramList" type="java.util.List"*/-->
+    <div th:each="s : *{paramList}">
+        <!--/*@thymesVar id="s" type="net.prasenjit.identity.model.ui.Tuple"*/-->
         <input type="hidden" th:name="${s.key}" th:value="${s.value}">
     </div>
 </form>
