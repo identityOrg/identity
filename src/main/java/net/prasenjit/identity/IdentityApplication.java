@@ -42,6 +42,7 @@ import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
 import net.prasenjit.identity.repository.UserRepository;
+import net.prasenjit.identity.service.openid.MetadataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.ApplicationArguments;
@@ -75,6 +76,8 @@ public class IdentityApplication implements ApplicationRunner {
     private PasswordEncoder userPasswordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
     @Autowired
     private ScopeRepository scopeRepository;
+    @Autowired
+    private MetadataService metadataService;
 
     public static void main(String[] args) {
         SpringApplication.run(IdentityApplication.class, args);
@@ -133,15 +136,8 @@ public class IdentityApplication implements ApplicationRunner {
         return client;
     }
 
-    private Set<ResponseType> getAllResponseTypes() throws ParseException {
-        HashSet<ResponseType> responseTypes = new HashSet<>();
-        responseTypes.add(ResponseType.parse("code"));
-        responseTypes.add(ResponseType.parse("id_token"));
-        responseTypes.add(ResponseType.parse("id_token token"));
-        responseTypes.add(ResponseType.parse("code id_token"));
-        responseTypes.add(ResponseType.parse("code token"));
-        responseTypes.add(ResponseType.parse("code id_token token"));
-        return responseTypes;
+    private Set<ResponseType> getAllResponseTypes() {
+        return new HashSet<>(metadataService.findOIDCConfiguration().getResponseTypes());
     }
 
     private Set<GrantType> getAllGrantTypes() {
