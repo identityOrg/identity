@@ -210,7 +210,7 @@ public class OpenIDConnectService {
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
             code = codeFactory.createAuthorizationCode(request.getClientID(), request.getRedirectionURI(),
                     filteredScope, principal.getUsername(), request.getState(), Duration.ofMinutes(10),
-                    loginTime, request.getCodeChallenge(), request.getCodeChallengeMethod(), true);
+                    loginTime, request.getNonce(), request.getCodeChallenge(), request.getCodeChallengeMethod(), true);
         }
         BearerAccessToken accessToken = null;
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {

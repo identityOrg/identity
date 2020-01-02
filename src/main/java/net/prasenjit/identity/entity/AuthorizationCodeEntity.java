@@ -54,6 +54,9 @@ public class AuthorizationCodeEntity {
     @Column(name = "CHALLENGE_METHOD", length = 20)
     private String challengeMethod;
 
+    @Column(name = "NONCE", length = 512)
+    private String nonce;
+
     @Column(name = "USED", nullable = false)
     private boolean used;
 

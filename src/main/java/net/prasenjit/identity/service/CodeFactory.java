@@ -93,7 +93,7 @@ public class CodeFactory {
     }
 
     AuthorizationCode createAuthorizationCode(ClientID clientId, URI returnUrl, Scope scope, String userName,
-                                              State state, Duration validity, LocalDateTime loginDate,
+                                              State state, Duration validity, LocalDateTime loginDate, Nonce nonce,
                                               CodeChallenge challenge, CodeChallengeMethod method, boolean openId) {
         AuthorizationCodeEntity authorizationCode = new AuthorizationCodeEntity();
         authorizationCode.setClientId(clientId.getValue());
@@ -104,6 +104,9 @@ public class CodeFactory {
         authorizationCode.setScope(scope.toString());
         authorizationCode.setUsername(userName);
         authorizationCode.setUsed(false);
+        if (nonce != null) {
+            authorizationCode.setNonce(nonce.getValue());
+        }
         if (state != null) {
             authorizationCode.setState(state.getValue());
         }

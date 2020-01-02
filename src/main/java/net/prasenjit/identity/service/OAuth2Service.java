@@ -28,6 +28,7 @@ import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.token.*;
+import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
 import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import lombok.RequiredArgsConstructor;
@@ -176,7 +177,7 @@ public class OAuth2Service {
         LocalDateTime loginTime = authentication.getLoginTime();
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
             code = codeFactory.createAuthorizationCode(request.getClientID(), request.getRedirectionURI(), filteredScope,
-                    principal.getUsername(), request.getState(), Duration.ofMinutes(10), loginTime,
+                    principal.getUsername(), request.getState(), Duration.ofMinutes(10), loginTime, null,
                     request.getCodeChallenge(), request.getCodeChallengeMethod(), false);
         }
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {
@@ -218,7 +219,8 @@ public class OAuth2Service {
             }
             client = optionalClient.get();
             String clientSecret;
-            if (clientAuthentication.getMethod().equals(client.getMetadata().getTokenEndpointAuthMethod())) {
+            if (clientAuthentication.getMethod().equals(client.getMetadata().getTokenEndpointAuthMethod())
+                    || client.getMetadata().getTokenEndpointAuthMethod() == null) {
                 if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
                     clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
                 } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
@@ -507,8 +509,9 @@ public class OAuth2Service {
 
                                 JWT idToken;
                                 if (authCode.isOpenId()) {
+                                    Nonce nonce = authCode.getNonce() != null ? Nonce.parse(authCode.getNonce()) : null;
                                     idToken = codeFactory.createIDToken(userProfile, authCode.getLoginDate(),
-                                            null, clientId, client.getAccessTokenValidity(), approvedScope,
+                                            nonce, clientId, client.getAccessTokenValidity(), approvedScope,
                                             accessToken, null);
                                     OIDCTokens tokens = new OIDCTokens(idToken, accessToken, refreshToken);
                                     return new OIDCTokenResponse(tokens);
