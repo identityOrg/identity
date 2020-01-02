@@ -42,7 +42,7 @@
         <spring-cloud.version>Greenwich.SR1</spring-cloud.version>
         <springfox-version>2.9.2</springfox-version>
         <docker.image.prefix>identityorg</docker.image.prefix>
-        <nimbus.jwt.version>7.0.1</nimbus.jwt.version>
+        <nimbus.jwt.version>7.9</nimbus.jwt.version>
         <oidc.sdk.version>6.5</oidc.sdk.version>
     </properties>
 
