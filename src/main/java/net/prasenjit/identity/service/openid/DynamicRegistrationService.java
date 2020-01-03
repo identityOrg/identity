@@ -98,7 +98,7 @@ public class DynamicRegistrationService {
         eventPublisher.publishEvent(csEvent);
         clientRepository.saveAndFlush(client);
 
-        return generateClientInfoResponse(client, clientMetadata);
+        return generateClientInfoResponse(client, clientMetadata, true);
     }
 
     @Transactional
@@ -133,7 +133,7 @@ public class DynamicRegistrationService {
 
             client.setMetadata(clientMetadata);
 
-            return generateClientInfoResponse(client, clientMetadata);
+            return generateClientInfoResponse(client, clientMetadata, false);
         } else {
             ErrorObject error = new ErrorObject("invalid_client", "Registration uri is invalid", 401);
             return new ClientRegistrationErrorResponse(error);
@@ -150,7 +150,7 @@ public class DynamicRegistrationService {
             metadata.setCustomField("access_token_validity_minute", client.getAccessTokenValidity().toMinutes());
             metadata.setCustomField("refresh_token_validity_minute", client.getRefreshTokenValidity().toMinutes());
 
-            return generateClientInfoResponse(client, metadata);
+            return generateClientInfoResponse(client, metadata, false);
         } else {
             ErrorObject error = new ErrorObject("invalid_uri", "Registration uri is invalid", 404);
             return new ClientRegistrationErrorResponse(error);
@@ -169,14 +169,14 @@ public class DynamicRegistrationService {
         }
     }
 
-    private ClientRegistrationResponse generateClientInfoResponse(Client client, OIDCClientMetadata clientMetadata) {
+    private ClientRegistrationResponse generateClientInfoResponse(Client client, OIDCClientMetadata clientMetadata, boolean newClient) {
         ClientID clientId = new ClientID(client.getClientId());
         Date issueDate = ValidationUtils.convertToDate(client.getCreationDate());
         Secret secret = new Secret(textEncryptor.decrypt(client.getClientSecret()));
         URI registrationUri = metadataService.findClientRegistrationURI(client.getClientId());
         OIDCClientInformation clientInfo = new OIDCClientInformation(clientId, issueDate, clientMetadata, secret,
                 registrationUri, null);
-        return new OIDCClientInformationResponse(clientInfo);
+        return new OIDCClientInformationResponse(clientInfo, newClient);
     }
 
     private void validateTokenValidity(OIDCClientMetadata clientMetadata, Client client) {

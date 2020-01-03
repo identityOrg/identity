@@ -13,3 +13,21 @@ https://tools.ietf.org/html/rfc7519
 https://tools.ietf.org/html/rfc7591
 https://tools.ietf.org/html/rfc7592
 https://tools.ietf.org/html/rfc7521
+
+## Dependency update command
+
+Update parent pom version
+
+```shell script
+./mvnw versions:update-parent
+```
+
+Update property declared versions
+```shell script
+./mvnw versions:update-properties
+```
+
+Commit the update
+```shell script
+./mvnw versions:commit
+```

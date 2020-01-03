@@ -31,8 +31,8 @@ import com.nimbusds.jose.util.ResourceRetriever;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.nimbusds.jwt.proc.JWTProcessor;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.client.RegistrationError;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
-import com.nimbusds.openid.connect.sdk.OIDCError;
 import com.nimbusds.openid.connect.sdk.op.AuthenticationRequestResolver;
 import com.nimbusds.openid.connect.sdk.op.ResolveException;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
@@ -104,18 +104,18 @@ public class JWTResolver implements ResourceRetriever {
                 Resource jwksResource = retrieveResource(metadata.getJWKSetURI().toURL());
                 return JWKSet.parse(jwksResource.getContent());
             } else {
-                throw new ResolveException(OIDCError.REQUEST_NOT_SUPPORTED
-                        .appendDescription(":Registered client doesnot have key set"), request);
+                throw new ResolveException(RegistrationError.INVALID_CLIENT_METADATA
+                        .appendDescription(":Registered client doesn't have key set"), request);
             }
         } catch (java.text.ParseException e) {
             log.debug("Failed to parse client key set", e);
-            throw new ParseException("Client keyset has error",
-                    OIDCError.REQUEST_NOT_SUPPORTED.appendDescription(":Registered client key set is invalid"),
+            throw new ParseException("Client key set has error",
+                    RegistrationError.INVALID_CLIENT_METADATA.appendDescription(":Registered client key set is invalid"),
                     request.getClientID(), request.getRedirectionURI(), request.getResponseMode(),
                     request.getState());
         } catch (IOException e) {
             log.debug("Failed to retrieve client key set", e);
-            throw new ResolveException(OIDCError.REQUEST_NOT_SUPPORTED
+            throw new ResolveException(RegistrationError.INVALID_CLIENT_METADATA
                     .appendDescription(":Registered client key set retrieval failed"), request);
         }
     }
