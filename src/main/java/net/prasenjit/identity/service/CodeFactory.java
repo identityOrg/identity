@@ -29,11 +29,9 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.ClientID;
-import com.nimbusds.oauth2.sdk.id.State;
-import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
-import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
@@ -92,29 +90,19 @@ public class CodeFactory {
         macVerifier = new MACVerifier(mainKey);
     }
 
-    AuthorizationCode createAuthorizationCode(ClientID clientId, URI returnUrl, Scope scope, String userName,
-                                              State state, Duration validity, LocalDateTime loginDate, Nonce nonce,
-                                              CodeChallenge challenge, CodeChallengeMethod method, boolean openId) {
+    AuthorizationCode createAuthorizationCode(AuthorizationRequest request, URI returnUrl, String userName,
+                                              Scope filteredScope, Duration validity, LocalDateTime loginDate,
+                                              boolean openId) {
         AuthorizationCodeEntity authorizationCode = new AuthorizationCodeEntity();
-        authorizationCode.setClientId(clientId.getValue());
+        authorizationCode.setRequest(request);
         LocalDateTime creationDate = LocalDateTime.now();
         authorizationCode.setCreationDate(creationDate);
         authorizationCode.setExpiryDate(creationDate.plus(validity));
         authorizationCode.setReturnUrl(returnUrl == null ? null : returnUrl.toString());
-        authorizationCode.setScope(scope.toString());
         authorizationCode.setUsername(userName);
         authorizationCode.setUsed(false);
-        if (nonce != null) {
-            authorizationCode.setNonce(nonce.getValue());
-        }
-        if (state != null) {
-            authorizationCode.setState(state.getValue());
-        }
-        if (challenge != null && method != null) {
-            authorizationCode.setChallenge(challenge.getValue());
-            authorizationCode.setChallengeMethod(method.getValue());
-        }
         authorizationCode.setOpenId(openId);
+        authorizationCode.setScope(filteredScope.toString());
         authorizationCode.setLoginDate(loginDate);
         int codeLength = identityProperties.getCodeProperty().getAuthorizationCodeLength();
         authorizationCode.setAuthorizationCode(RandomStringUtils.randomAlphanumeric(codeLength));

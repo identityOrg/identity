@@ -16,13 +16,11 @@
 
 package net.prasenjit.identity.entity;
 
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import lombok.Data;
-import org.springframework.util.StringUtils;
+import net.prasenjit.identity.entity.converter.AbstractJsonConverter;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Data
@@ -39,26 +37,19 @@ public class AuthorizationCodeEntity {
     @Column(name = "USERNAME", length = 50, nullable = false)
     private String username;
 
-    @Column(name = "CLIENT_ID", length = 50, nullable = false)
-    private String clientId;
-
     @Column(name = "SCOPE", length = 500, nullable = false)
     private String scope;
 
-    @Column(name = "STATE", length = 50)
-    private String state;
-
-    @Column(name = "CHALLENGE", length = 200)
-    private String challenge;
-
-    @Column(name = "CHALLENGE_METHOD", length = 20)
-    private String challengeMethod;
-
-    @Column(name = "NONCE", length = 512)
-    private String nonce;
-
     @Column(name = "USED", nullable = false)
     private boolean used;
+
+    @Column(name = "OPEN_ID", nullable = false)
+    private boolean openId;
+
+    @Lob
+    @Column(name = "REQUEST", nullable = false)
+    @Convert(converter = AbstractJsonConverter.AuthorizationRequestConverter.class)
+    private AuthorizationRequest request;
 
     @Column(name = "LOGIN_DATE", nullable = false)
     private LocalDateTime loginDate;
@@ -69,18 +60,11 @@ public class AuthorizationCodeEntity {
     @Column(name = "EXPIRY_DATE", nullable = false)
     private LocalDateTime expiryDate;
 
-    @Column(name = "OPEN_ID", nullable = false)
-    private boolean openId;
-
     public boolean isValid() {
         return LocalDateTime.now().isBefore(expiryDate);
     }
 
     public boolean isChallengeAvailable() {
-        if (StringUtils.hasText(challenge) && StringUtils.hasText(challengeMethod)) {
-            return true;
-        } else {
-            return false;
-        }
+        return request != null && request.getCodeChallenge() != null && request.getCodeChallengeMethod() != null;
     }
 }

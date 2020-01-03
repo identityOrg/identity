@@ -208,9 +208,8 @@ public class OpenIDConnectService {
 
         LocalDateTime loginTime = authentication.getLoginTime();
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
-            code = codeFactory.createAuthorizationCode(request.getClientID(), request.getRedirectionURI(),
-                    filteredScope, principal.getUsername(), request.getState(), Duration.ofMinutes(10),
-                    loginTime, request.getNonce(), request.getCodeChallenge(), request.getCodeChallengeMethod(), true);
+            code = codeFactory.createAuthorizationCode(request, request.getRedirectionURI(), principal.getUsername(),
+                    filteredScope, Duration.ofMinutes(10), loginTime, true);
         }
         BearerAccessToken accessToken = null;
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {

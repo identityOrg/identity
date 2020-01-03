@@ -28,6 +28,7 @@ import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.token.*;
+import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
 import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
@@ -176,9 +177,8 @@ public class OAuth2Service {
 
         LocalDateTime loginTime = authentication.getLoginTime();
         if (request.getResponseType().contains(ResponseType.Value.CODE)) {
-            code = codeFactory.createAuthorizationCode(request.getClientID(), request.getRedirectionURI(), filteredScope,
-                    principal.getUsername(), request.getState(), Duration.ofMinutes(10), loginTime, null,
-                    request.getCodeChallenge(), request.getCodeChallengeMethod(), false);
+            code = codeFactory.createAuthorizationCode(request, request.getRedirectionURI(), principal.getUsername(),
+                    filteredScope, Duration.ofMinutes(10), loginTime, false);
         }
         if (request.getResponseType().contains(ResponseType.Value.TOKEN)) {
             accessToken = codeFactory.createAccessToken(principal,
@@ -190,10 +190,7 @@ public class OAuth2Service {
 
     public URI getRedirectUriForClientId(ClientID clientID) {
         Optional<Client> optionalClient = clientRepository.findById(clientID.getValue());
-        if (optionalClient.isPresent()) {
-            return optionalClient.get().getMetadata().getRedirectionURI();
-        }
-        return null;
+        return optionalClient.map(client -> client.getMetadata().getRedirectionURI()).orElse(null);
     }
 
     @Transactional
@@ -474,15 +471,15 @@ public class OAuth2Service {
             AuthorizationCodeEntity authCode = authorizationCode.get();
             if (!authCode.isUsed()) {
                 ClientID clientId = new ClientID(client.getClientId());
-                if (clientId.getValue().equals(authCode.getClientId())) {
+                if (clientId.equals(authCode.getRequest().getClientID())) {
                     if (!StringUtils.hasText(authCode.getReturnUrl()) || (grant.getRedirectionURI() != null &&
                             authCode.getReturnUrl().equals(grant.getRedirectionURI().toString()))) {
                         if (authCode.isValid()) {
                             if (authCode.isChallengeAvailable()) {
                                 if (grant.getCodeVerifier() != null) {
-                                    CodeChallengeMethod method = CodeChallengeMethod.parse(authCode.getChallengeMethod());
+                                    CodeChallengeMethod method = authCode.getRequest().getCodeChallengeMethod();
                                     CodeChallenge compute = CodeChallenge.compute(method, grant.getCodeVerifier());
-                                    if (!compute.getValue().equals(authCode.getChallenge())) {
+                                    if (!compute.equals(authCode.getRequest().getCodeChallenge())) {
                                         return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.appendDescription(": Invalid challenge"));
                                     }
                                 }
@@ -509,7 +506,8 @@ public class OAuth2Service {
 
                                 JWT idToken;
                                 if (authCode.isOpenId()) {
-                                    Nonce nonce = authCode.getNonce() != null ? Nonce.parse(authCode.getNonce()) : null;
+                                    AuthenticationRequest authenticationRequest = (AuthenticationRequest) authCode.getRequest();
+                                    Nonce nonce = authenticationRequest.getNonce();
                                     idToken = codeFactory.createIDToken(userProfile, authCode.getLoginDate(),
                                             nonce, clientId, client.getAccessTokenValidity(), approvedScope,
                                             accessToken, null);

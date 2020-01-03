@@ -65,33 +65,29 @@
             <column name="AUTHORIZATION_CODE" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="CLIENT_ID" type="VARCHAR(50)">
+            <column name="RETURN_URL" type="VARCHAR(500)"/>
+            <column name="USERNAME" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SCOPE" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="USED" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="OPEN_ID" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REQUEST" type="CLOB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="LOGIN_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="CREATION_DATE" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="EXPIRY_DATE" type="TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-            <column name="LOGIN_DATE" type="TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-            <column name="OPEN_ID" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column name="RETURN_URL" type="VARCHAR(500)"/>
-            <column name="SCOPE" type="VARCHAR(500)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="STATE" type="VARCHAR(50)"/>
-            <column name="CHALLENGE" type="VARCHAR(200)"/>
-            <column name="NONCE" type="VARCHAR(512)"/>
-            <column name="CHALLENGE_METHOD" type="VARCHAR(20)"/>
-            <column name="USED" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column name="USERNAME" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
         </createTable>
