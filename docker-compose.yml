@@ -1,0 +1,53 @@
+version: '3.7'
+
+services:
+  identity:
+    build:
+      context: .
+      args:
+        - JAR_FILE=target/identity-0.0.1-SNAPSHOT.jar
+    image: identityorg/identity:test
+    networks:
+      - identity
+    ports:
+      - 8080:8080
+    depends_on:
+      - mysql
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/db?useSSL=false
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=pass
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQL5Dialect
+      - SPRING_JPA_HIBERNATE_NAMING_PHYSICAL_STRATEGY=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+  mysql:
+    image: mysql:5
+    networks:
+      - identity
+    ports:
+       - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_DATABASE=db
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=pass
+    volumes:
+      - mysqldata:/var/lib/mysql/
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u user --password=pass
+      timeout: 5s
+      interval: 10s
+      retries: 10
+      start_period: 10s
+
+
+volumes:
+  mysqldata:
+
+networks:
+  identity:
+    ipam: 
+      driver: default
+      config:
+        - subnet: 172.28.5.0/24

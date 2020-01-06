@@ -40,13 +40,13 @@
             <column name="ACTIVE" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
-            <column name="LOGIN_DATE" type="TIMESTAMP">
+            <column name="LOGIN_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
-            <column name="CREATION_DATE" type="TIMESTAMP">
+            <column name="CREATION_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP">
+            <column name="EXPIRY_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
             <column name="SCOPE" type="VARCHAR(500)">
@@ -81,13 +81,13 @@
             <column name="REQUEST" type="CLOB">
                 <constraints nullable="false"/>
             </column>
-            <column name="LOGIN_DATE" type="TIMESTAMP">
+            <column name="LOGIN_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
-            <column name="CREATION_DATE" type="TIMESTAMP">
+            <column name="CREATION_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP">
+            <column name="EXPIRY_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -104,10 +104,10 @@
                 <constraints nullable="false"/>
             </column>
             <column name="CLIENT_SECRET" type="VARCHAR(256)"/>
-            <column name="CREATION_DATE" type="TIMESTAMP">
+            <column name="CREATION_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP"/>
+            <column name="EXPIRY_DATE" type="DATETIME"/>
             <column name="REFRESH_TOKEN_VALIDITY" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
@@ -131,13 +131,13 @@
             <column name="ACTIVE" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
-            <column name="CREATION_DATE" type="TIMESTAMP">
+            <column name="CREATION_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
-            <column name="LOGIN_DATE" type="TIMESTAMP">
+            <column name="LOGIN_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP">
+            <column name="EXPIRY_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
             <column name="SCOPE" type="VARCHAR(50)">
@@ -160,14 +160,14 @@
                 <constraints nullable="false"/>
             </column>
             <column name="ADMIN" type="BOOLEAN"/>
-            <column name="CREATION_DATE" type="TIMESTAMP">
+            <column name="CREATION_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
-            <column name="EXPIRY_DATE" type="TIMESTAMP"/>
+            <column name="EXPIRY_DATE" type="DATETIME"/>
             <column name="PASSWORD" type="VARCHAR(200)">
                 <constraints nullable="false"/>
             </column>
-            <column name="PASSWORD_EXPIRY_DATE" type="TIMESTAMP">
+            <column name="PASSWORD_EXPIRY_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
             <column name="ACTIVE" type="BOOLEAN">
@@ -189,7 +189,7 @@
             <column name="USER_TYPE" type="VARCHAR(10)">
                 <constraints nullable="false"/>
             </column>
-            <column name="CREATION_DATE" type="TIMESTAMP">
+            <column name="CREATION_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
             <column name="CURRENT_PRIVATE_KEY" type="CLOB">
@@ -205,7 +205,7 @@
             <column name="ID" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
-            <column name="CREATION_DATE" type="TIMESTAMP">
+            <column name="CREATION_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
             <column name="PRIVATE_KEY" type="CLOB">
@@ -227,7 +227,7 @@
             <column name="SCOPES" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="APPRIVAL_DATE" type="TIMESTAMP">
+            <column name="APPRIVAL_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
         </createTable>

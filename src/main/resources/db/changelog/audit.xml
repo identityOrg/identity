@@ -26,7 +26,7 @@
             <column name="EVENT_NAME" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="EVENT_TIME" type="TIMESTAMP">
+            <column name="EVENT_TIME" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
             <column name="DISPLAY_LEVEL" type="INT">
