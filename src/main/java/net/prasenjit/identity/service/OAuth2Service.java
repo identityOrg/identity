@@ -211,7 +211,7 @@ public class OAuth2Service {
             ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
             String clientId = clientAuthentication.getClientID().getValue();
             Optional<Client> optionalClient = clientRepository.findById(clientId);
-            if (!optionalClient.isPresent()) {
+            if (optionalClient.isEmpty()) {
                 return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT);
             }
             client = optionalClient.get();
@@ -497,7 +497,8 @@ public class OAuth2Service {
 
 
                                 RefreshToken refreshToken = null;
-                                if (client.supportsGrant(GrantType.REFRESH_TOKEN)) {
+                                if (authCode.getRequest().getScope().contains("offline_access")
+                                        && client.supportsGrant(GrantType.REFRESH_TOKEN)) {
                                     refreshToken = codeFactory.createRefreshToken(clientId,
                                             associatedUser.get().getUsername(),
                                             accessToken.getScope(), authCode.getLoginDate(),
