@@ -20,7 +20,7 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
     <changeSet author="prasenjit-net" id="03032018-5">
         <createTable tableName="T_SCOPE">
-            <column name="SCOPE_ID" type="VARCHAR(10)">
+            <column name="SCOPE_ID" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
             <column name="SCOPE_NAME" type="VARCHAR(50)">
@@ -75,6 +75,10 @@
         <insert tableName="T_SCOPE">
             <column name="scope_id" value="address"/>
             <column name="scope_name" value="OpenID Address"/>
+        </insert>
+        <insert tableName="T_SCOPE">
+            <column name="scope_id" value="offline_access"/>
+            <column name="scope_name" value="OpenID scope for refresh token"/>
         </insert>
         <insert tableName="T_SCOPE">
             <column name="scope_id" value="scope1"/>
