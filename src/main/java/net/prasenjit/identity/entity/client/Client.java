@@ -73,4 +73,9 @@ public class Client {
         return getMetadata().getScope();
     }
 
+    public boolean isAccountNonExpired() {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(creationDate)) return false;
+        return expiryDate == null || now.isBefore(expiryDate);
+    }
 }
