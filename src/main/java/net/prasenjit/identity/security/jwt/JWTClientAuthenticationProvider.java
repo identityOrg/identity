@@ -18,6 +18,7 @@ import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.repository.ClientRepository;
@@ -41,6 +42,7 @@ public class JWTClientAuthenticationProvider implements AuthenticationProvider {
     private final ClientRepository clientRepository;
     private final MetadataService metadataService;
     private final RemoteResourceRetriever resourceRetriever;
+    private final TextEncryptor textEncryptor;
 
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         Assert.isInstanceOf(JWTClientAuthenticationToken.class, authentication,
@@ -48,14 +50,12 @@ public class JWTClientAuthenticationProvider implements AuthenticationProvider {
 
         // Determine username
         String clientId = (authentication.getPrincipal() == null) ? "NONE_PROVIDED" : authentication.getName();
-
         Client client = clientRepository.findById(clientId).orElseThrow(() -> new BadCredentialsException("Bad credentials"));
-
 
         this.preAuthenticationCheck(client);
         additionalAuthenticationChecks(client, (JWTClientAuthenticationToken) authentication);
 
-        return createSuccessAuthentication(client, authentication, Profile.create(client));
+        return createSuccessAuthentication(client.getClientId(), authentication, Profile.create(client));
     }
 
     public boolean supports(Class<?> authentication) {
@@ -93,11 +93,16 @@ public class JWTClientAuthenticationProvider implements AuthenticationProvider {
 
     private void validateClientJWT(Client client, ClientID clientID, JWTAuthentication clientSecretJWT) {
         if (!clientSecretJWT.getClientID().equals(clientID)) {
+            log.debug("Authentication failed: client is mismatch");
             throw new BadCredentialsException("Bad credentials");
         }
         JWSAlgorithm expectedSigningAlgorithm = client.getMetadata().getTokenEndpointAuthJWSAlg();
-        if (expectedSigningAlgorithm == null || client.getClientSecret() == null) {
+        if (expectedSigningAlgorithm == null) {
+            log.debug("Authentication failed: signing algorithm not registered");
             throw new BadCredentialsException("Bad credentials");
+        }
+        if (client.getClientSecret() == null && clientSecretJWT.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_JWT)) {
+            log.debug("Authentication failed: insecure client can not use method {}", ClientAuthenticationMethod.CLIENT_SECRET_JWT);
         }
         String tokenEP = metadataService.findOIDCConfiguration().getTokenEndpointURI().toString();
 
@@ -119,6 +124,7 @@ public class JWTClientAuthenticationProvider implements AuthenticationProvider {
         try {
             processor.process(clientSecretJWT.getClientAssertion(), new SimpleSecurityContext());
         } catch (BadJOSEException | JOSEException e) {
+            log.debug("Authentication failed: credential verification failed", e);
             throw new BadCredentialsException("Bad credentials", e);
         }
     }
@@ -131,12 +137,15 @@ public class JWTClientAuthenticationProvider implements AuthenticationProvider {
                 try {
                     new RemoteJWKSet<SimpleSecurityContext>(client.getMetadata().getJWKSetURI().toURL(), resourceRetriever);
                 } catch (MalformedURLException e) {
+                    log.debug("Authentication failed: remote key retrieval failed", e);
                     throw new BadCredentialsException("Bad credentials", e);
                 }
             }
         } else if (authentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_JWT)) {
-            return new ImmutableSecret<>(client.getClientSecret().getBytes());
+            String decryptedSecret = textEncryptor.decrypt(client.getClientSecret());
+            return new ImmutableSecret<>(decryptedSecret.getBytes());
         }
+        log.debug("Authentication failed: nondeterministic key source");
         throw new BadCredentialsException("Bad credentials");
     }
 }

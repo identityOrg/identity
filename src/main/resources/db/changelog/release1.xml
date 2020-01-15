@@ -103,7 +103,7 @@
             <column name="CLIENT_NAME" type="VARCHAR(500)">
                 <constraints nullable="false"/>
             </column>
-            <column name="CLIENT_SECRET" type="VARCHAR(256)"/>
+            <column name="CLIENT_SECRET" type="VARCHAR(1024)"/>
             <column name="CREATION_DATE" type="DATETIME">
                 <constraints nullable="false"/>
             </column>

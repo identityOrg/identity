@@ -18,10 +18,7 @@ package net.prasenjit.identity.service;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.oauth2.sdk.*;
-import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
-import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
-import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
-import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
+import com.nimbusds.oauth2.sdk.auth.*;
 import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.Subject;
@@ -44,8 +41,10 @@ import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.repository.*;
 import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
+import net.prasenjit.identity.security.jwt.JWTClientAuthenticationToken;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import net.prasenjit.identity.service.openid.MetadataService;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -215,24 +214,26 @@ public class OAuth2Service {
                 return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT);
             }
             client = optionalClient.get();
-            String clientSecret;
-            if (clientAuthentication.getMethod().equals(client.getMetadata().getTokenEndpointAuthMethod())
-                    || client.getMetadata().getTokenEndpointAuthMethod() == null) {
-                if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
-                    clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
-                } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
-                    clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
+            AbstractAuthenticationToken authToken;
+            ClientAuthenticationMethod registeredAuthMethod = client.getMetadata().getTokenEndpointAuthMethod();
+            ClientAuthenticationMethod usedAuthMethod = clientAuthentication.getMethod();
+            if (metadataService.findOIDCConfiguration().getTokenEndpointAuthMethods().contains(usedAuthMethod) &&
+                    (registeredAuthMethod == null || registeredAuthMethod.equals(usedAuthMethod))) {
+                if (clientAuthentication instanceof PlainClientSecret) {
+                    authToken = new BasicAuthenticationToken(clientId, ((PlainClientSecret) clientAuthentication).getClientSecret());
+                } else if (clientAuthentication instanceof JWTAuthentication) {
+                    authToken = new JWTClientAuthenticationToken(clientAuthentication.getClientID(), clientAuthentication);
                 } else {
                     return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED
                             .setDescription("Client authentication not supported"));
                 }
             } else {
                 return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED
-                        .setDescription("Client authentication not allowed"));
+                        .setDescription("Client authentication not supported"));
             }
 
             try {
-                authenticationManager.authenticate(new BasicAuthenticationToken(clientId, clientSecret));
+                authenticationManager.authenticate(authToken);
             } catch (AuthenticationException e) {
                 return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed"));
             }

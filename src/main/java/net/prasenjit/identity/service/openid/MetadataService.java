@@ -103,6 +103,7 @@ public class MetadataService {
             epAuthMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
             epAuthMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_POST);
             epAuthMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_JWT);
+            epAuthMethods.add(ClientAuthenticationMethod.PRIVATE_KEY_JWT);
             metadata.setTokenEndpointAuthMethods(epAuthMethods);
 
             builder1 = builder.cloneBuilder();

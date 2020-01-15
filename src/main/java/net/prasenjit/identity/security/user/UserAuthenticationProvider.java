@@ -61,7 +61,6 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
             throws AuthenticationException {
         if (authentication.getCredentials() == null) {
             log.debug("Authentication failed: no credentials provided");
-
             throw new BadCredentialsException(messages.getMessage(
                     "AbstractUserDetailsAuthenticationProvider.badCredentials",
                     "Bad credentials"));
@@ -72,7 +71,6 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
         if (authentication.isRemembered()) {
             if (!userDetails.getPassword().equals(presentedPassword)) {
                 log.debug("Authentication failed: password does not match stored value");
-
                 throw new BadCredentialsException(messages.getMessage(
                         "AbstractUserDetailsAuthenticationProvider.badCredentials",
                         "Bad credentials"));
@@ -80,7 +78,6 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
         } else {
             if (!passwordEncoder.matches(presentedPassword, userDetails.getPassword())) {
                 log.debug("Authentication failed: password does not match stored value");
-
                 throw new BadCredentialsException(messages.getMessage(
                         "AbstractUserDetailsAuthenticationProvider.badCredentials",
                         "Bad credentials"));
@@ -113,7 +110,7 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
             try {
                 user = retrieveUser(username, (UserAuthenticationToken) authentication);
             } catch (UsernameNotFoundException notFound) {
-                log.debug("User '" + username + "' not found");
+                log.debug("User '{}' not found", username);
 
                 throw new BadCredentialsException(messages.getMessage(
                         "AbstractUserDetailsAuthenticationProvider.badCredentials",
@@ -228,7 +225,7 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
     private class DefaultPreAuthenticationChecks implements UserDetailsChecker {
         public void check(UserDetails user) {
             if (!user.isAccountNonLocked()) {
-                log.debug("User account is locked");
+                log.debug("User '{}' account is locked", user.getUsername());
 
                 throw new LockedException(messages.getMessage(
                         "AbstractUserDetailsAuthenticationProvider.locked",
@@ -236,7 +233,7 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
             }
 
             if (!user.isEnabled()) {
-                log.debug("User account is disabled");
+                log.debug("User '{}' account is disabled", user.getUsername());
 
                 throw new DisabledException(messages.getMessage(
                         "AbstractUserDetailsAuthenticationProvider.disabled",
@@ -244,7 +241,7 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
             }
 
             if (!user.isAccountNonExpired()) {
-                log.debug("User account is expired");
+                log.debug("User '{}' account is expired", user.getUsername());
 
                 throw new AccountExpiredException(messages.getMessage(
                         "AbstractUserDetailsAuthenticationProvider.expired",
@@ -256,7 +253,7 @@ public class UserAuthenticationProvider implements AuthenticationProvider, Initi
     private class DefaultPostAuthenticationChecks implements UserDetailsChecker {
         public void check(UserDetails user) {
             if (!user.isCredentialsNonExpired()) {
-                log.debug("User account credentials have expired");
+                log.debug("User '{}' account credentials have expired", user.getUsername());
 
                 throw new CredentialsExpiredException(messages.getMessage(
                         "AbstractUserDetailsAuthenticationProvider.credentialsExpired",

@@ -41,7 +41,7 @@ public class Client {
     private String clientName;
 
     @JsonIgnore
-    @Column(name = "CLIENT_SECRET", length = 50)
+    @Column(name = "CLIENT_SECRET", length = 1024)
     private String clientSecret;
 
     @Column(name = "STATUS", nullable = false)
