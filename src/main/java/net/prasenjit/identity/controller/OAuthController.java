@@ -134,15 +134,16 @@ public class OAuthController {
     }
 
     @PostMapping(value = "revocation")
-    public ResponseEntity<?> revocation(HttpServletRequest servletRequest) throws IOException {
+    public ResponseEntity<?> revocation(HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(servletRequest);
         try {
-            TokenIntrospectionRequest request = TokenIntrospectionRequest.parse(httpRequest);
-            boolean revoked = oAuth2Service.revokeToken(request);
-            if (revoked) {
-                return ResponseEntity.status(200).build();
+            TokenRevocationRequest request = TokenRevocationRequest.parse(httpRequest);
+            ErrorObject errorObject = oAuth2Service.revokeToken(request);
+            if (errorObject != null) {
+                return ResponseEntity.status(errorObject.getHTTPStatusCode()).contentType(MediaType.APPLICATION_JSON)
+                        .body(errorObject.toJSONObject());
             } else {
-                return ResponseEntity.status(401).build();
+                return ResponseEntity.status(200).build();
             }
         } catch (ParseException e) {
             return ResponseEntity.status(e.getErrorObject().getHTTPStatusCode()).contentType(MediaType.APPLICATION_JSON)
