@@ -263,6 +263,9 @@ public class OAuth2Service {
     @Transactional(readOnly = true)
     public TokenIntrospectionResponse introspectToken(TokenIntrospectionRequest introspectionRequest) {
         ClientAuthentication clientAuthentication = introspectionRequest.getClientAuthentication();
+        if (clientAuthentication == null) {
+            return new TokenIntrospectionErrorResponse(OAuth2Error.INVALID_CLIENT);
+        }
         ClientID clientID = clientAuthentication.getClientID();
         Client client = clientRepository.findById(clientID.getValue()).orElse(null);
         if (client == null || !client.isAccountNonExpired()) {
@@ -321,6 +324,9 @@ public class OAuth2Service {
     @Transactional
     public ErrorObject revokeToken(TokenRevocationRequest revocationRequest) {
         ClientAuthentication clientAuthentication = revocationRequest.getClientAuthentication();
+        if (clientAuthentication == null) {
+            return OAuth2Error.INVALID_CLIENT;
+        }
         ClientID clientID = clientAuthentication.getClientID();
         Client client = clientRepository.findById(clientID.getValue()).orElse(null);
         if (client == null || !client.isAccountNonExpired()) {
