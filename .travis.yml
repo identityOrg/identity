@@ -4,3 +4,13 @@ jdk:
   - openjdk11
 services:
   - docker
+
+jobs:
+  include:
+    - stage: test
+      script: ./mvnw clean test
+    - stage: build
+      script: ./mvnw package
+      branches:
+        only:
+          - master
