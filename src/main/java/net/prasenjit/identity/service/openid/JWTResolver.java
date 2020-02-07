@@ -25,9 +25,8 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.JWEDecryptionKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
-import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.proc.SimpleSecurityContext;
 import com.nimbusds.jose.util.Resource;
-import com.nimbusds.jose.util.ResourceRetriever;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.nimbusds.jwt.proc.JWTProcessor;
 import com.nimbusds.oauth2.sdk.ParseException;
@@ -39,30 +38,26 @@ import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.identity.entity.client.Client;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.ResponseEntity;
+import net.prasenjit.identity.service.RemoteResourceRetriever;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.net.URL;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JWTResolver implements ResourceRetriever {
+public class JWTResolver {
 
-    @Qualifier("cachingRestTemplate")
-    private final RestTemplate restTemplate;
     private final CryptographyService cryptographyService;
+    private final RemoteResourceRetriever resourceRetriever;
 
     public AuthenticationRequest resolveAuthenticationRequest(AuthenticationRequest request, Client client)
             throws ParseException, ResolveException {
         if (request.specifiesRequestObject()) {
             OIDCClientMetadata metadata = client.getMetadata();
-            JWTProcessor<SecurityContext> jwtProcessor = createJWTProcessor(metadata, request);
-            AuthenticationRequestResolver<SecurityContext> requestResolver =
-                    new AuthenticationRequestResolver<>(jwtProcessor, this);
+            JWTProcessor<SimpleSecurityContext> jwtProcessor = createJWTProcessor(metadata, request);
+            AuthenticationRequestResolver<SimpleSecurityContext> requestResolver =
+                    new AuthenticationRequestResolver<>(jwtProcessor, resourceRetriever);
 
             try {
                 return requestResolver.resolve(request, null);
@@ -73,24 +68,24 @@ public class JWTResolver implements ResourceRetriever {
         return request;
     }
 
-    private JWTProcessor<SecurityContext> createJWTProcessor(OIDCClientMetadata metadata,
-                                                             AuthenticationRequest request)
+    private JWTProcessor<SimpleSecurityContext> createJWTProcessor(OIDCClientMetadata metadata,
+                                                                   AuthenticationRequest request)
             throws ParseException, ResolveException {
-        JWEDecryptionKeySelector<SecurityContext> encKeySelector = null;
-        JWSVerificationKeySelector<SecurityContext> signKeySelector = null;
+        JWEDecryptionKeySelector<SimpleSecurityContext> encKeySelector = null;
+        JWSVerificationKeySelector<SimpleSecurityContext> signKeySelector = null;
         if (metadata.getRequestObjectJWSAlg() != null) {
             JWSAlgorithm algo = metadata.getRequestObjectJWSAlg();
-            JWKSource<SecurityContext> keySource = new ImmutableJWKSet<>(getClientJWKSet(metadata, request));
+            JWKSource<SimpleSecurityContext> keySource = new ImmutableJWKSet<>(getClientJWKSet(metadata, request));
             signKeySelector = new JWSVerificationKeySelector<>(algo, keySource);
         }
         if (metadata.getRequestObjectJWEAlg() != null
                 && metadata.getRequestObjectJWEEnc() != null) {
             JWEAlgorithm jweAlg = metadata.getRequestObjectJWEAlg();
             EncryptionMethod jweEnc = metadata.getRequestObjectJWEEnc();
-            JWKSource<SecurityContext> opKeySource = new ImmutableJWKSet<>(cryptographyService.loadJwkKeys());
+            JWKSource<SimpleSecurityContext> opKeySource = new ImmutableJWKSet<>(cryptographyService.loadJwkKeys());
             encKeySelector = new JWEDecryptionKeySelector<>(jweAlg, jweEnc, opKeySource);
         }
-        DefaultJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
+        DefaultJWTProcessor<SimpleSecurityContext> processor = new DefaultJWTProcessor<>();
         processor.setJWSKeySelector(signKeySelector);
         processor.setJWEKeySelector(encKeySelector);
         return processor;
@@ -101,7 +96,7 @@ public class JWTResolver implements ResourceRetriever {
             if (metadata.getJWKSet() != null) {
                 return metadata.getJWKSet();
             } else if (metadata.getJWKSetURI() != null) {
-                Resource jwksResource = retrieveResource(metadata.getJWKSetURI().toURL());
+                Resource jwksResource = resourceRetriever.retrieveResource(metadata.getJWKSetURI().toURL());
                 return JWKSet.parse(jwksResource.getContent());
             } else {
                 throw new ResolveException(RegistrationError.INVALID_CLIENT_METADATA
@@ -118,11 +113,5 @@ public class JWTResolver implements ResourceRetriever {
             throw new ResolveException(RegistrationError.INVALID_CLIENT_METADATA
                     .appendDescription(":Registered client key set retrieval failed"), request);
         }
-    }
-
-    @Override
-    public Resource retrieveResource(URL url) throws IOException {
-        ResponseEntity<String> forEntity = restTemplate.getForEntity(url.toString(), String.class);
-        return new Resource(forEntity.getBody(), forEntity.getHeaders().getContentType().toString());
     }
 }

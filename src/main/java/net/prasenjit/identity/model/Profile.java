@@ -18,14 +18,14 @@ package net.prasenjit.identity.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nimbusds.oauth2.sdk.id.Identifier;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.prasenjit.identity.entity.Status;
-import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.entity.client.Client;
+import net.prasenjit.identity.entity.user.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -35,8 +35,8 @@ import java.util.List;
 
 @Data
 public class Profile implements UserDetails {
-	private static final long serialVersionUID = -8616676872755665605L;
-	private LocalDateTime expiryDate;
+    private static final long serialVersionUID = -8616676872755665605L;
+    private LocalDateTime expiryDate;
     private LocalDateTime passwordExpiryDate;
     private List<SimpleGrantedAuthority> authorities;
     private LocalDateTime creationDate;
@@ -58,7 +58,7 @@ public class Profile implements UserDetails {
     private Profile(User user) {
         this.username = user.getUsername();
         UserInfo userInfo = user.getUserInfo();
-		this.firstName = userInfo.getGivenName();
+        this.firstName = userInfo.getGivenName();
         this.lastName = userInfo.getFamilyName();
         this.creationDate = user.getCreationDate();
         this.expiryDate = user.getExpiryDate();
@@ -79,6 +79,10 @@ public class Profile implements UserDetails {
         this.expiryDate = client.getExpiryDate();
         this.authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("CLIENT"));
+        client.getMetadata().getGrantTypes().stream()
+                .map(Identifier::getValue)
+                .map(SimpleGrantedAuthority::new)
+                .forEach(authorities::add);
         this.status = client.getStatus();
         this.client = true;
     }
@@ -134,7 +138,7 @@ public class Profile implements UserDetails {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SimpleGrantedAuthority implements GrantedAuthority {
-		private static final long serialVersionUID = -5690245860071067474L;
-		private String authority;
+        private static final long serialVersionUID = -5690245860071067474L;
+        private String authority;
     }
 }

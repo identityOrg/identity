@@ -306,8 +306,7 @@ public class DynamicRegistrationService {
         ClientAuthenticationMethod tokenEndpointAuthMethod = clientMetadata.getTokenEndpointAuthMethod();
         if (tokenEndpointAuthMethod == null) {
             clientMetadata.setTokenEndpointAuthMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
-        } else if (!(ClientAuthenticationMethod.CLIENT_SECRET_BASIC.equals(tokenEndpointAuthMethod) ||
-                ClientAuthenticationMethod.CLIENT_SECRET_POST.equals(tokenEndpointAuthMethod))) {
+        } else if (!(serverMetadata.getTokenEndpointAuthMethods().contains(tokenEndpointAuthMethod))) {
             return new ClientRegistrationErrorResponse(
                     RegistrationError.INVALID_CLIENT_METADATA
                             .appendDescription(": Unsupported Client authentication method"));

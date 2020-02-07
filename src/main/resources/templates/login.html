@@ -15,7 +15,7 @@
   ~    limitations under the License.
   -->
 
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
 
     <link rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" id="bootstrap-css">
@@ -36,6 +36,7 @@
                 <div class="form-group">
 
 
+                    <!--/*@thymesVar id="loginHint" type="java.lang.Boolean"*/-->
                     <input type="text" class="form-control" id="inputEmail" name="username" placeholder="Email Address"
                            th:value="${loginHint}" th:readonly="${loginHint}">
 

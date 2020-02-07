@@ -19,12 +19,16 @@ package net.prasenjit.identity.config;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.model.openid.OpenIDSessionContainer;
+import net.prasenjit.identity.repository.AccessTokenRepository;
+import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.security.basic.BasicAuthenticationProvider;
 import net.prasenjit.identity.security.bearer.BearerAuthenticationProvider;
+import net.prasenjit.identity.security.jwt.JWTClientAuthenticationProvider;
 import net.prasenjit.identity.security.user.UserAuthenticationProvider;
-import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.service.ClientService;
+import net.prasenjit.identity.service.RemoteResourceRetriever;
 import net.prasenjit.identity.service.UserService;
+import net.prasenjit.identity.service.openid.MetadataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -42,6 +46,9 @@ public class AuthManagerConfig {
     private final UserService userService;
     private final ClientService clientService;
     private final AccessTokenRepository accessTokenRepository;
+    private final ClientRepository clientRepository;
+    private final MetadataService metadataService;
+    private final RemoteResourceRetriever resourceRetriever;
 
     @Autowired
     @Qualifier("client-password")
@@ -54,6 +61,7 @@ public class AuthManagerConfig {
         providers.add(userAuthProvider(sessionContainer));
         providers.add(bearerAuthProvider());
         providers.add(clientAuthProvider());
+        providers.add(clientJWTProvider());
         ProviderManager providerManager = new ProviderManager(providers);
         providerManager.setAuthenticationEventPublisher(eventPublisher);
         providerManager.setEraseCredentialsAfterAuthentication(true);
@@ -71,6 +79,10 @@ public class AuthManagerConfig {
         provider.setUserDetailsService(userService);
         provider.setSessionContainer(sessionContainer);
         return provider;
+    }
+
+    private AuthenticationProvider clientJWTProvider() {
+        return new JWTClientAuthenticationProvider(clientRepository, metadataService, resourceRetriever, textEncryptor);
     }
 
     private AuthenticationProvider clientAuthProvider() {

@@ -128,6 +128,10 @@ public abstract class HtmlPageTestBase {
         registerClient();
     }
 
+    protected void configureClient(OIDCClientMetadata metadata) throws JOSEException, ParseException {
+        // for extenders.
+    }
+
     private void registerClient() throws JOSEException, ParseException {
         OIDCClientMetadata metadata = new OIDCClientMetadata();
         metadata.setRequestObjectJWSAlg(JWSAlgorithm.RS256);
@@ -142,6 +146,8 @@ public abstract class HtmlPageTestBase {
         metadata.setGrantTypes(new HashSet<>(oidcConfiguration.getGrantTypes()));
         metadata.setResponseTypes(new HashSet<>(oidcConfiguration.getResponseTypes()));
         metadata.setTokenEndpointAuthMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
+
+        configureClient(metadata);
 
         OIDCClientRegistrationRequest registrationRequest = new OIDCClientRegistrationRequest(
                 oidcConfiguration.getRegistrationEndpointURI(), metadata, null);

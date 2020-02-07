@@ -24,6 +24,7 @@ import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import net.prasenjit.identity.HtmlPageTestBase;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class OpenIDIssuerTest extends HtmlPageTestBase {
@@ -43,7 +44,7 @@ public class OpenIDIssuerTest extends HtmlPageTestBase {
         // Parse OpenID provider metadata
         OIDCProviderMetadata opMetadata = OIDCProviderMetadata.parse(httpResponse.getContentAsJSONObject());
 
-        assertTrue(issuer.equals(opMetadata.getIssuer()));
+        assertEquals(issuer, opMetadata.getIssuer());
 
         // Print the metadata
         System.out.println(opMetadata.toJSONObject());

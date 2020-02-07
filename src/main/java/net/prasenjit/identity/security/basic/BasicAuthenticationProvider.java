@@ -16,6 +16,7 @@
 
 package net.prasenjit.identity.security.basic;
 
+import com.nimbusds.oauth2.sdk.auth.Secret;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -44,15 +45,18 @@ public class BasicAuthenticationProvider implements AuthenticationProvider, Init
             throws AuthenticationException {
         if (authentication.getCredentials() == null) {
             log.debug("Authentication failed: no credentials provided");
-
             throw new BadCredentialsException("Bad credentials");
         }
 
-        String presentedPassword = authentication.getCredentials().toString();
+        String presentedPassword;
+        if (authentication.getCredentials() instanceof Secret) {
+            presentedPassword = ((Secret) authentication.getCredentials()).getValue();
+        } else {
+            presentedPassword = (String) authentication.getCredentials();
+        }
 
         if (!passwordEncoder.matches(presentedPassword, userDetails.getPassword())) {
             log.debug("Authentication failed: password does not match stored value");
-
             throw new BadCredentialsException("Bad credentials");
         }
     }
@@ -143,25 +147,24 @@ public class BasicAuthenticationProvider implements AuthenticationProvider, Init
 
     private void preAuthenticationCheck(UserDetails user) {
         if (!user.isAccountNonLocked()) {
-            log.debug("User account is locked");
+            log.debug("User '{}' account is locked", user.getUsername());
             throw new LockedException("User account is locked");
         }
 
         if (!user.isEnabled()) {
-            log.debug("User account is disabled");
+            log.debug("User '{}' account is disabled", user.getUsername());
             throw new DisabledException("User is disabled");
         }
 
         if (!user.isAccountNonExpired()) {
-            log.debug("User account is expired");
+            log.debug("User '{}' account is expired", user.getUsername());
             throw new AccountExpiredException("User account has expired");
         }
     }
 
     private void postAuthenticationCheck(UserDetails user) {
         if (!user.isCredentialsNonExpired()) {
-            log.debug("User account credentials have expired");
-
+            log.debug("User '{}' account credentials have expired", user.getUsername());
             throw new CredentialsExpiredException("User credentials have expired");
         }
     }

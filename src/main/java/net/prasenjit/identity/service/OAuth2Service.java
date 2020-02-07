@@ -20,8 +20,8 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
-import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
-import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
+import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
+import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.Subject;
@@ -44,8 +44,10 @@ import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.repository.*;
 import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
+import net.prasenjit.identity.security.jwt.JWTClientAuthenticationToken;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import net.prasenjit.identity.service.openid.MetadataService;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -87,7 +89,7 @@ public class OAuth2Service {
 
         Optional<Client> client = clientRepository.findById(request.getClientID().getValue());
 
-        if (!client.isPresent()) {
+        if (client.isEmpty()) {
             if (request.getRedirectionURI() != null) {
                 return new AuthorizationErrorResponse(request.getRedirectionURI(),
                         OAuth2Error.INVALID_CLIENT, request.getState(), request.getResponseMode());
@@ -195,47 +197,21 @@ public class OAuth2Service {
 
     @Transactional
     public TokenResponse handleTokenRequest(TokenRequest tokenRequest) {
-        Client client;
-        if (tokenRequest.getClientAuthentication() == null) {
-            ClientID clientId = tokenRequest.getClientID();
-            Optional<Client> optionalClient = clientRepository.findById(clientId.getValue());
-            if (optionalClient.isPresent()) {
-                client = optionalClient.get();
-                if (!StringUtils.hasText(client.getClientSecret())) {
-                    return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED);
-                }
-            } else {
-                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED);
-            }
-        } else {
-            ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
-            String clientId = clientAuthentication.getClientID().getValue();
-            Optional<Client> optionalClient = clientRepository.findById(clientId);
-            if (optionalClient.isEmpty()) {
-                return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT);
-            }
-            client = optionalClient.get();
-            String clientSecret;
-            if (clientAuthentication.getMethod().equals(client.getMetadata().getTokenEndpointAuthMethod())
-                    || client.getMetadata().getTokenEndpointAuthMethod() == null) {
-                if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
-                    clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
-                } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
-                    clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
-                } else {
-                    return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED
-                            .setDescription("Client authentication not supported"));
-                }
-            } else {
-                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED
-                        .setDescription("Client authentication not allowed"));
-            }
-
-            try {
-                authenticationManager.authenticate(new BasicAuthenticationToken(clientId, clientSecret));
-            } catch (AuthenticationException e) {
-                return new TokenErrorResponse(OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed"));
-            }
+        ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
+        ClientID clientID = tokenRequest.getClientID();
+        if (clientID == null && clientAuthentication != null) {
+            clientID = clientAuthentication.getClientID();
+        }
+        if (clientID == null) {
+            return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT);
+        }
+        Client client = clientRepository.findById(clientID.getValue()).orElse(null);
+        if (client == null || !client.isAccountNonExpired()) {
+            return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT);
+        }
+        ErrorObject errorObject = authenticateClient(clientAuthentication, clientID, client);
+        if (errorObject != null) {
+            return new TokenErrorResponse(errorObject);
         }
         if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.AUTHORIZATION_CODE)) {
             return handleGrantInternal(client,
@@ -253,123 +229,132 @@ public class OAuth2Service {
         }
     }
 
-    @Transactional(readOnly = true)
-    public TokenIntrospectionResponse introspectToken(TokenIntrospectionRequest request) {
-        ClientAuthentication authentication = request.getClientAuthentication();
-        if (authentication == null) {
-            return new TokenIntrospectionErrorResponse(OAuth2Error.ACCESS_DENIED);
+    private ErrorObject authenticateClient(ClientAuthentication clientAuthentication, ClientID clientID, Client client) {
+        if (clientAuthentication == null) {
+            if (StringUtils.hasText(client.getClientSecret())) {
+                return OAuth2Error.ACCESS_DENIED;
+            }
         } else {
-            ClientAuthentication clientAuthentication = request.getClientAuthentication();
-            String clientId = clientAuthentication.getClientID().getValue();
-            String clientSecret;
-            if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
-                clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
-            } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
-                clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
+            AbstractAuthenticationToken authToken;
+            ClientAuthenticationMethod registeredAuthMethod = client.getMetadata().getTokenEndpointAuthMethod();
+            ClientAuthenticationMethod usedAuthMethod = clientAuthentication.getMethod();
+            if (metadataService.findOIDCConfiguration().getTokenEndpointAuthMethods().contains(usedAuthMethod) &&
+                    (registeredAuthMethod == null || registeredAuthMethod.equals(usedAuthMethod))) {
+                if (clientAuthentication instanceof PlainClientSecret) {
+                    authToken = new BasicAuthenticationToken(clientID, ((PlainClientSecret) clientAuthentication).getClientSecret());
+                } else if (clientAuthentication instanceof JWTAuthentication) {
+                    authToken = new JWTClientAuthenticationToken(clientAuthentication.getClientID(), clientAuthentication);
+                } else {
+                    return OAuth2Error.ACCESS_DENIED.setDescription("Client authentication not supported");
+                }
             } else {
-                return new TokenIntrospectionErrorResponse(
-                        OAuth2Error.ACCESS_DENIED.setDescription("Client authentication not supported"));
+                return OAuth2Error.ACCESS_DENIED.setDescription("Client authentication not supported");
             }
 
-            BasicAuthenticationToken authenticate;
             try {
-                authenticate = (BasicAuthenticationToken) authenticationManager.authenticate(
-                        new BasicAuthenticationToken(clientId, clientSecret));
+                authenticationManager.authenticate(authToken);
             } catch (AuthenticationException e) {
-                return new TokenIntrospectionErrorResponse(
-                        OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed"));
+                return OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed");
             }
-            Profile clientProfile = (Profile) authenticate.getPrincipal();
+        }
+        return null;
+    }
 
-            Token token = request.getToken();
-            Optional<AccessTokenEntity> accessToken = accessTokenRepository.findById(token.getValue());
-            if (accessToken.isPresent()
-                    && accessToken.get().getClientId().equals(clientProfile.getUsername())
-                    && accessToken.get().isValid()) {
-                Profile userProfile = accessToken.get().getUserProfile();
-                Optional<User> optionalUser = userRepository.findById(userProfile.getUsername());
+    @Transactional(readOnly = true)
+    public TokenIntrospectionResponse introspectToken(TokenIntrospectionRequest introspectionRequest) {
+        ClientAuthentication clientAuthentication = introspectionRequest.getClientAuthentication();
+        if (clientAuthentication == null) {
+            return new TokenIntrospectionErrorResponse(OAuth2Error.INVALID_CLIENT);
+        }
+        ClientID clientID = clientAuthentication.getClientID();
+        Client client = clientRepository.findById(clientID.getValue()).orElse(null);
+        if (client == null || !client.isAccountNonExpired()) {
+            return new TokenIntrospectionErrorResponse(OAuth2Error.INVALID_CLIENT);
+        }
+        ErrorObject errorObject = authenticateClient(clientAuthentication, clientID, client);
+        if (errorObject != null) {
+            return new TokenIntrospectionErrorResponse(errorObject);
+        }
+
+        Token token = introspectionRequest.getToken();
+        Optional<AccessTokenEntity> accessToken = accessTokenRepository.findById(token.getValue());
+        if (accessToken.isPresent()
+                && accessToken.get().getClientId().equals(clientID.getValue())
+                && accessToken.get().isValid()) {
+            Profile userProfile = accessToken.get().getUserProfile();
+            Optional<User> optionalUser = userRepository.findById(userProfile.getUsername());
+            if (optionalUser.isPresent() && optionalUser.get().isValid()) {
+                return new TokenIntrospectionSuccessResponse.Builder(true)
+                        .clientID(clientID)
+                        .issuer(metadataService.getIssuer())
+                        .username(userProfile.getUsername())
+                        .scope(Scope.parse(accessToken.get().getScope()))
+                        .tokenType(AccessTokenType.BEARER)
+                        .expirationTime(ValidationUtils.convertToDate(accessToken.get().getExpiryDate()))
+                        .issueTime(ValidationUtils.convertToDate(accessToken.get().getCreationDate()))
+                        .subject(new Subject(userProfile.getUsername()))
+                        .audience(Collections.singletonList(new Audience(clientID.getValue())))
+                        .build();
+            }
+        }
+        Optional<RefreshTokenEntity> refreshToken = refreshTokenRepository.findById(token.getValue());
+        if (refreshToken.isPresent()) {
+            if (refreshToken.get().isValid() &&
+                    refreshToken.get().getClientId().equals(clientID.getValue())) {
+                String username = refreshToken.get().getUsername();
+                Optional<User> optionalUser = userRepository.findById(username);
                 if (optionalUser.isPresent() && optionalUser.get().isValid()) {
+                    Profile userProfile = Profile.create(optionalUser.get());
                     return new TokenIntrospectionSuccessResponse.Builder(true)
-                            .clientID(new ClientID(clientProfile.getUsername()))
+                            .clientID(clientID)
                             .issuer(metadataService.getIssuer())
                             .username(userProfile.getUsername())
-                            .scope(Scope.parse(accessToken.get().getScope()))
-                            .tokenType(AccessTokenType.BEARER)
-                            .expirationTime(ValidationUtils.convertToDate(accessToken.get().getExpiryDate()))
-                            .issueTime(ValidationUtils.convertToDate(accessToken.get().getCreationDate()))
+                            .scope(Scope.parse(refreshToken.get().getScope()))
+                            .expirationTime(ValidationUtils.convertToDate(refreshToken.get().getExpiryDate()))
+                            .issueTime(ValidationUtils.convertToDate(refreshToken.get().getCreationDate()))
                             .subject(new Subject(userProfile.getUsername()))
-                            .audience(Collections.singletonList(new Audience(clientProfile.getUsername())))
+                            .audience(Collections.singletonList(new Audience(clientID.getValue())))
                             .build();
                 }
             }
-            Optional<RefreshTokenEntity> refreshToken = refreshTokenRepository.findById(token.getValue());
-            if (refreshToken.isPresent()) {
-                if (refreshToken.get().isValid() &&
-                        refreshToken.get().getClientId().equals(clientProfile.getUsername())) {
-                    String username = refreshToken.get().getUsername();
-                    Optional<User> optionalUser = userRepository.findById(username);
-                    if (optionalUser.isPresent() && optionalUser.get().isValid()) {
-                        Profile userProfile = Profile.create(optionalUser.get());
-                        return new TokenIntrospectionSuccessResponse.Builder(true)
-                                .clientID(new ClientID(clientProfile.getUsername()))
-                                .issuer(metadataService.getIssuer())
-                                .username(userProfile.getUsername())
-                                .scope(Scope.parse(refreshToken.get().getScope()))
-                                .expirationTime(ValidationUtils.convertToDate(refreshToken.get().getExpiryDate()))
-                                .issueTime(ValidationUtils.convertToDate(refreshToken.get().getCreationDate()))
-                                .subject(new Subject(userProfile.getUsername()))
-                                .audience(Collections.singletonList(new Audience(clientProfile.getUsername())))
-                                .build();
-                    }
-                }
-            }
-            return new TokenIntrospectionSuccessResponse.Builder(false).build();
         }
+        return new TokenIntrospectionSuccessResponse.Builder(false).build();
     }
 
     @Transactional
-    public boolean revokeToken(TokenIntrospectionRequest request) {
-        ClientAuthentication authentication = request.getClientAuthentication();
-        if (authentication == null) {
-            return false;
-        } else {
-            ClientAuthentication clientAuthentication = request.getClientAuthentication();
-            String clientId = clientAuthentication.getClientID().getValue();
-            String clientSecret;
-            if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)) {
-                clientSecret = ((ClientSecretBasic) clientAuthentication).getClientSecret().getValue();
-            } else if (clientAuthentication.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
-                clientSecret = ((ClientSecretPost) clientAuthentication).getClientSecret().getValue();
-            } else {
-                return false;
-            }
-
-            BasicAuthenticationToken authenticate;
-            try {
-                authenticate = (BasicAuthenticationToken) authenticationManager.authenticate(
-                        new BasicAuthenticationToken(clientId, clientSecret));
-            } catch (AuthenticationException e) {
-                return false;
-            }
-            final Profile clientProfile = (Profile) authenticate.getPrincipal();
-
-            Token token = request.getToken();
-            Optional<AccessTokenEntity> accessToken = accessTokenRepository.findById(token.getValue());
-            accessToken.filter(t -> t.getClientId().equals(clientProfile.getUsername()))
-                    .ifPresent(t -> t.setActive(false));
-
-            refreshTokenRepository.findById(token.getValue())
-                    .ifPresent(r -> revokeRefreshTokenRecursive(clientProfile, r));
-            return true;
+    public ErrorObject revokeToken(TokenRevocationRequest revocationRequest) {
+        ClientAuthentication clientAuthentication = revocationRequest.getClientAuthentication();
+        if (clientAuthentication == null) {
+            return OAuth2Error.INVALID_CLIENT;
         }
+        ClientID clientID = clientAuthentication.getClientID();
+        Client client = clientRepository.findById(clientID.getValue()).orElse(null);
+        if (client == null || !client.isAccountNonExpired()) {
+            return OAuth2Error.INVALID_CLIENT;
+        }
+        ErrorObject errorObject = authenticateClient(clientAuthentication, clientID, client);
+        if (errorObject != null) {
+            return errorObject;
+        }
+
+        Token token = revocationRequest.getToken();
+        Optional<AccessTokenEntity> accessToken = accessTokenRepository.findById(token.getValue());
+        accessToken.filter(t -> t.getClientId().equals(clientID.getValue()))
+                .ifPresent(t -> t.setActive(false));
+
+        refreshTokenRepository.findById(token.getValue())
+                .ifPresent(r -> revokeRefreshTokenRecursive(clientID, r));
+        return null;
     }
 
-    private void revokeRefreshTokenRecursive(final Profile clientProfile, RefreshTokenEntity token) {
+    private void revokeRefreshTokenRecursive(final ClientID clientID, RefreshTokenEntity token) {
         token.setActive(false);
         accessTokenRepository.findByActiveTrueAndRefreshTokenEquals(token.getRefreshToken())
+                .filter(t -> t.getClientId().equals(clientID.getValue()))
                 .forEach(a -> a.setActive(false));
         refreshTokenRepository.findByActiveTrueAndParentRefreshTokenEquals(token.getRefreshToken())
-                .forEach(r -> revokeRefreshTokenRecursive(clientProfile, r));
+                .filter(t -> t.getClientId().equals(clientID.getValue()))
+                .forEach(r -> revokeRefreshTokenRecursive(clientID, r));
 
     }
 
