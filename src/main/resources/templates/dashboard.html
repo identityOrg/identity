@@ -16,7 +16,7 @@
 
 <!DOCTYPE html>
 
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
 
 <link rel='stylesheet'
@@ -101,7 +101,7 @@ body#LoginForm {
 												href="#contact-info-tab" role="tab"
 												aria-controls="nav-contact" aria-selected="false">Contact
 												Info</a> <a class="nav-item nav-link"
-												id="contact-info-tab-head" data-toggle="tab"
+												id="event-tab-head" data-toggle="tab"
 												href="#events-tab" role="tab"
 												aria-controls="nav-contact" aria-selected="false">Events</a>
 										</div>
@@ -254,7 +254,7 @@ body#LoginForm {
 												</div>
 											</div>
 											<div class="tab-pane fade" role="tabpanel" id="events-tab">
-												<div th:replace="/events"></div>
+												<div th:replace="events"></div>
 											</div>
 											<div class="row">
 												<div class="col d-flex justify-content-end">

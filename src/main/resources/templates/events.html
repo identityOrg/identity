@@ -8,6 +8,7 @@
 		</tr>
 	</thead>
 	<tbody>
+		<!--/*@thymesVar id="events" type="java.util.List<net.prasenjit.identity.entity.AuditEvent>"*/-->
 		<tr th:each="s : ${events}">
 			<th scope="row" th:text="${s.id}">1</th>
 			<td th:text="${s.eventName}">Mark</td>

@@ -15,12 +15,12 @@
   ~    limitations under the License.
   -->
 
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Auto Submit Form</title>
 </head>
-<body onload="javascript:document.forms[0].submit()">
+<body onload="document.forms[0].submit()">
 <h3>This page will refresh automatically</h3>
 <!--/*@thymesVar id="redirect_uri" type="java.net.URI"*/-->
 <form th:action="${redirect_uri}" method="post" name="auth">
@@ -32,4 +32,3 @@
 </form>
 </body>
 </html>
-<html>
