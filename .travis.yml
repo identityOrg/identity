@@ -10,7 +10,7 @@ jobs:
     - stage: test
       script: ./mvnw clean test
     - stage: build
-      script: ./mvnw package
+      script: ./mvnw package -DskipTests
       branches:
         only:
           - master
