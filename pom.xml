@@ -20,7 +20,7 @@
 
     <groupId>net.prasenjit</groupId>
     <artifactId>identity</artifactId>
-    <version>0.0.3-SNAPSHOT</version>
+    <version>0.0.3</version>
     <packaging>jar</packaging>
 
     <name>Identity</name>
@@ -35,7 +35,7 @@
         <url>https://github.com/identityOrg/identity</url>
         <connection>scm:git:https://github.com/identityOrg/identity.git</connection>
         <developerConnection>scm:git:https://github.com/identityOrg/identity.git</developerConnection>
-        <tag>v@{project.version}</tag>
+        <tag>v0.0.3</tag>
     </scm>
 
     <developers>
