@@ -30,39 +30,39 @@ public class HttpCacheTest {
 
     @Test
     public void testHTTPCache() {
-        RestTemplate restTemplate = getTemplate();
-        LocalDateTime startTime = LocalDateTime.now();
-        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
-        LocalDateTime endTime = LocalDateTime.now();
-        long diff = ChronoUnit.MILLIS.between(startTime, endTime);
-        startTime = endTime;
-        System.err.println(diff);
-        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
-        endTime = LocalDateTime.now();
-        diff = ChronoUnit.MILLIS.between(startTime, endTime);
-        startTime = endTime;
-        System.err.println(diff);
-        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
-        endTime = LocalDateTime.now();
-        diff = ChronoUnit.MILLIS.between(startTime, endTime);
-        startTime = endTime;
-        System.err.println(diff);
-        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
-        endTime = LocalDateTime.now();
-        diff = ChronoUnit.MILLIS.between(startTime, endTime);
-        startTime = endTime;
-        System.err.println(diff);
-        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
-        endTime = LocalDateTime.now();
-        diff = ChronoUnit.MILLIS.between(startTime, endTime);
-        System.err.println(diff);
+//        RestTemplate restTemplate = getTemplate();
+//        LocalDateTime startTime = LocalDateTime.now();
+//        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
+//        LocalDateTime endTime = LocalDateTime.now();
+//        long diff = ChronoUnit.MILLIS.between(startTime, endTime);
+//        startTime = endTime;
+//        System.err.println(diff);
+//        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
+//        endTime = LocalDateTime.now();
+//        diff = ChronoUnit.MILLIS.between(startTime, endTime);
+//        startTime = endTime;
+//        System.err.println(diff);
+//        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
+//        endTime = LocalDateTime.now();
+//        diff = ChronoUnit.MILLIS.between(startTime, endTime);
+//        startTime = endTime;
+//        System.err.println(diff);
+//        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
+//        endTime = LocalDateTime.now();
+//        diff = ChronoUnit.MILLIS.between(startTime, endTime);
+//        startTime = endTime;
+//        System.err.println(diff);
+//        restTemplate.getForObject("https://www.prasenjit.net/", String.class);
+//        endTime = LocalDateTime.now();
+//        diff = ChronoUnit.MILLIS.between(startTime, endTime);
+//        System.err.println(diff);
     }
 
-    private RestTemplate getTemplate() {
-        HazelcastInstance hi = Hazelcast.newHazelcastInstance();
-        HazelcastHttpCache hhc = new HazelcastHttpCache(hi);
-        hhc.afterPropertiesSet();
-        HttpClientConfig hcc = new HttpClientConfig(hhc);
-        return hcc.cachingRestTemplate(hcc.cachingHttpClient());
-    }
+//    private RestTemplate getTemplate() {
+//        HazelcastInstance hi = Hazelcast.newHazelcastInstance();
+//        HazelcastHttpCache hhc = new HazelcastHttpCache(hi);
+//        hhc.afterPropertiesSet();
+//        HttpClientConfig hcc = new HttpClientConfig(hhc);
+//        return hcc.cachingRestTemplate(hcc.cachingHttpClient());
+//    }
 }
