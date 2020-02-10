@@ -37,6 +37,7 @@
         <url>https://github.com/identityOrg/identity</url>
         <connection>scm:git:git://github.com/identityOrg/identity.git</connection>
         <developerConnection>scm:git:git@github.com:identityOrg/identity.git</developerConnection>
+        <tag>@{project.version}</tag>
     </scm>
 
     <developers>
@@ -51,7 +52,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.2.2.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath /> <!-- lookup parent from repository -->
     </parent>
 
     <properties>
