@@ -369,6 +369,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <goals>deploy</goals>
+                    <preparationGoals>compile</preparationGoals>
                     <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
                     <remoteTagging>false</remoteTagging>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
