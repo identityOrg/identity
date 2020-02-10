@@ -342,7 +342,7 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.50</minimum>
+                                            <minimum>0.01</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
@@ -377,6 +377,14 @@
             </plugin>
         </plugins>
     </build>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub OWNER Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/identityOrg/identity</url>
+        </repository>
+    </distributionManagement>
 
 <!--    <repositories>
         <repository>
