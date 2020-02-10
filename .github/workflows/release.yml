@@ -19,6 +19,8 @@ jobs:
         uses: actions/checkout@master
       - name: Build project # This would actually build your project, using zip for an example artifact
         run: mvn -B package -DskipTests
+      - name: Find Project Version
+        run: VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -36,4 +38,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          pattern: target/identity-*.jar
+          asset_path: ./target/identity-${{ VERSION }}.jar
+          asset_name: identity-${{ VERSION }}.jar
+          asset_content_type: application/zip
