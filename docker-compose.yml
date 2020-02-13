@@ -2,11 +2,7 @@ version: '3.7'
 
 services:
   identity:
-    build:
-      context: .
-      args:
-        - JAR_FILE=target/identity-0.0.1-SNAPSHOT.jar
-    image: identityorg/identity:test
+    image: identityorg/identity:latest
     networks:
       - identity
     ports:

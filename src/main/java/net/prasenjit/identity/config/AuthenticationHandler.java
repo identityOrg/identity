@@ -25,7 +25,6 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
@@ -71,16 +70,11 @@ public class AuthenticationHandler implements AuthenticationSuccessHandler, Auth
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
-        UriComponentsBuilder builder = ServletUriComponentsBuilder.fromRequest(request);
-        request.getSession().setAttribute(PREVIOUS_URL, builder.build().toString());
+        request.getSession().setAttribute(PREVIOUS_URL, resolveFullPath(request.getRequestURI()));
         response.sendRedirect(resolveFullPath("/login"));
     }
 
     private String resolveFullPath(String relativePath) {
-        String issuer = metadataService.findOIDCConfiguration().getIssuer().getValue();
-        return UriComponentsBuilder.fromHttpUrl(issuer)
-                .path(relativePath)
-                .build()
-                .toString();
+        return relativePath;
     }
 }
