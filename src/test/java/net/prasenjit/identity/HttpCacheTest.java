@@ -16,15 +16,7 @@
 
 package net.prasenjit.identity;
 
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-import net.prasenjit.identity.config.HttpClientConfig;
-import net.prasenjit.identity.config.http.HazelcastHttpCache;
 import org.junit.Test;
-import org.springframework.web.client.RestTemplate;
-
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 
 public class HttpCacheTest {
 

@@ -16,23 +16,8 @@
 
 package net.prasenjit.identity.clientregistry;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.net.URI;
-
-import org.junit.Test;
-
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.oauth2.sdk.ClientCredentialsGrant;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.Scope;
-import com.nimbusds.oauth2.sdk.TokenRequest;
-import com.nimbusds.oauth2.sdk.TokenResponse;
+import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.client.ClientDeleteRequest;
@@ -46,8 +31,14 @@ import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientRegistrationRequest;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientRegistrationResponseParser;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientUpdateRequest;
-
 import net.prasenjit.identity.HtmlPageTestBase;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
 
 public class ClientRegistrationTest extends HtmlPageTestBase {
 

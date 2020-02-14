@@ -16,25 +16,17 @@
 
 package net.prasenjit.identity.entity.user;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
-
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.Table;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+import lombok.Data;
+import net.prasenjit.identity.entity.converter.UserInfoConverter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.nimbusds.openid.connect.sdk.claims.UserInfo;
-
-import lombok.Data;
-import net.prasenjit.identity.entity.converter.UserInfoConverter;
+import javax.persistence.*;
+import java.time.LocalDateTime;
+import java.util.Collection;
 
 @Data
 @Entity

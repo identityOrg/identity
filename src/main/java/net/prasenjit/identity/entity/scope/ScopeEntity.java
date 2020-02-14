@@ -17,7 +17,6 @@
 package net.prasenjit.identity.entity.scope;
 
 import lombok.Data;
-import net.prasenjit.identity.entity.scope.ClaimEntity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
