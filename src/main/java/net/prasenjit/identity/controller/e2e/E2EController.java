@@ -18,14 +18,12 @@ package net.prasenjit.identity.controller.e2e;
 
 import com.nimbusds.jose.jwk.RSAKey;
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.service.e2e.E2EService;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@SwaggerDocumented
 @RequestMapping(value = "api/e2e")
 @RequiredArgsConstructor
 public class E2EController implements E2EApi {

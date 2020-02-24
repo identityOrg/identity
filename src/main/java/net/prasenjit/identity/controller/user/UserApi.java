@@ -16,31 +16,31 @@
 
 package net.prasenjit.identity.controller.user;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.model.api.user.*;
 
 import java.util.List;
 
-@Api(value = "User", tags = "user", description = "API's for user related operations")
+@Tag(name = "user", description = "API's for user related operations")
 public interface UserApi {
 
-    @ApiOperation(value = "Search User", notes = "Search a user with any user attribute")
-    List<User> searchClient(SearchUserRequest request);
+    @Operation(summary = "Search User", description = "Search a user with any user attribute")
+    List<User> searchUser(SearchUserRequest request);
 
-    @ApiOperation(value = "Find User", notes = "Find a client with username")
-    User findClient(String clientId);
+    @Operation(summary="Find User", description = "Find a user with username")
+    User findUser(String clientId);
 
-    @ApiOperation(value = "Update User", notes = "Update a user attributes")
+    @Operation(summary = "Update User", description = "Update a user attributes")
     User update(String username, UpdateUserRequest request);
 
-    @ApiOperation(value = "Create User", notes = "Create a user, user is created is disabled state.")
+    @Operation(summary = "Create User", description = "Create a user, user is created is disabled state.")
     User create(CreateUserRequest request);
 
-    @ApiOperation(value = "Change Status", notes = "Change status of a user.")
+    @Operation(summary = "Change Status", description = "Change status of a user.")
     User status(String username, StatusUserRequest request);
 
-    @ApiOperation(value = "Change password", notes = "Change password of a user.")
+    @Operation(summary = "Change password", description = "Change password of a user.")
     User password(String username, PasswordUserRequest request);
 }

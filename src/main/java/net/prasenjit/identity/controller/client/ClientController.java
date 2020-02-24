@@ -17,7 +17,6 @@
 package net.prasenjit.identity.controller.client;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.model.api.client.*;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@SwaggerDocumented
 @RequiredArgsConstructor
 @RequestMapping(value = "api/client", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ClientController implements ClientApi {

@@ -17,7 +17,6 @@
 package net.prasenjit.identity.controller.scope;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.events.CreateEvent;
@@ -36,7 +35,6 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@SwaggerDocumented
 @RequiredArgsConstructor
 @RequestMapping(value = "api/scope", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ScopeController implements ScopeApi {

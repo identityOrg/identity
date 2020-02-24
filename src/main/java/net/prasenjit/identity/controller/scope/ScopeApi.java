@@ -16,25 +16,25 @@
 
 package net.prasenjit.identity.controller.scope;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.model.api.scope.UpdateScopeRequest;
 
 import java.util.List;
 
-@Api(value = "Scope", tags = "scope", description = "API's for scope related operations")
+@Tag(name = "scope", description = "API's for scope related operations")
 public interface ScopeApi {
 
-    @ApiOperation(value = "Create Scope", notes = "Create a new scope.")
+    @Operation(summary = "Create Scope", description = "Create a new scope.")
     ScopeEntity create(ScopeEntity scope);
 
-    @ApiOperation(value = "Update Scope", notes = "Update a scope.")
+    @Operation(summary = "Update Scope", description = "Update a scope.")
     ScopeEntity update(String scopeId, UpdateScopeRequest scope);
 
-    @ApiOperation(value = "Find Scope", notes = "Find a scope.")
+    @Operation(summary = "Find Scope", description = "Find a scope.")
     ScopeEntity findScope(String scopeId);
 
-    @ApiOperation(value = "Find all", notes = "Find all scopes.")
+    @Operation(summary = "Find all", description = "Find all scopes.")
     List<ScopeEntity> findAll();
 }

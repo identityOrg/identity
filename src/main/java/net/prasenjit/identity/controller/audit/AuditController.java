@@ -17,7 +17,6 @@
 package net.prasenjit.identity.controller.audit;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.AuditEvent;
 import net.prasenjit.identity.model.api.audit.SearchAuditRequest;
 import net.prasenjit.identity.repository.AuditEventRepository;
@@ -30,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@SwaggerDocumented
 @RequiredArgsConstructor
 @RequestMapping(value = "api/audit", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AuditController implements AuditApi {
