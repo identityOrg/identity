@@ -23,4 +23,5 @@
     <include file="db/changelog/release1.xml"/>
     <include file="db/changelog/audit.xml"/>
     <include file="db/changelog/scope-and-data.xml"/>
+    <include file="db/changelog/session.xml"/>
 </databaseChangeLog>

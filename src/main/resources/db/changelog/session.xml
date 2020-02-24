@@ -1,0 +1,60 @@
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+    <changeSet id="24022020-1" author="prasenjit-net">
+        <createTable tableName="T_SESSION">
+            <column name="PRIMARY_ID" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SESSION_ID" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CREATION_TIME" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="LAST_ACCESS_TIME" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="MAX_INACTIVE_INTERVAL" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="EXPIRY_TIME" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="PRINCIPAL_NAME" type="VARCHAR(100)"/>
+        </createTable>
+        <addPrimaryKey tableName="T_SESSION" columnNames="PRIMARY_ID" constraintName="T_SESSION_PK"/>
+    </changeSet>
+    <changeSet id="24022020-2" author="prasenjit-net">
+        <createTable tableName="T_SESSION_ATTRIBUTES">
+            <column name="SESSION_PRIMARY_ID" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ATTRIBUTE_NAME" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ATTRIBUTE_BYTES" type="BLOB">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="T_SESSION_ATTRIBUTES" columnNames="SESSION_PRIMARY_ID, ATTRIBUTE_NAME"/>
+        <addForeignKeyConstraint baseTableName="T_SESSION_ATTRIBUTES" baseColumnNames="SESSION_PRIMARY_ID"
+                                 constraintName="FK_SESSION_PID"
+                                 referencedTableName="T_SESSION"
+                                 referencedColumnNames="PRIMARY_ID"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+    <changeSet id="24022020-3" author="prasenjit-net">
+        <createIndex tableName="T_SESSION" indexName="IDX_T_SESSION_SID_UK" unique="true">
+            <column name="SESSION_ID"/>
+        </createIndex>
+        <createIndex tableName="T_SESSION" indexName="IDX_T_SESSION_EXP">
+            <column name="EXPIRY_TIME"/>
+        </createIndex>
+        <createIndex tableName="T_SESSION" indexName="IDX_T_SESSION_PRIN">
+            <column name="PRINCIPAL_NAME"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="24022020-4" author="prasenjit-net">
+    </changeSet>
+</databaseChangeLog>

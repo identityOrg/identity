@@ -49,6 +49,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -63,6 +64,7 @@ import java.util.Set;
 
 @Slf4j
 @EnableAsync
+@EnableCaching
 @SpringBootApplication
 public class IdentityApplication implements ApplicationRunner {
 

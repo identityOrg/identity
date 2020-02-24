@@ -17,7 +17,6 @@
 package net.prasenjit.identity.controller.user;
 
 import lombok.RequiredArgsConstructor;
-import net.prasenjit.identity.config.doc.SwaggerDocumented;
 import net.prasenjit.identity.entity.user.User;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.model.api.user.*;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@SwaggerDocumented
 @RequiredArgsConstructor
 @RequestMapping(value = "api/user", produces = MediaType.APPLICATION_JSON_VALUE)
 public class UserController implements UserApi {
@@ -43,7 +41,7 @@ public class UserController implements UserApi {
 
     @Override
     @GetMapping
-    public List<User> searchClient(@ModelAttribute SearchUserRequest request) {
+    public List<User> searchUser(@ModelAttribute SearchUserRequest request) {
         User user = new User();
         user.setLocked(request.getLocked());
         user.setActive(request.getActive());
@@ -56,7 +54,7 @@ public class UserController implements UserApi {
 
     @Override
     @GetMapping(value = "{username}")
-    public User findClient(@PathVariable(value = "username") String username) {
+    public User findUser(@PathVariable(value = "username") String username) {
         Optional<User> userOptional = userRepository.findById(username);
         if (userOptional.isPresent()) {
             return userOptional.get();

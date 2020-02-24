@@ -16,13 +16,13 @@
 
 package net.prasenjit.identity.config.http;
 
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
 import lombok.RequiredArgsConstructor;
 import org.apache.http.client.cache.HttpCacheEntry;
 import org.apache.http.client.cache.HttpCacheStorage;
 import org.apache.http.client.cache.HttpCacheUpdateCallback;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -31,8 +31,8 @@ import java.io.*;
 @RequiredArgsConstructor
 public class HazelcastHttpCache implements HttpCacheStorage, InitializingBean {
 
-    private final HazelcastInstance hazelcastInstance;
-    private IMap<String, byte[]> httpCache;
+    private final CacheManager cacheManager;
+    private Cache httpCache;
 
     @Override
     public void putEntry(String s, HttpCacheEntry httpCacheEntry) throws IOException {
@@ -46,7 +46,11 @@ public class HazelcastHttpCache implements HttpCacheStorage, InitializingBean {
     @Override
     public HttpCacheEntry getEntry(String s) throws IOException {
         System.out.println("Retrieved");
-        byte[] buf = httpCache.get(s);
+        Cache.ValueWrapper valueWrapper = httpCache.get(s);
+        byte[] buf = new byte[0];
+        if (valueWrapper != null) {
+            buf = (byte[]) valueWrapper.get();
+        }
         if (buf == null) return null;
         ByteArrayInputStream in = new ByteArrayInputStream(buf);
         ObjectInputStream oin = new ObjectInputStream(in);
@@ -59,7 +63,7 @@ public class HazelcastHttpCache implements HttpCacheStorage, InitializingBean {
 
     @Override
     public void removeEntry(String s) {
-        httpCache.remove(s);
+        httpCache.evict(s);
     }
 
     @Override
@@ -69,6 +73,6 @@ public class HazelcastHttpCache implements HttpCacheStorage, InitializingBean {
 
     @Override
     public void afterPropertiesSet() {
-        httpCache = hazelcastInstance.getMap("http-cache");
+        httpCache = cacheManager.getCache("http-cache");
     }
 }
