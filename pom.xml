@@ -112,7 +112,15 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.session</groupId>
-            <artifactId>spring-session-hazelcast</artifactId>
+            <artifactId>spring-session-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -386,17 +394,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        <profile>
-            <id>oracle</id>
-            <dependencies>
-                <dependency>
-                    <groupId>com.oracle</groupId>
-                    <artifactId>ojdbc7</artifactId>
-                    <version>12</version>
-                    <scope>runtime</scope>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
 

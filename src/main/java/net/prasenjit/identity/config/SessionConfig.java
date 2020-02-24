@@ -16,12 +16,13 @@
 
 package net.prasenjit.identity.config;
 
-import com.hazelcast.config.Config;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
+import lombok.RequiredArgsConstructor;
+import net.prasenjit.identity.properties.IdentityProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.session.hazelcast.config.annotation.web.http.EnableHazelcastHttpSession;
+import org.springframework.session.config.SessionRepositoryCustomizer;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
+import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
 import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 import org.springframework.session.web.http.HeaderHttpSessionIdResolver;
 import org.springframework.session.web.http.HttpSessionIdResolver;
@@ -32,19 +33,21 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 @Configuration
-@EnableHazelcastHttpSession
-public class HazelcastSessionConfig {
+@EnableJdbcHttpSession
+@RequiredArgsConstructor
+public class SessionConfig implements SessionRepositoryCustomizer<JdbcIndexedSessionRepository> {
 
-    @Bean
-    public HazelcastInstance hazelcastInstance() {
-        Config config = new Config();
-        config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        return Hazelcast.newHazelcastInstance(config);
-    }
+    private final IdentityProperties identityProperties;
 
     @Bean
     public HttpSessionIdResolver sessionIdResolver() {
         return new CompoundHttpSessionIdResolver();
+    }
+
+    @Override
+    public void customize(JdbcIndexedSessionRepository sessionRepository) {
+        sessionRepository.setTableName(identityProperties.getSessionProperties().getTableName());
+        sessionRepository.setDefaultMaxInactiveInterval(identityProperties.getSessionProperties().getMaxInactiveInterval());
     }
 
     public static class CompoundHttpSessionIdResolver implements HttpSessionIdResolver {
