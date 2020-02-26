@@ -313,6 +313,9 @@
                     <container>
                         <ports>8080</ports>
                     </container>
+                    <outputPaths>
+                        <tar>${build.directory}/identity.tar</tar>
+                    </outputPaths>
                 </configuration>
             </plugin>
             <plugin>
@@ -321,7 +324,7 @@
                 <configuration>
                     <preparationGoals>verify</preparationGoals>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
-                    <goals>compile jib:build</goals>
+                    <goals>compile jib:build jib:buildTar</goals>
                     <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
                     <remoteTagging>false</remoteTagging>
                 </configuration>
