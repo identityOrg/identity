@@ -98,7 +98,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public User updateUser(UpdateUserRequest user) {
         Optional<User> optionalUser = userRepository.findById(user.getUsername());
-        if (!optionalUser.isPresent()) {
+        if (optionalUser.isEmpty()) {
             throw new ItemNotFoundException("User doesn't exist.");
         }
         User savedUser = optionalUser.get();
@@ -116,7 +116,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void lockUser(String username, boolean lock) {
         Optional<User> optionalUser = userRepository.findById(username);
-        if (!optionalUser.isPresent()) {
+        if (optionalUser.isEmpty()) {
             throw new ItemNotFoundException("User doesn't exist.");
         } else {
             optionalUser.get().setLocked(lock);
@@ -126,7 +126,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public User changeStatus(String username, Status status, String password) {
         Optional<User> optionalUser = userRepository.findById(username);
-        if (!optionalUser.isPresent()) {
+        if (optionalUser.isEmpty()) {
             throw new ItemNotFoundException("User doesn't exist.");
         } else if (optionalUser.get().isEnabled() == (status == Status.ACTIVE)) {
             throw new OperationIgnoredException("Status not changed");
@@ -146,7 +146,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public User changePassword(String username, String oldPassword, String newPassword) {
         Optional<User> optionalUser = userRepository.findById(username);
-        if (!optionalUser.isPresent()) {
+        if (optionalUser.isEmpty()) {
             throw new ItemNotFoundException("User doesn't exist.");
         } else {
             if (passwordEncoder.matches(oldPassword, optionalUser.get().getPassword())) {
@@ -167,7 +167,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void modifyUser(String username, UserInfoModify userInfoModify) {
         Optional<User> optionalUser = userRepository.findById(username);
-        if (!optionalUser.isPresent()) {
+        if (optionalUser.isEmpty()) {
             throw new ItemNotFoundException("User doesn't exist.");
         } else {
             UserInfo userInfo = optionalUser.get().getUserInfo();

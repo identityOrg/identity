@@ -125,7 +125,12 @@ public class IdentityApplication implements ApplicationRunner {
                 .reduce((x, y) -> x + " " + y)
                 .map(Scope::parse)
                 .ifPresent(metadata::setScope);
-        metadata.setRedirectionURI(URI.create("http://localhost:4200/callback"));
+        Set<URI> redirUris = new HashSet<>();
+        redirUris.add(URI.create("http://localhost:4200/dashboard"));
+        redirUris.add(URI.create("http://localhost:4000/dashboard"));
+        redirUris.add(URI.create("http://localhost:4200/"));
+        redirUris.add(URI.create("http://localhost:4000/"));
+        metadata.setRedirectionURIs(redirUris);
         client.setAccessTokenValidity(Duration.ofMinutes(30));
         client.setRefreshTokenValidity(Duration.ofHours(2));
         metadata.setApplicationType(ApplicationType.getDefault());

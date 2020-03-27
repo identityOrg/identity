@@ -16,13 +16,25 @@
 
 package net.prasenjit.identity.config;
 
+import net.prasenjit.identity.entity.client.Client;
+import net.prasenjit.identity.events.AbstractModificationEvent;
+import net.prasenjit.identity.events.CreateEvent;
+import net.prasenjit.identity.events.UpdateEvent;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.context.event.EventListener;
+import org.springframework.http.CacheControl;
+import org.springframework.web.servlet.config.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class MvcConfig implements WebMvcConfigurer {
+
+    private List<CorsRegistration> corsConfigurations = new LinkedList<>();
+
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/login").setViewName("login");
@@ -30,15 +42,32 @@ public class MvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
+        CorsRegistration apiCors = registry.addMapping("/api/**")
                 .allowCredentials(true)
-                .allowedOrigins("*")
                 .allowedMethods("GET", "POST", "PUT", "DELETE")
-                .maxAge(3600);
-        registry.addMapping("/.well-known/**")
-                .allowCredentials(true)
                 .allowedOrigins("*")
-                .allowedMethods("GET")
                 .maxAge(3600);
+        corsConfigurations.add(apiCors);
+        CorsRegistration wellKnownCors = registry.addMapping("/.well-known/**")
+                .allowCredentials(true)
+                .allowedMethods("GET")
+                .allowedOrigins("*")
+                .maxAge(3600);
+        corsConfigurations.add(wellKnownCors);
+    }
+
+    @EventListener(value = AbstractModificationEvent.class)
+    public void clientUpdateCorsHandler(AbstractModificationEvent event) {
+        if (event instanceof CreateEvent || event instanceof UpdateEvent) {
+            if (event.getSource() instanceof Client) {
+                Client client = (Client) event.getSource();
+                client.getMetadata().getRedirectionURIs()
+                        .stream()
+                        .map(UriComponentsBuilder::fromUri)
+                        .map(ucb -> ucb.replacePath("").userInfo(null)
+                                .query(null).fragment(null).build().toString())
+                        .forEach(origin -> corsConfigurations.forEach(config -> config.allowedOrigins(origin)));
+            }
+        }
     }
 }

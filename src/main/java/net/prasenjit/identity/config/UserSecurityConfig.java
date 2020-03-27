@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -41,16 +42,18 @@ public class UserSecurityConfig extends WebSecurityConfigurerAdapter {
     private final JWTRememberMe jwtRememberMe;
 
     @Override
+    public void configure(WebSecurity web) throws Exception {
+        web.ignoring()
+                .antMatchers("/js/**", "/css/**", "/images/**")
+                .antMatchers("/*.png", "/*.ico", "/*.xml", "/*.svg", "/*.webmanifest")
+                .antMatchers("/webjars/**", "/swagger-resources/**");
+    }
+
+    @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/login", "/webjars/**", "/swagger-resources/**")
-                .permitAll()
-                .mvcMatchers("/oauth/authorize", "/js/**", "/css/**", "/images/**")
-                .permitAll()
-                .antMatchers("/*.png", "/*.ico", "/*.xml", "/*.svg", "/*.webmanifest")
-                .permitAll()
-                .mvcMatchers("/change-password")
+                .antMatchers("/login", "/oauth/authorize", "/change-password")
                 .permitAll()
                 .anyRequest()
                 .hasAuthority("ADMIN")

@@ -104,7 +104,7 @@ public class ClientService implements UserDetailsService {
     @Transactional
     public Client updateClient(UpdateClientRequest request) {
         Optional<Client> optionalClient = clientRepository.findById(request.getClientId());
-        if (!optionalClient.isPresent()) {
+        if (optionalClient.isEmpty()) {
             throw new ItemNotFoundException("Client not found.");
         }
         Client savedClient = optionalClient.get();
@@ -125,7 +125,7 @@ public class ClientService implements UserDetailsService {
     @Transactional
     public Client changeStatus(String clientId, Status status) {
         Optional<Client> optionalClient = clientRepository.findById(clientId);
-        if (!optionalClient.isPresent()) {
+        if (optionalClient.isEmpty()) {
             throw new ItemNotFoundException("Client not found.");
         } else if (optionalClient.get().getStatus() == status) {
             throw new OperationIgnoredException("Status not changed");
@@ -142,7 +142,7 @@ public class ClientService implements UserDetailsService {
     @Transactional
     public Client resetSecret(String clientId) {
         Optional<Client> optionalClient = clientRepository.findById(clientId);
-        if (!optionalClient.isPresent()) {
+        if (optionalClient.isEmpty()) {
             throw new ItemNotFoundException("Client not found.");
         } else {
             String encryptedClientId = textEncryptor.encrypt(RandomStringUtils.randomAlphanumeric(20));
