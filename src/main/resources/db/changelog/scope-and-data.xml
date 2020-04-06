@@ -42,6 +42,9 @@
             <column name="TYPE" type="VARCHAR(20)">
                 <constraints nullable="false"/>
             </column>
+            <column name="CUSTOM" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
             <column name="STANDARD_ATTRIBUTE" type="VARCHAR(256)"/>
         </createTable>
     </changeSet>
@@ -189,6 +192,18 @@
             <column name="CLAIM_ID" value="5000020"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="updated_at"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000021"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="CUSTOM" valueBoolean="true"/>
+            <column name="STANDARD_ATTRIBUTE" value="custom1"/>
+        </insert>
+        <insert tableName="T_CLAIM">
+            <column name="CLAIM_ID" value="5000022"/>
+            <column name="TYPE" value="NORMAL"/>
+            <column name="CUSTOM" valueBoolean="true"/>
+            <column name="STANDARD_ATTRIBUTE" value="custom2"/>
         </insert>
     </changeSet>
     <changeSet id="claim scope mapping data" author="prasenjit-net">

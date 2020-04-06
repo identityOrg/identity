@@ -9,6 +9,7 @@ import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.repository.ClaimRepository;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Example;
 import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -71,7 +72,9 @@ public class ClaimController implements ClaimApi {
     @Override
     @GetMapping
     @Transactional(readOnly = true)
-    public List<ClaimEntity> findAll() {
-        return claimRepository.findAll();
+    public List<ClaimEntity> findAll(@ModelAttribute ClaimEntity claim) {
+        claim.setId(null);
+        Example<ClaimEntity> example = Example.of(claim);
+        return claimRepository.findAll(example);
     }
 }

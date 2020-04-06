@@ -18,5 +18,5 @@ public interface ClaimApi {
     ClaimEntity findScope(Integer claimId);
 
     @Operation(summary = "Find all claim", description = "Find all claim.")
-    List<ClaimEntity> findAll();
+    List<ClaimEntity> findAll(ClaimEntity claim);
 }
