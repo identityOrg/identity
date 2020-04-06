@@ -54,10 +54,10 @@ public class UserController implements UserApi {
 
     @Override
     @GetMapping(value = "{username}")
-    public User findUser(@PathVariable(value = "username") String username) {
+    public UserDTO findUser(@PathVariable(value = "username") String username) {
         Optional<User> userOptional = userRepository.findById(username);
         if (userOptional.isPresent()) {
-            return userOptional.get();
+            return new UserDTO(userOptional.get());
         } else {
             throw new ItemNotFoundException("User not found");
         }
@@ -65,30 +65,34 @@ public class UserController implements UserApi {
 
     @Override
     @PutMapping(value = "{username}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User update(@PathVariable(value = "username") String username,
-                       @RequestBody @Valid UpdateUserRequest request) {
+    public UserDTO update(@PathVariable(value = "username") String username,
+                          @RequestBody @Valid UpdateUserRequest request) {
         request.setUsername(username);
-        return userService.updateUser(request);
+        User user = userService.updateUser(request);
+        return new UserDTO(user);
     }
 
     @Override
     @ResponseStatus(code = HttpStatus.CREATED)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User create(@RequestBody @Valid CreateUserRequest request) {
-        return userService.createUser(request);
+    public UserDTO create(@RequestBody @Valid CreateUserRequest request) {
+        User user = userService.createUser(request);
+        return new UserDTO(user);
     }
 
     @Override
     @PostMapping(value = "{username}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User status(@PathVariable(value = "username") String username,
-                       @RequestBody @Valid StatusUserRequest request) {
-        return userService.changeStatus(username, request.getStatus(), request.getPassword());
+    public UserDTO status(@PathVariable(value = "username") String username,
+                          @RequestBody @Valid StatusUserRequest request) {
+        User user = userService.changeStatus(username, request.getStatus(), request.getPassword());
+        return new UserDTO(user);
     }
 
     @Override
     @PostMapping(value = "{username}/password", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User password(@PathVariable(value = "username") String username,
-                         @RequestBody @Valid PasswordUserRequest request) {
-        return userService.changePassword(username, request.getOldPassword(), request.getNewPassword());
+    public UserDTO password(@PathVariable(value = "username") String username,
+                            @RequestBody @Valid PasswordUserRequest request) {
+        User user = userService.changePassword(username, request.getOldPassword(), request.getNewPassword());
+        return new UserDTO(user);
     }
 }

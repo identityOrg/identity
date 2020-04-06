@@ -52,10 +52,10 @@ public class ClientController implements ClientApi {
 
     @Override
     @GetMapping(value = "{clientId}")
-    public Client findClient(@PathVariable(value = "clientId") String clientId) {
+    public ClientDTO findClient(@PathVariable(value = "clientId") String clientId) {
         Optional<Client> clientOptional = clientRepository.findById(clientId);
         if (clientOptional.isPresent()) {
-            return clientOptional.get();
+            return new ClientDTO(clientOptional.get());
         } else {
             throw new ItemNotFoundException("Client not found");
         }
@@ -63,30 +63,30 @@ public class ClientController implements ClientApi {
 
     @Override
     @PutMapping(value = "{clientId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Client update(@PathVariable(value = "clientId") String clientId,
+    public ClientDTO update(@PathVariable(value = "clientId") String clientId,
                          @RequestBody @Valid UpdateClientRequest request) {
         request.setClientId(clientId);
-        return clientService.updateClient(request);
+        return new ClientDTO(clientService.updateClient(request));
     }
 
     @Override
     @ResponseStatus(code = HttpStatus.CREATED)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Client create(@RequestBody @Valid CreateClientRequest request) {
-        return clientService.createClient(request);
+    public ClientDTO create(@RequestBody @Valid CreateClientRequest request) {
+        return new ClientDTO(clientService.createClient(request));
     }
 
     @Override
     @PostMapping(value = "{clientId}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Client status(@PathVariable(value = "clientId") String clientId,
+    public ClientDTO status(@PathVariable(value = "clientId") String clientId,
                          @RequestBody @Valid StatusClientRequest request) {
-        return clientService.changeStatus(clientId, request.getStatus());
+        return new ClientDTO(clientService.changeStatus(clientId, request.getStatus()));
     }
 
     @Override
     @PostMapping(value = "{clientId}/secret")
-    public Client secret(@PathVariable(value = "clientId") String clientId) {
-        return clientService.resetSecret(clientId);
+    public ClientDTO secret(@PathVariable(value = "clientId") String clientId) {
+        return new ClientDTO(clientService.resetSecret(clientId));
     }
 
     @Override

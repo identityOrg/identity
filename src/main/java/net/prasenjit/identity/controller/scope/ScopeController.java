@@ -58,10 +58,11 @@ public class ScopeController implements ScopeApi {
     }
 
     @Override
+    @Transactional
     @PutMapping(value = "{scopeId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ScopeEntity update(@PathVariable("scopeId") String scopeId, @RequestBody @Valid UpdateScopeRequest request) {
         Optional<ScopeEntity> scopeOptional = scopeRepository.findById(scopeId);
-        if (!scopeOptional.isPresent()) {
+        if (scopeOptional.isEmpty()) {
             throw new ItemNotFoundException("Scope not exist");
         }
         ScopeEntity scope = scopeOptional.get();
@@ -74,10 +75,11 @@ public class ScopeController implements ScopeApi {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @GetMapping(value = "{scopeId}")
     public ScopeEntity findScope(@PathVariable("scopeId") String scopeId) {
         Optional<ScopeEntity> scopeOptional = scopeRepository.findById(scopeId);
-        if (!scopeOptional.isPresent()) {
+        if (scopeOptional.isEmpty()) {
             throw new ItemNotFoundException("Scope not found");
         }
         return scopeOptional.get();

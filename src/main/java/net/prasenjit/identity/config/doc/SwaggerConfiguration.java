@@ -50,6 +50,7 @@ public class SwaggerConfiguration {
                 .packagesToScan("net.prasenjit.identity.controller.audit",
                         "net.prasenjit.identity.controller.client",
                         "net.prasenjit.identity.controller.scope",
+                        "net.prasenjit.identity.controller.claim",
                         "net.prasenjit.identity.controller.user",
                         "net.prasenjit.identity.controller.e2e")
                 .setGroup("api")

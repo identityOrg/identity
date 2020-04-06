@@ -16,6 +16,7 @@
 
 package net.prasenjit.identity.entity.user;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import lombok.Data;
@@ -63,9 +64,11 @@ public class User implements UserDetails {
 	@Lob
 	@Column(name = "PROFILE", nullable = false)
 	@Convert(converter = UserInfoConverter.class)
+	@JsonIgnore
 	private UserInfo userInfo;
 
 	@Override
+	@JsonIgnore
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return admin ? AuthorityUtils.createAuthorityList("USER", "ADMIN") : AuthorityUtils.createAuthorityList("USER");
 	}

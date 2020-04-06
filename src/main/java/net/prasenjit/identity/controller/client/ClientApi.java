@@ -30,19 +30,19 @@ public interface ClientApi {
     List<Client> searchClient(SearchClientRequest request);
 
     @Operation(summary = "Find Client", description = "Find a client with clientId")
-    Client findClient(String clientId);
+    ClientDTO findClient(String clientId);
 
     @Operation(summary = "Update Client", description = "Update a client attributes")
-    Client update(String clientId, UpdateClientRequest request);
+    ClientDTO update(String clientId, UpdateClientRequest request);
 
     @Operation(summary = "Create Client", description = "Create a client, client is created is disabled state.")
-    Client create(CreateClientRequest request);
+    ClientDTO create(CreateClientRequest request);
 
     @Operation(summary = "Change Status", description = "Change client status.")
-    Client status(String clientId, StatusClientRequest request);
+    ClientDTO status(String clientId, StatusClientRequest request);
 
     @Operation(summary = "Reset Secret", description = "Reset client secret.")
-    Client secret(String clientId);
+    ClientDTO secret(String clientId);
 
     @Operation(summary = "Get Secret", description = "Get client secret.")
     ClientSecretResponse getSecret(String clientId);

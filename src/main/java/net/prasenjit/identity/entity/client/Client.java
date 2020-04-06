@@ -61,6 +61,7 @@ public class Client {
     private Duration refreshTokenValidity;
 
     @Lob
+    @JsonIgnore
     @Column(name = "METADATA", nullable = false)
     @Convert(converter = MetadataConverter.class)
     private OIDCClientMetadata metadata;
@@ -69,10 +70,12 @@ public class Client {
         return getMetadata().getGrantTypes().contains(grant);
     }
 
+    @JsonIgnore
     public Scope getApprovedScopes() {
         return getMetadata().getScope();
     }
 
+    @JsonIgnore
     public boolean isAccountNonExpired() {
         LocalDateTime now = LocalDateTime.now();
         if (now.isBefore(creationDate)) return false;

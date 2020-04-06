@@ -128,6 +128,7 @@ public class IdentityApplication implements ApplicationRunner {
         Set<URI> redirUris = new HashSet<>();
         redirUris.add(URI.create("http://localhost:4200/dashboard"));
         redirUris.add(URI.create("http://localhost:4000/dashboard"));
+        redirUris.add(URI.create("http://admin.prasenjit.net/dashboard"));
         redirUris.add(URI.create("http://localhost:4200/"));
         redirUris.add(URI.create("http://localhost:4000/"));
         metadata.setRedirectionURIs(redirUris);
