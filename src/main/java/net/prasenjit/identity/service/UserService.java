@@ -102,10 +102,9 @@ public class UserService implements UserDetailsService {
             throw new ItemNotFoundException("User doesn't exist.");
         }
         User savedUser = optionalUser.get();
-        //TODO savedUser.setFirstName(user.getFirstName());
-        //TODO savedUser.setLastName(user.getLastName());
         savedUser.setExpiryDate(user.getExpiryDate());
         savedUser.setAdmin(user.getAdmin());
+        savedUser.getUserInfo().putAll(user.getUserClaims());
 
         UpdateEvent csEvent = new UpdateEvent(this, ResourceType.USER, user.getUsername());
         eventPublisher.publishEvent(csEvent);
