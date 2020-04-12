@@ -108,7 +108,7 @@
             <column name="CLAIM_ID" value="5000002"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="name"/>
-            <column name="DESCRIPTION" value="Displayable name" />
+            <column name="DESCRIPTION" value="Displayable Name" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000003"/>
