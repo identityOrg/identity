@@ -45,7 +45,12 @@
             <column name="CUSTOM" type="BOOLEAN" defaultValueBoolean="false">
                 <constraints nullable="false"/>
             </column>
-            <column name="STANDARD_ATTRIBUTE" type="VARCHAR(256)"/>
+            <column name="STANDARD_ATTRIBUTE" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DESCRIPTION" type="VARCHAR(256)">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
     </changeSet>
     <changeSet author="prasenjit-net" id="03032018-24">
@@ -97,113 +102,135 @@
             <column name="CLAIM_ID" value="5000001"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="sub"/>
+            <column name="DESCRIPTION" value="Subject or username" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000002"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="name"/>
+            <column name="DESCRIPTION" value="Displayable name" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000003"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="given_name"/>
+            <column name="DESCRIPTION" value="Given Name" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000004"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="family_name"/>
+            <column name="DESCRIPTION" value="Family Name" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000005"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="middle_name"/>
+            <column name="DESCRIPTION" value="Middle Name" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000006"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="nickname"/>
+            <column name="DESCRIPTION" value="Nickname" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000007"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="preferred_username"/>
+            <column name="DESCRIPTION" value="Preferred Username" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000008"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="profile"/>
+            <column name="DESCRIPTION" value="Profile URL" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000009"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="picture"/>
+            <column name="DESCRIPTION" value="Profile Picture URL" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000010"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="website"/>
+            <column name="DESCRIPTION" value="Website URL" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000011"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="email"/>
+            <column name="DESCRIPTION" value="Email Address" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000012"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="email_verified"/>
+            <column name="DESCRIPTION" value="Email Verified" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000013"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="gender"/>
+            <column name="DESCRIPTION" value="Gender" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000014"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="birthdate"/>
+            <column name="DESCRIPTION" value="Birth Date" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000015"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="zoneinfo"/>
+            <column name="DESCRIPTION" value="Zone Info" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000016"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="locale"/>
+            <column name="DESCRIPTION" value="Locale" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000017"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="phone_number"/>
+            <column name="DESCRIPTION" value="Phone Number" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000018"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="phone_number_verified"/>
+            <column name="DESCRIPTION" value="Phone Number Verified" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000019"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="address"/>
+            <column name="DESCRIPTION" value="Address" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000020"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="STANDARD_ATTRIBUTE" value="updated_at"/>
+            <column name="DESCRIPTION" value="Updated At" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000021"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="CUSTOM" valueBoolean="true"/>
             <column name="STANDARD_ATTRIBUTE" value="custom1"/>
+            <column name="DESCRIPTION" value="Custom Attribute 1" />
         </insert>
         <insert tableName="T_CLAIM">
             <column name="CLAIM_ID" value="5000022"/>
             <column name="TYPE" value="NORMAL"/>
             <column name="CUSTOM" valueBoolean="true"/>
             <column name="STANDARD_ATTRIBUTE" value="custom2"/>
+            <column name="DESCRIPTION" value="Custom Attribute 2" />
         </insert>
     </changeSet>
     <changeSet id="claim scope mapping data" author="prasenjit-net">

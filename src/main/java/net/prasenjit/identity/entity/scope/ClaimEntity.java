@@ -36,6 +36,9 @@ public class ClaimEntity {
     @Column(name = "CUSTOM", nullable = false)
     private Boolean custom;
 
-    @Column(name = "STANDARD_ATTRIBUTE", length = 256)
+    @Column(name = "STANDARD_ATTRIBUTE", length = 100)
     private String standardAttribute;
+
+    @Column(name = "DESCRIPTION", length = 256)
+    private String description;
 }
