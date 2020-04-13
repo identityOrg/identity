@@ -28,7 +28,7 @@ public class ClaimController implements ClaimApi {
     @Override
     @Transactional
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ClaimEntity create(ClaimEntity claim) {
+    public ClaimEntity create(@RequestBody ClaimEntity claim) {
         Optional<ClaimEntity> claimOptional = claimRepository.findById(claim.getId());
         if (claimOptional.isPresent()) {
             throw new ConflictException("Claim already present");
@@ -43,14 +43,15 @@ public class ClaimController implements ClaimApi {
     @Override
     @Transactional
     @PutMapping(value = "{claimId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ClaimEntity update(@PathVariable("claimId") Integer claimId, ClaimEntity request) {
+    public ClaimEntity update(@PathVariable("claimId") Integer claimId, @RequestBody ClaimEntity request) {
         Optional<ClaimEntity> claimOptional = claimRepository.findById(claimId);
-        if (claimOptional.isEmpty()) {
-            throw new ItemNotFoundException("Claim not exist");
+        if (claimOptional.isEmpty() || !claimOptional.get().getCustom()) {
+            throw new ItemNotFoundException("Claim not exist or not editable");
         }
         ClaimEntity claim = claimOptional.get();
-        claim.setClaimType(request.getClaimType());
+        //claim.setClaimType(request.getClaimType());
         claim.setStandardAttribute(request.getStandardAttribute());
+        claim.setDescription(request.getDescription());
 
         UpdateEvent csEvent = new UpdateEvent(this, ResourceType.CLAIM, String.valueOf(claimId));
         eventPublisher.publishEvent(csEvent);
@@ -61,7 +62,7 @@ public class ClaimController implements ClaimApi {
     @Override
     @Transactional(readOnly = true)
     @GetMapping(value = "{claimId}")
-    public ClaimEntity findScope(@PathVariable("claimId") Integer claimId) {
+    public ClaimEntity findOne(@PathVariable("claimId") Integer claimId) {
         Optional<ClaimEntity> claimOptional = claimRepository.findById(claimId);
         if (claimOptional.isEmpty()) {
             throw new ItemNotFoundException("Scope not found");

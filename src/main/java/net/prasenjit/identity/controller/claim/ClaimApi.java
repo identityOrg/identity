@@ -15,7 +15,7 @@ public interface ClaimApi {
     ClaimEntity update(Integer claimId, ClaimEntity scope);
 
     @Operation(summary = "Find claim", description = "Find a claim.")
-    ClaimEntity findScope(Integer claimId);
+    ClaimEntity findOne(Integer claimId);
 
     @Operation(summary = "Find all claim", description = "Find all claim.")
     List<ClaimEntity> findAll(ClaimEntity claim);
