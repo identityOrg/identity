@@ -16,6 +16,7 @@
 
 package net.prasenjit.identity.entity.scope;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -37,6 +38,7 @@ public class ScopeEntity implements Serializable {
     @Column(name = "SCOPE_NAME", length = 50, nullable = false, unique = true)
     private String scopeName;
 
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "T_SCOPE_CLAIM",
             joinColumns = @JoinColumn(name = "SCOPE_ID", referencedColumnName = "SCOPE_ID"),
