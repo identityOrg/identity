@@ -3,6 +3,7 @@ package net.prasenjit.identity.controller.claim;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.scope.ClaimEntity;
+import net.prasenjit.identity.entity.scope.ClaimType;
 import net.prasenjit.identity.events.CreateEvent;
 import net.prasenjit.identity.events.UpdateEvent;
 import net.prasenjit.identity.exception.ConflictException;
@@ -29,10 +30,12 @@ public class ClaimController implements ClaimApi {
     @Transactional
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ClaimEntity create(@RequestBody ClaimEntity claim) {
-        Optional<ClaimEntity> claimOptional = claimRepository.findById(claim.getId());
-        if (claimOptional.isPresent()) {
-            throw new ConflictException("Claim already present");
+        if (claimRepository.findByStandardAttribute(claim.getStandardAttribute()) != null) {
+            throw new ConflictException("Claim already present with same standard attribute");
         }
+
+        claim.setClaimType(ClaimType.NORMAL);
+        claim.setCustom(true);
 
         CreateEvent csEvent = new CreateEvent(this, ResourceType.CLAIM, String.valueOf(claim.getId()));
         eventPublisher.publishEvent(csEvent);

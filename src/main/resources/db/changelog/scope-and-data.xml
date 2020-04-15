@@ -57,6 +57,7 @@
         <addPrimaryKey columnNames="SCOPE_ID" constraintName="T_SCOPEPK" tableName="T_SCOPE"/>
         <addUniqueConstraint columnNames="SCOPE_NAME" constraintName="UC_T_SCOPESCOPE_NAME_COL" tableName="T_SCOPE"/>
         <addPrimaryKey columnNames="CLAIM_ID" constraintName="T_CLAIMPK" tableName="T_CLAIM"/>
+        <addUniqueConstraint tableName="T_CLAIM" columnNames="STANDARD_ATTRIBUTE" constraintName="UK_T_CLAIM"/>
         <addForeignKeyConstraint baseTableName="T_SCOPE_CLAIM" baseColumnNames="CLAIM_ID"
                                  constraintName="FK_CLAIM_SCOPE_1"
                                  referencedTableName="T_CLAIM"
