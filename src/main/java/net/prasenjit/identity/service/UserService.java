@@ -49,6 +49,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -84,10 +85,12 @@ public class UserService implements UserDetailsService {
         user.setCreationDate(now);
         user.setAdmin(request.isAdmin());
         user.setPassword(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled user
-        //TODO user.setFirstName(request.getFirstName());
-        //TODO user.setLastName(request.getLastName());
         user.setUsername(request.getUsername());
         user.setExpiryDate(request.getExpiryDate());
+        request.getUserClaims().put("sub", request.getUsername());
+        UserInfo userInfo = new UserInfo(request.getUserClaims());
+        userInfo.setUpdatedTime(new Date());
+        user.setUserInfo(userInfo);
 
         CreateEvent csEvent = new CreateEvent(this, ResourceType.USER, user.getUsername());
         eventPublisher.publishEvent(csEvent);
@@ -104,7 +107,9 @@ public class UserService implements UserDetailsService {
         User savedUser = optionalUser.get();
         savedUser.setExpiryDate(user.getExpiryDate());
         savedUser.setAdmin(user.getAdmin());
+        user.getUserClaims().put("sub", user.getUsername());
         savedUser.getUserInfo().putAll(user.getUserClaims());
+        savedUser.getUserInfo().setUpdatedTime(new Date());
 
         UpdateEvent csEvent = new UpdateEvent(this, ResourceType.USER, user.getUsername());
         eventPublisher.publishEvent(csEvent);

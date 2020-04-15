@@ -17,6 +17,7 @@
 package net.prasenjit.identity.model.api.user;
 
 import lombok.Data;
+import net.minidev.json.JSONObject;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -29,9 +30,6 @@ public class CreateUserRequest {
     @NotNull
     private String username;
     private boolean admin;
-    @NotEmpty
-    private String firstName;
-    @NotEmpty
-    private String lastName;
     private LocalDateTime expiryDate;
+    private JSONObject userClaims;
 }
