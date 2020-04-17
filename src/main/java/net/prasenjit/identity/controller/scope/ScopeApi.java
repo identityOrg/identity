@@ -33,6 +33,12 @@ public interface ScopeApi {
     @Operation(summary = "Update Scope", description = "Update a scope.")
     ScopeDTO update(String scopeId, UpdateScopeRequest scope);
 
+    @Operation(summary = "Add claim", description = "Add claim to scope.")
+    ScopeDTO addClaim(String scopeId, Integer claimId);
+
+    @Operation(summary = "Remove claim", description = "Remove claim from scope.")
+    ScopeDTO removeClaim(String scopeId, Integer claimId);
+
     @Operation(summary = "Find Scope", description = "Find a scope.")
     ScopeDTO findScope(String scopeId);
 

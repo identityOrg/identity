@@ -18,6 +18,7 @@ package net.prasenjit.identity.controller.scope;
 
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.identity.entity.ResourceType;
+import net.prasenjit.identity.entity.scope.ClaimEntity;
 import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.events.CreateEvent;
 import net.prasenjit.identity.events.UpdateEvent;
@@ -25,6 +26,7 @@ import net.prasenjit.identity.exception.ConflictException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.model.api.scope.ScopeDTO;
 import net.prasenjit.identity.model.api.scope.UpdateScopeRequest;
+import net.prasenjit.identity.repository.ClaimRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
@@ -41,6 +43,7 @@ import java.util.Optional;
 public class ScopeController implements ScopeApi {
 
     private final ScopeRepository scopeRepository;
+    private final ClaimRepository claimRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -73,6 +76,53 @@ public class ScopeController implements ScopeApi {
         eventPublisher.publishEvent(csEvent);
 
         return new ScopeDTO(scopeRepository.saveAndFlush(scope));
+    }
+
+    @Override
+    @Transactional
+    @PatchMapping(value = "{scopeId}/add-claim/{claimId}")
+    public ScopeDTO addClaim(@PathVariable("scopeId") String scopeId, @PathVariable("claimId") Integer claimId) {
+        Optional<ScopeEntity> scopeOptional = scopeRepository.findById(scopeId);
+        if (scopeOptional.isEmpty()) {
+            throw new ItemNotFoundException("Scope not exist");
+        }
+        ScopeEntity scope = scopeOptional.get();
+        Optional<ClaimEntity> newClaim = claimRepository.findById(claimId);
+        if (newClaim.isEmpty()) {
+            throw new ItemNotFoundException("Claim not exist");
+        }
+        ClaimEntity claim = new ClaimEntity();
+        claim.setId(claimId);
+        scope.getClaims().add(claim);
+
+        UpdateEvent csEvent = new UpdateEvent(this, ResourceType.SCOPE, scopeId);
+        eventPublisher.publishEvent(csEvent);
+
+        return new ScopeDTO(scopeRepository.saveAndFlush(scope));
+    }
+
+    @Override
+    @Transactional
+    @PatchMapping(value = "{scopeId}/remove-claim/{claimId}")
+    public ScopeDTO removeClaim(@PathVariable("scopeId") String scopeId, @PathVariable("claimId") Integer claimId) {
+        Optional<ScopeEntity> scopeOptional = scopeRepository.findById(scopeId);
+        if (scopeOptional.isEmpty()) {
+            throw new ItemNotFoundException("Scope not exist");
+        }
+        ScopeEntity scope = scopeOptional.get();
+        Optional<ClaimEntity> found = scope.getClaims().stream()
+                .filter(claimEntity -> claimEntity.getId().equals(claimId))
+                .findFirst();
+        if (found.isPresent()) {
+            scope.getClaims().remove(found.get());
+
+            UpdateEvent csEvent = new UpdateEvent(this, ResourceType.SCOPE, scopeId);
+            eventPublisher.publishEvent(csEvent);
+            return new ScopeDTO(scopeRepository.saveAndFlush(scope));
+        } else {
+            return new ScopeDTO(scope);
+        }
+
     }
 
     @Override
