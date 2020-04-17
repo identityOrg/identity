@@ -38,6 +38,9 @@ public class ScopeEntity implements Serializable {
     @Column(name = "SCOPE_NAME", length = 50, nullable = false, unique = true)
     private String scopeName;
 
+    @Column(name = "CUSTOM", nullable = false)
+    private Boolean custom;
+
     @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "T_SCOPE_CLAIM",

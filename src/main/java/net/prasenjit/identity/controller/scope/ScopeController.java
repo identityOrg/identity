@@ -23,12 +23,14 @@ import net.prasenjit.identity.entity.scope.ScopeEntity;
 import net.prasenjit.identity.events.CreateEvent;
 import net.prasenjit.identity.events.UpdateEvent;
 import net.prasenjit.identity.exception.ConflictException;
+import net.prasenjit.identity.exception.InvalidRequestException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.model.api.scope.ScopeDTO;
 import net.prasenjit.identity.model.api.scope.UpdateScopeRequest;
 import net.prasenjit.identity.repository.ClaimRepository;
 import net.prasenjit.identity.repository.ScopeRepository;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -54,6 +56,7 @@ public class ScopeController implements ScopeApi {
         if (scopeOptional.isPresent()) {
             throw new ConflictException("Scope already present");
         }
+        scope.setCustom(true);
 
         CreateEvent csEvent = new CreateEvent(this, ResourceType.SCOPE, scope.getScopeId());
         eventPublisher.publishEvent(csEvent);
@@ -140,5 +143,22 @@ public class ScopeController implements ScopeApi {
     @GetMapping
     public List<ScopeEntity> findAll() {
         return scopeRepository.findAll();
+    }
+
+    @Override
+    @Transactional
+    @DeleteMapping(value = "{scopeId}")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void deleteScope(@PathVariable("scopeId") String scopeId) {
+        Optional<ScopeEntity> scopeOptional = scopeRepository.findById(scopeId);
+        if (scopeOptional.isEmpty()) {
+            throw new ItemNotFoundException("Scope not found");
+        }
+        ScopeEntity scope = scopeOptional.get();
+        if (!scope.getCustom()) {
+            throw new InvalidRequestException("Only custom scopes are allowed to delete");
+        }
+
+        scopeRepository.delete(scope);
     }
 }

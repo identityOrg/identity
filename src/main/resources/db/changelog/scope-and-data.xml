@@ -23,6 +23,9 @@
             <column name="SCOPE_ID" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
+            <column name="CUSTOM" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
             <column name="SCOPE_NAME" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
@@ -91,10 +94,12 @@
         </insert>
         <insert tableName="T_SCOPE">
             <column name="scope_id" value="scope1"/>
+            <column name="custom" valueBoolean="true"/>
             <column name="scope_name" value="Scope 1"/>
         </insert>
         <insert tableName="T_SCOPE">
             <column name="scope_id" value="scope2"/>
+            <column name="custom" valueBoolean="true"/>
             <column name="scope_name" value="Scope 2"/>
         </insert>
     </changeSet>

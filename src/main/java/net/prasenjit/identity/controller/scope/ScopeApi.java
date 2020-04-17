@@ -44,4 +44,7 @@ public interface ScopeApi {
 
     @Operation(summary = "Find all", description = "Find all scopes.")
     List<ScopeEntity> findAll();
+
+    @Operation(summary = "Delete scope", description = "Delete custom scope.")
+    void deleteScope(String scopeId);
 }

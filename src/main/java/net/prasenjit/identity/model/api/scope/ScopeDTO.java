@@ -16,6 +16,7 @@ public class ScopeDTO extends ScopeEntity {
     public ScopeDTO(ScopeEntity scopeEntity) {
         setScopeName(scopeEntity.getScopeName());
         setScopeId(scopeEntity.getScopeId());
+        setCustom(scopeEntity.getCustom());
         attachedClaims = scopeEntity.getClaims();
     }
 
