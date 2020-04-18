@@ -1,10 +1,7 @@
 package net.prasenjit.identity.model.api.client;
 
-import com.nimbusds.jose.util.JSONObjectUtils;
 import net.minidev.json.JSONObject;
 import net.prasenjit.identity.entity.client.Client;
-
-import java.text.ParseException;
 
 public class ClientDTO extends Client {
     public ClientDTO(Client client) {
@@ -18,7 +15,7 @@ public class ClientDTO extends Client {
         setExpiryDate(client.getExpiryDate());
     }
 
-    public JSONObject getClientMetadata() throws ParseException {
-        return JSONObjectUtils.parse(getClientMetadata().toJSONString());
+    public JSONObject getClientMetadata() {
+        return getMetadata().toJSONObject();
     }
 }
