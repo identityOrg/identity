@@ -15,10 +15,10 @@
   ~    limitations under the License.
   -->
 
-<html xmlns:th="https://www.thymeleaf.org" lang="en">
+<html lang="en" xmlns:th="https://www.thymeleaf.org">
 <head>
 
-    <link rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" id="bootstrap-css">
+    <link id="bootstrap-css" rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/css/style-login.css}">
     <!------ Include the above in your HEAD tag ---------->
     <title>Identity - Consent</title>
@@ -32,22 +32,24 @@
                 <h2>Authorize Access</h2>
                 <p><b th:text="${model.client.clientName}"></b> is trying to access your resource</p>
 
-                <form id="Login" th:action="${#mvc.url('OAC#submitConsent').build()}" th:object="${model}"
-                      method="post" name="auth">
+                <form id="Login" method="post" name="auth"
+                      th:action="${#mvc.url('OAC#submitConsent').build()}" th:object="${model}">
                     <div class="accordion" id="accordionExample">
                         <div class="card text-left" th:each="s : *{filteredScopes}">
                             <div class="card-header" id="headingOne">
                                 <h5 class="mb-0">
-                                    <input th:id="${#ids.seq('scope')}" type="checkbox" th:field="*{filteredScopes[__${s.key}__]}">
-                                    <button class="btn btn-link" type="button" data-toggle="collapse"
-                                            th:attr='data-target=${"#" + #ids.next("scope-tab")}' aria-controls="collapseOne" th:text="${s.key}">
+                                    <input th:field="*{filteredScopes[__${s.key}__]}" th:id="${#ids.seq('scope')}"
+                                           type="checkbox">
+                                    <button aria-controls="collapseOne" class="btn btn-link" data-toggle="collapse"
+                                            th:attr='data-target=${"#" + #ids.next("scope-tab")}'
+                                            th:text="${s.key}" type="button">
                                         openid
                                     </button>
                                 </h5>
                             </div>
 
-                            <div th:id="${#ids.seq('scope-tab')}" class="collapse" aria-labelledby="headingOne"
-                                 data-parent="#accordionExample">
+                            <div aria-labelledby="headingOne" class="collapse" data-parent="#accordionExample"
+                                 th:id="${#ids.seq('scope-tab')}">
                                 <div class="card-body">
                                     Scope description
                                 </div>
@@ -55,14 +57,14 @@
                         </div>
                     </div>
                     <div class="btn-group full-width mt-3" role="group">
-                        <button type="submit" name="valid" class="btn btn-success btn-50" value="true">Approve</button>
-                        <button type="submit" name="valid" class="btn btn-danger btn-50" value="false">Disapprove
+                        <button class="btn btn-success btn-50" name="valid" type="submit" value="true">Approve</button>
+                        <button class="btn btn-danger btn-50" name="valid" type="submit" value="false">Disapprove
                         </button>
                     </div>
-                    <input type="hidden" th:field="*{requestUri}">
-                    <input type="hidden" th:field="*{openid}">
-                    <input type="hidden" th:field="*{redirectUriUsed}">
-                    <input type="hidden" name="consentSubmitted" value="true">
+                    <input th:field="*{requestUri}" type="hidden">
+                    <input th:field="*{openid}" type="hidden">
+                    <input th:field="*{redirectUriUsed}" type="hidden">
+                    <input name="consentSubmitted" type="hidden" value="true">
                 </form>
             </div>
         </div>

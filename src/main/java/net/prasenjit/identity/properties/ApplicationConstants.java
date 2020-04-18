@@ -19,5 +19,5 @@ package net.prasenjit.identity.properties;
 public interface ApplicationConstants {
     String PREVIOUS_URL = "PREVIOUS_URL";
     String LOGIN_TIME = "LOGIN_TIME";
-    String PASSWORD_CHANGE_FORCED_FOR ="PASSWORD-CHANGE-FORCED-FOR";
+    String PASSWORD_CHANGE_FORCED_FOR = "PASSWORD-CHANGE-FORCED-FOR";
 }

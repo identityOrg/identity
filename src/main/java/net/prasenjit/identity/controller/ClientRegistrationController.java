@@ -39,60 +39,60 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class ClientRegistrationController {
 
-	private final DynamicRegistrationService registrationService;
+    private final DynamicRegistrationService registrationService;
 
-	@PostMapping
-	public void registerClient(HttpServletRequest servletRequest, HttpServletResponse servletResponse)
-			throws IOException {
-		HTTPRequest httpRequest = ServletUtils.createHTTPRequest(servletRequest);
-		try {
-			OIDCClientRegistrationRequest request = OIDCClientRegistrationRequest.parse(httpRequest);
-			ClientRegistrationResponse response = registrationService.registerClient(request);
-			ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
-		} catch (ParseException e) {
-			ClientRegistrationErrorResponse response = new ClientRegistrationErrorResponse(e.getErrorObject());
-			ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
-		}
-	}
+    @PostMapping
+    public void registerClient(HttpServletRequest servletRequest, HttpServletResponse servletResponse)
+            throws IOException {
+        HTTPRequest httpRequest = ServletUtils.createHTTPRequest(servletRequest);
+        try {
+            OIDCClientRegistrationRequest request = OIDCClientRegistrationRequest.parse(httpRequest);
+            ClientRegistrationResponse response = registrationService.registerClient(request);
+            ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
+        } catch (ParseException e) {
+            ClientRegistrationErrorResponse response = new ClientRegistrationErrorResponse(e.getErrorObject());
+            ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
+        }
+    }
 
-	@PutMapping("{clientId}")
-	public void updateClient(@PathVariable("clientId") String clientID, HttpServletRequest servletRequest,
-			HttpServletResponse servletResponse) throws IOException {
-		HTTPRequest httpRequest = ServletUtils.createHTTPRequest(servletRequest);
-		try {
-			OIDCClientUpdateRequest request = OIDCClientUpdateRequest.parse(httpRequest);
-			ClientRegistrationResponse response = registrationService.updateClient(clientID, request);
-			ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
-		} catch (ParseException e) {
-			ClientRegistrationErrorResponse response = new ClientRegistrationErrorResponse(e.getErrorObject());
-			ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
-		}
-	}
+    @PutMapping("{clientId}")
+    public void updateClient(@PathVariable("clientId") String clientID, HttpServletRequest servletRequest,
+                             HttpServletResponse servletResponse) throws IOException {
+        HTTPRequest httpRequest = ServletUtils.createHTTPRequest(servletRequest);
+        try {
+            OIDCClientUpdateRequest request = OIDCClientUpdateRequest.parse(httpRequest);
+            ClientRegistrationResponse response = registrationService.updateClient(clientID, request);
+            ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
+        } catch (ParseException e) {
+            ClientRegistrationErrorResponse response = new ClientRegistrationErrorResponse(e.getErrorObject());
+            ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
+        }
+    }
 
-	@GetMapping("{clientId}")
-	public void readClient(@PathVariable("clientId") String clientID, HttpServletRequest servletRequest,
-			HttpServletResponse servletResponse) throws IOException {
-		HTTPRequest httpRequest = ServletUtils.createHTTPRequest(servletRequest);
-		try {
-			ClientReadRequest request = ClientReadRequest.parse(httpRequest);
-			ClientRegistrationResponse response = registrationService.readClient(clientID, request);
-			ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
-		} catch (ParseException e) {
-			ClientRegistrationErrorResponse response = new ClientRegistrationErrorResponse(e.getErrorObject());
-			ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
-		}
-	}
+    @GetMapping("{clientId}")
+    public void readClient(@PathVariable("clientId") String clientID, HttpServletRequest servletRequest,
+                           HttpServletResponse servletResponse) throws IOException {
+        HTTPRequest httpRequest = ServletUtils.createHTTPRequest(servletRequest);
+        try {
+            ClientReadRequest request = ClientReadRequest.parse(httpRequest);
+            ClientRegistrationResponse response = registrationService.readClient(clientID, request);
+            ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
+        } catch (ParseException e) {
+            ClientRegistrationErrorResponse response = new ClientRegistrationErrorResponse(e.getErrorObject());
+            ServletUtils.applyHTTPResponse(response.toHTTPResponse(), servletResponse);
+        }
+    }
 
-	@DeleteMapping("{clientId}")
-	public ResponseEntity<Void> deleteClient(@PathVariable("clientId") String clientID,
-			HttpServletRequest servletRequest) throws IOException {
-		HTTPRequest httpRequest = ServletUtils.createHTTPRequest(servletRequest);
-		try {
-			ClientDeleteRequest request = ClientDeleteRequest.parse(httpRequest);
-			int response = registrationService.deleteClient(clientID, request);
-			return ResponseEntity.status(response).build();
-		} catch (ParseException e) {
-			return ResponseEntity.status(e.getErrorObject().getHTTPStatusCode()).build();
-		}
-	}
+    @DeleteMapping("{clientId}")
+    public ResponseEntity<Void> deleteClient(@PathVariable("clientId") String clientID,
+                                             HttpServletRequest servletRequest) throws IOException {
+        HTTPRequest httpRequest = ServletUtils.createHTTPRequest(servletRequest);
+        try {
+            ClientDeleteRequest request = ClientDeleteRequest.parse(httpRequest);
+            int response = registrationService.deleteClient(clientID, request);
+            return ResponseEntity.status(response).build();
+        } catch (ParseException e) {
+            return ResponseEntity.status(e.getErrorObject().getHTTPStatusCode()).build();
+        }
+    }
 }

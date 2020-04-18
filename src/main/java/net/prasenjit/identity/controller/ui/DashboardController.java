@@ -41,34 +41,34 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class DashboardController {
 
-	private final UserRepository userRepository;
-	private final AuditEventRepository eventRepository;
-	private final UserService userService;
+    private final UserRepository userRepository;
+    private final AuditEventRepository eventRepository;
+    private final UserService userService;
 
-	@GetMapping("/")
-	public String dashboard(Authentication principal, Model model, Pageable pageable) {
-		Optional<User> optionalUser = userRepository.findById(principal.getName());
-		if (optionalUser.isPresent()) {
-			UserAuthenticationToken token = (UserAuthenticationToken) principal;
-			model.addAttribute("user", optionalUser.get());
-			model.addAttribute("userInfo", optionalUser.get().getUserInfo());
-			model.addAttribute("loginTime", token.getLoginTime());
-			boolean admin = token.getAuthorities().stream().anyMatch(ga -> ga.getAuthority().equals("ADMIN"));
-			model.addAttribute("admin", admin);
-			findAudits(pageable, model);
-			return "dashboard";
-		}
-		throw new ItemNotFoundException("User not found");
-	}
+    @GetMapping("/")
+    public String dashboard(Authentication principal, Model model, Pageable pageable) {
+        Optional<User> optionalUser = userRepository.findById(principal.getName());
+        if (optionalUser.isPresent()) {
+            UserAuthenticationToken token = (UserAuthenticationToken) principal;
+            model.addAttribute("user", optionalUser.get());
+            model.addAttribute("userInfo", optionalUser.get().getUserInfo());
+            model.addAttribute("loginTime", token.getLoginTime());
+            boolean admin = token.getAuthorities().stream().anyMatch(ga -> ga.getAuthority().equals("ADMIN"));
+            model.addAttribute("admin", admin);
+            findAudits(pageable, model);
+            return "dashboard";
+        }
+        throw new ItemNotFoundException("User not found");
+    }
 
-	private void findAudits(Pageable pageable, Model model) {
-		Page<AuditEvent> events = eventRepository.findByDisplayLevelGreaterThan(-5, pageable);
-		model.addAttribute("events", events);
-	}
+    private void findAudits(Pageable pageable, Model model) {
+        Page<AuditEvent> events = eventRepository.findByDisplayLevelGreaterThan(-5, pageable);
+        model.addAttribute("events", events);
+    }
 
-	@PostMapping("/")
-	public String modifyProfile(Authentication principal, @ModelAttribute @Valid UserInfoModify userInfoModify) {
-		userService.modifyUser(principal.getName(), userInfoModify);
-		return "redirect:/";
-	}
+    @PostMapping("/")
+    public String modifyProfile(Authentication principal, @ModelAttribute @Valid UserInfoModify userInfoModify) {
+        userService.modifyUser(principal.getName(), userInfoModify);
+        return "redirect:/";
+    }
 }

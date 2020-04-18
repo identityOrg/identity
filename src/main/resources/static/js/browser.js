@@ -66,7 +66,7 @@ function getBrowserName() {
     }
 
     // Edge Chromium
-    if (isChrome && (navigator.userAgent.indexOf("Edg") != -1)){
+    if (isChrome && (navigator.userAgent.indexOf("Edg") != -1)) {
         return 'Edge Chromium';
     }
 }

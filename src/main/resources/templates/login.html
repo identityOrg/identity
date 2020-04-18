@@ -15,10 +15,10 @@
   ~    limitations under the License.
   -->
 
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
 
-    <link rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" id="bootstrap-css">
+    <link id="bootstrap-css" rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/css/style-login.css}">
     <!------ Include the above in your HEAD tag ---------->
     <title>Identity - Login</title>
@@ -31,27 +31,27 @@
                 <h2>Identity Login</h2>
                 <p>Please enter your username and password</p>
             </div>
-            <form id="Login" th:action="@{/login}" method="post" name="login">
+            <form id="Login" method="post" name="login" th:action="@{/login}">
 
                 <div class="form-group">
 
 
                     <!--/*@thymesVar id="loginHint" type="java.lang.Boolean"*/-->
-                    <input type="text" class="form-control" id="inputEmail" name="username" placeholder="Email Address"
-                           th:value="${loginHint}" th:readonly="${loginHint}">
+                    <input class="form-control" id="inputEmail" name="username" placeholder="Email Address" th:readonly="${loginHint}"
+                           th:value="${loginHint}" type="text">
 
                 </div>
 
                 <div class="form-group">
 
-                    <input type="password" class="form-control" id="inputPassword" name="password"
-                           placeholder="Password">
+                    <input class="form-control" id="inputPassword" name="password" placeholder="Password"
+                           type="password">
 
                 </div>
                 <div class="forgot">
                     <a href="reset.html">Forgot password?</a>
                 </div>
-                <button type="submit" class="btn btn-primary" name="submit">Login</button>
+                <button class="btn btn-primary" name="submit" type="submit">Login</button>
 
             </form>
         </div>

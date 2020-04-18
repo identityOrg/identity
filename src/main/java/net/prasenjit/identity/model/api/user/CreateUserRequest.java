@@ -19,7 +19,6 @@ package net.prasenjit.identity.model.api.user;
 import lombok.Data;
 import net.minidev.json.JSONObject;
 
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.time.LocalDateTime;

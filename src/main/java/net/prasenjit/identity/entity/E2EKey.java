@@ -70,9 +70,9 @@ public class E2EKey {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class KeyId implements Serializable {
-		private static final long serialVersionUID = -1630505153203532266L;
+        private static final long serialVersionUID = -1630505153203532266L;
 
-		@Column(name = "ASSOCIATION", nullable = false, length = 256)
+        @Column(name = "ASSOCIATION", nullable = false, length = 256)
         private String association;
 
         @Column(name = "USER_TYPE", nullable = false, length = 10)

@@ -27,7 +27,7 @@ import java.io.Serializable;
 @Component
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class OpenIDSessionContainer implements Serializable {
-	private static final long serialVersionUID = 1847604223298382520L;
-	private boolean interactiveLoginDone;
-	private boolean forceConsentApproval;
+    private static final long serialVersionUID = 1847604223298382520L;
+    private boolean interactiveLoginDone;
+    private boolean forceConsentApproval;
 }

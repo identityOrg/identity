@@ -42,74 +42,74 @@ import static org.junit.Assert.*;
 
 public class ClientRegistrationTest extends HtmlPageTestBase {
 
-	@Test
-	public void testRegistrationSuccess() throws ParseException, IOException {
-		URI uri = oidcConfiguration.getRegistrationEndpointURI();
-		OIDCClientMetadata metadata = new OIDCClientMetadata();
-		metadata.setName("Unit Test Client");
-		ClientAuthentication clientAuth = new ClientSecretBasic(clientInformation.getID(),
-				clientInformation.getSecret());
-		ClientCredentialsGrant grant = new ClientCredentialsGrant();
-		Scope scope = Scope.parse("scope1");
-		TokenRequest tokenRequest = new TokenRequest(getTokenURI(), clientAuth, grant, scope);
+    @Test
+    public void testRegistrationSuccess() throws ParseException, IOException {
+        URI uri = oidcConfiguration.getRegistrationEndpointURI();
+        OIDCClientMetadata metadata = new OIDCClientMetadata();
+        metadata.setName("Unit Test Client");
+        ClientAuthentication clientAuth = new ClientSecretBasic(clientInformation.getID(),
+                clientInformation.getSecret());
+        ClientCredentialsGrant grant = new ClientCredentialsGrant();
+        Scope scope = Scope.parse("scope1");
+        TokenRequest tokenRequest = new TokenRequest(getTokenURI(), clientAuth, grant, scope);
 
-		TokenResponse tokenResponse = OIDCTokenResponseParser.parse(tokenRequest.toHTTPRequest().send());
-		BearerAccessToken bearerAccessToken = tokenResponse.toSuccessResponse().getTokens().getBearerAccessToken();
-		OIDCClientRegistrationRequest request = new OIDCClientRegistrationRequest(uri, metadata, bearerAccessToken);
+        TokenResponse tokenResponse = OIDCTokenResponseParser.parse(tokenRequest.toHTTPRequest().send());
+        BearerAccessToken bearerAccessToken = tokenResponse.toSuccessResponse().getTokens().getBearerAccessToken();
+        OIDCClientRegistrationRequest request = new OIDCClientRegistrationRequest(uri, metadata, bearerAccessToken);
 
-		ClientRegistrationResponse response = OIDCClientRegistrationResponseParser
-				.parse(request.toHTTPRequest().send());
+        ClientRegistrationResponse response = OIDCClientRegistrationResponseParser
+                .parse(request.toHTTPRequest().send());
 
-		assertTrue(response.indicatesSuccess());
+        assertTrue(response.indicatesSuccess());
 
-		ClientInformation info = response.toSuccessResponse().getClientInformation();
-		OIDCClientMetadata clientMetadata = (OIDCClientMetadata) info.getMetadata();
+        ClientInformation info = response.toSuccessResponse().getClientInformation();
+        OIDCClientMetadata clientMetadata = (OIDCClientMetadata) info.getMetadata();
 
-		JWSAlgorithm alg = clientMetadata.getIDTokenJWSAlg();
+        JWSAlgorithm alg = clientMetadata.getIDTokenJWSAlg();
 
-		assertNotNull(alg);
-		assertThat(JWSAlgorithm.RS256, is(alg));
+        assertNotNull(alg);
+        assertThat(JWSAlgorithm.RS256, is(alg));
 
-		clientMetadata.setIDTokenJWSAlg(JWSAlgorithm.RS384);
+        clientMetadata.setIDTokenJWSAlg(JWSAlgorithm.RS384);
 
-		// check get information
-		OIDCClientUpdateRequest updateRequest = new OIDCClientUpdateRequest(info.getRegistrationURI(), info.getID(),
-				bearerAccessToken, clientMetadata, info.getSecret());
+        // check get information
+        OIDCClientUpdateRequest updateRequest = new OIDCClientUpdateRequest(info.getRegistrationURI(), info.getID(),
+                bearerAccessToken, clientMetadata, info.getSecret());
 
-		response = OIDCClientRegistrationResponseParser.parse(updateRequest.toHTTPRequest().send());
+        response = OIDCClientRegistrationResponseParser.parse(updateRequest.toHTTPRequest().send());
 
-		assertTrue(response.indicatesSuccess());
+        assertTrue(response.indicatesSuccess());
 
-		info = response.toSuccessResponse().getClientInformation();
-		clientMetadata = (OIDCClientMetadata) info.getMetadata();
+        info = response.toSuccessResponse().getClientInformation();
+        clientMetadata = (OIDCClientMetadata) info.getMetadata();
 
-		alg = clientMetadata.getIDTokenJWSAlg();
+        alg = clientMetadata.getIDTokenJWSAlg();
 
-		assertNotNull(alg);
-		assertThat(JWSAlgorithm.RS384, is(alg));
+        assertNotNull(alg);
+        assertThat(JWSAlgorithm.RS384, is(alg));
 
-		ClientReadRequest readRequest = new ClientReadRequest(info.getRegistrationURI(), bearerAccessToken);
+        ClientReadRequest readRequest = new ClientReadRequest(info.getRegistrationURI(), bearerAccessToken);
 
-		response = OIDCClientRegistrationResponseParser.parse(readRequest.toHTTPRequest().send());
+        response = OIDCClientRegistrationResponseParser.parse(readRequest.toHTTPRequest().send());
 
-		assertTrue(response.indicatesSuccess());
+        assertTrue(response.indicatesSuccess());
 
-		info = response.toSuccessResponse().getClientInformation();
-		clientMetadata = (OIDCClientMetadata) info.getMetadata();
+        info = response.toSuccessResponse().getClientInformation();
+        clientMetadata = (OIDCClientMetadata) info.getMetadata();
 
-		alg = clientMetadata.getIDTokenJWSAlg();
+        alg = clientMetadata.getIDTokenJWSAlg();
 
-		assertNotNull(alg);
-		assertThat(JWSAlgorithm.RS384, is(alg));
+        assertNotNull(alg);
+        assertThat(JWSAlgorithm.RS384, is(alg));
 
-		ClientDeleteRequest deleteRequest = new ClientDeleteRequest(info.getRegistrationURI(), bearerAccessToken);
+        ClientDeleteRequest deleteRequest = new ClientDeleteRequest(info.getRegistrationURI(), bearerAccessToken);
 
-		HTTPResponse httpResponse = deleteRequest.toHTTPRequest().send();
+        HTTPResponse httpResponse = deleteRequest.toHTTPRequest().send();
 
-		assertThat(200, is(httpResponse.getStatusCode()));
+        assertThat(200, is(httpResponse.getStatusCode()));
 
-		response = OIDCClientRegistrationResponseParser.parse(readRequest.toHTTPRequest().send());
+        response = OIDCClientRegistrationResponseParser.parse(readRequest.toHTTPRequest().send());
 
-		assertFalse(response.indicatesSuccess());
-	}
+        assertFalse(response.indicatesSuccess());
+    }
 }

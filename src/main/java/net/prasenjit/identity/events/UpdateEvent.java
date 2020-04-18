@@ -19,9 +19,9 @@ package net.prasenjit.identity.events;
 import net.prasenjit.identity.entity.ResourceType;
 
 public class UpdateEvent extends AbstractModificationEvent {
-	private static final long serialVersionUID = -8297282915852587825L;
+    private static final long serialVersionUID = -8297282915852587825L;
 
-	/**
+    /**
      * Create a new ApplicationEvent.
      *
      * @param source the object on which the event initially occurred (never {@code null})

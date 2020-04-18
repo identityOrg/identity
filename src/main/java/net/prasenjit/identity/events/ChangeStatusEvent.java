@@ -20,8 +20,8 @@ import net.prasenjit.identity.entity.ResourceType;
 import net.prasenjit.identity.entity.Status;
 
 public class ChangeStatusEvent extends AbstractModificationEvent {
-	private static final long serialVersionUID = -1902071920793713373L;
-	private final Status status;
+    private static final long serialVersionUID = -1902071920793713373L;
+    private final Status status;
 
     /**
      * Create a new ApplicationEvent.

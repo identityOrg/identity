@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 public class ClientAuthenticationTest {
 
     @Test
-    public void testJWTClientAuthentication(){
+    public void testJWTClientAuthentication() {
 
     }
 }

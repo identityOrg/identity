@@ -23,11 +23,11 @@
 <body onload="document.forms[0].submit()">
 <h3>This page will refresh automatically</h3>
 <!--/*@thymesVar id="redirect_uri" type="java.net.URI"*/-->
-<form th:action="${redirect_uri}" method="post" name="auth">
+<form method="post" name="auth" th:action="${redirect_uri}">
     <!--/*@thymesVar id="paramList" type="java.util.List"*/-->
     <div th:each="s : *{paramList}">
         <!--/*@thymesVar id="s" type="net.prasenjit.identity.model.ui.Tuple"*/-->
-        <input type="hidden" th:name="${s.key}" th:value="${s.value}">
+        <input th:name="${s.key}" th:value="${s.value}" type="hidden">
     </div>
 </form>
 </body>

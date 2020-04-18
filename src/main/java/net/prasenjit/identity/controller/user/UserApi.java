@@ -29,7 +29,7 @@ public interface UserApi {
     @Operation(summary = "Search User", description = "Search a user with any user attribute")
     List<User> searchUser(SearchUserRequest request);
 
-    @Operation(summary="Find User", description = "Find a user with username")
+    @Operation(summary = "Find User", description = "Find a user with username")
     User findUser(String clientId);
 
     @Operation(summary = "Update User", description = "Update a user attributes")

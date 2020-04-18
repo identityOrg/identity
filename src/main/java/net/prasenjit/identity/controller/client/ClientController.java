@@ -64,7 +64,7 @@ public class ClientController implements ClientApi {
     @Override
     @PutMapping(value = "{clientId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ClientDTO update(@PathVariable(value = "clientId") String clientId,
-                         @RequestBody @Valid UpdateClientRequest request) {
+                            @RequestBody @Valid UpdateClientRequest request) {
         request.setClientId(clientId);
         return new ClientDTO(clientService.updateClient(request));
     }
@@ -79,7 +79,7 @@ public class ClientController implements ClientApi {
     @Override
     @PostMapping(value = "{clientId}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ClientDTO status(@PathVariable(value = "clientId") String clientId,
-                         @RequestBody @Valid StatusClientRequest request) {
+                            @RequestBody @Valid StatusClientRequest request) {
         return new ClientDTO(clientService.changeStatus(clientId, request.getStatus()));
     }
 

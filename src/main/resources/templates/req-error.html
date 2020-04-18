@@ -15,10 +15,10 @@
   ~    limitations under the License.
   -->
 
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
 
-    <link rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" id="bootstrap-css">
+    <link id="bootstrap-css" rel='stylesheet' th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/css/style-login.css}">
     <!------ Include the above in your HEAD tag ---------->
     <title>Identity - Error</title>
@@ -36,7 +36,7 @@
                     <!--/*@thymesVar id="error" type="com.nimbusds.oauth2.sdk.ErrorObject"*/-->
                     <h5 class="card-title" th:text="${error.code}">Card title</h5>
                     <p class="card-text" th:text="${error.description}">Some quick example</p>
-                    <a th:if="${error.URI}" th:href="${error.URI}" class="card-link">More</a>
+                    <a class="card-link" th:href="${error.URI}" th:if="${error.URI}">More</a>
                 </div>
             </div>
         </div>
