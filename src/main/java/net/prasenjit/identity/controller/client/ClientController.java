@@ -16,8 +16,14 @@
 
 package net.prasenjit.identity.controller.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.oauth2.sdk.ParseException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.minidev.json.parser.JSONParser;
 import net.prasenjit.identity.entity.client.Client;
+import net.prasenjit.identity.exception.InvalidRequestException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.model.api.client.*;
 import net.prasenjit.identity.repository.ClientRepository;
@@ -31,6 +37,7 @@ import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "api/client", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -38,6 +45,7 @@ public class ClientController implements ClientApi {
 
     private final ClientRepository clientRepository;
     private final ClientService clientService;
+    private final ObjectMapper objectMapper;
 
     @Override
     @GetMapping
@@ -66,7 +74,16 @@ public class ClientController implements ClientApi {
     public ClientDTO update(@PathVariable(value = "clientId") String clientId,
                             @RequestBody @Valid UpdateClientRequest request) {
         request.setClientId(clientId);
-        return new ClientDTO(clientService.updateClient(request));
+        try {
+            String asString = objectMapper.writeValueAsString(request);
+            JSONParser jsonParser = new JSONParser(JSONParser.MODE_JSON_SIMPLE);
+            UpdateClientRequest updateClientRequest = jsonParser.parse(asString, UpdateClientRequest.class);
+            request.setClientMetadata(updateClientRequest.getClientMetadata());
+            return new ClientDTO(clientService.updateClient(request));
+        } catch (ParseException | JsonProcessingException | net.minidev.json.parser.ParseException e) {
+            log.error("Error parsing request", e);
+            throw new InvalidRequestException(e.getMessage());
+        }
     }
 
     @Override

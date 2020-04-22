@@ -16,6 +16,7 @@
 
 package net.prasenjit.identity.controller.client;
 
+import com.nimbusds.oauth2.sdk.ParseException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import net.prasenjit.identity.entity.client.Client;

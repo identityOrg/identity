@@ -16,6 +16,9 @@
 
 package net.prasenjit.identity.service;
 
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.client.ClientRegistrationResponse;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import lombok.RequiredArgsConstructor;
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.ResourceType;
@@ -26,6 +29,7 @@ import net.prasenjit.identity.events.ChangeStatusEvent;
 import net.prasenjit.identity.events.CreateEvent;
 import net.prasenjit.identity.events.UpdateEvent;
 import net.prasenjit.identity.exception.ConflictException;
+import net.prasenjit.identity.exception.InvalidRequestException;
 import net.prasenjit.identity.exception.ItemNotFoundException;
 import net.prasenjit.identity.exception.OperationIgnoredException;
 import net.prasenjit.identity.model.Profile;
@@ -33,6 +37,7 @@ import net.prasenjit.identity.model.api.client.ClientSecretResponse;
 import net.prasenjit.identity.model.api.client.CreateClientRequest;
 import net.prasenjit.identity.model.api.client.UpdateClientRequest;
 import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.service.openid.DynamicRegistrationService;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
@@ -51,8 +56,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ClientService implements UserDetailsService {
 
+    public static final String REFRESH_TOKEN_VALIDITY_MINUTE = "refresh_token_validity_minute";
+    public static final String ACCESS_TOKEN_VALIDITY_MINUTE = "access_token_validity_minute";
     private final ClientRepository clientRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final DynamicRegistrationService dynamicRegistrationService;
     @Qualifier("client-password")
     private final TextEncryptor textEncryptor;
 
@@ -86,37 +94,45 @@ public class ClientService implements UserDetailsService {
         LocalDateTime now = LocalDateTime.now();
         client.setCreationDate(now);
         client.setClientSecret(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled client
-        //client.setRedirectUri(request.getRedirectUri().toString());
         client.setClientName(request.getClientName());
         client.setExpiryDate(request.getExpiryDate());
-        client.setAccessTokenValidity(request.getAccessTokenValidity());
-        client.setRefreshTokenValidity(request.getRefreshTokenValidity());
         client.setClientId(request.getClientId());
-        //client.setScopes(request.getScopes());
 
-        CreateEvent csEvent = new CreateEvent(this,
-                ResourceType.CLIENT, request.getClientId());
+        OIDCClientMetadata metadata = new OIDCClientMetadata();
+        metadata.applyDefaults();
+        metadata.setName(request.getClientName());
+        client.setMetadata(metadata);
+
+        ClientRegistrationResponse errorResponse = dynamicRegistrationService.validateClientMetadata(metadata);
+        if (errorResponse != null) {
+            throw new InvalidRequestException(errorResponse.toErrorResponse().getErrorObject().getDescription());
+        }
+        dynamicRegistrationService.validateTokenValidity(metadata, client);
+
+        CreateEvent csEvent = new CreateEvent(this, ResourceType.CLIENT, request.getClientId());
         eventPublisher.publishEvent(csEvent);
 
         return clientRepository.saveAndFlush(client);
     }
 
     @Transactional
-    public Client updateClient(UpdateClientRequest request) {
+    public Client updateClient(UpdateClientRequest request) throws ParseException {
         Optional<Client> optionalClient = clientRepository.findById(request.getClientId());
         if (optionalClient.isEmpty()) {
             throw new ItemNotFoundException("Client not found.");
         }
         Client savedClient = optionalClient.get();
-        //savedClient.setRedirectUri(request.getRedirectUri().toString());
-        savedClient.setClientName(request.getClientName());
-        savedClient.setRefreshTokenValidity(request.getRefreshTokenValidity());
-        savedClient.setAccessTokenValidity(request.getAccessTokenValidity());
-        //savedClient.setScopes(request.getScopes());
         savedClient.setExpiryDate(request.getExpiryDate());
+        OIDCClientMetadata clientMetadata = OIDCClientMetadata.parse(request.getClientMetadata());
+        dynamicRegistrationService.validateTokenValidity(clientMetadata, savedClient);
+        ClientRegistrationResponse error = dynamicRegistrationService.validateClientMetadata(clientMetadata);
+        if (error != null) {
+            throw new InvalidRequestException(error.toErrorResponse().getErrorObject().getDescription());
+        }
+        savedClient.setMetadata(clientMetadata);
+        savedClient.setClientName(clientMetadata.getName());
 
-        UpdateEvent csEvent = new UpdateEvent(this,
-                ResourceType.CLIENT, request.getClientId());
+        UpdateEvent csEvent = new UpdateEvent(this, ResourceType.CLIENT, request.getClientId());
         eventPublisher.publishEvent(csEvent);
 
         return savedClient;

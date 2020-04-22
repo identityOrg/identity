@@ -25,11 +25,13 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
 import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.client.*;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.id.Identifier;
 import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.SubjectType;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.rp.*;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import net.minidev.json.JSONObject;
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.ResourceType;
@@ -38,6 +40,7 @@ import net.prasenjit.identity.entity.client.Client;
 import net.prasenjit.identity.events.CreateEvent;
 import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.ClientRepository;
+import net.prasenjit.identity.service.ClientService;
 import net.prasenjit.identity.service.ValidationUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,10 +54,8 @@ import org.springframework.util.StringUtils;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -69,19 +70,20 @@ public class DynamicRegistrationService {
 
     @Transactional
     public ClientRegistrationResponse registerClient(OIDCClientRegistrationRequest request) throws ParseException {
-        OIDCClientMetadata clientMetadata = request.getOIDCClientMetadata();
-        clientMetadata.applyDefaults();
+        OIDCClientMetadata metadata = new OIDCClientMetadata();
+        metadata.applyDefaults();
+        metadata.setCustomFields(request.getOIDCClientMetadata().toJSONObject());
 
-        ClientRegistrationResponse errorResponse = validateClientMetadata(clientMetadata);
+        ClientRegistrationResponse errorResponse = validateClientMetadata(metadata);
         if (errorResponse != null) {
             return errorResponse;
         }
 
         Client client = new Client();
-        client.setClientName(clientMetadata.getName());
-        client.setMetadata(clientMetadata);
+        client.setClientName(metadata.getName());
+        client.setMetadata(metadata);
         client.setStatus(Status.ACTIVE);
-        validateTokenValidity(clientMetadata, client);
+        validateTokenValidity(metadata, client);
 
         client.setCreationDate(LocalDateTime.now());
 
@@ -98,7 +100,7 @@ public class DynamicRegistrationService {
         eventPublisher.publishEvent(csEvent);
         clientRepository.saveAndFlush(client);
 
-        return generateClientInfoResponse(client, clientMetadata, true);
+        return generateClientInfoResponse(client, metadata, true);
     }
 
     @Transactional
@@ -147,8 +149,8 @@ public class DynamicRegistrationService {
         if (clientOptional.isPresent()) {
             Client client = clientOptional.get();
             OIDCClientMetadata metadata = client.getMetadata();
-            metadata.setCustomField("access_token_validity_minute", client.getAccessTokenValidity().toMinutes());
-            metadata.setCustomField("refresh_token_validity_minute", client.getRefreshTokenValidity().toMinutes());
+            metadata.setCustomField(ClientService.ACCESS_TOKEN_VALIDITY_MINUTE, client.getAccessTokenValidity().toMinutes());
+            metadata.setCustomField(ClientService.REFRESH_TOKEN_VALIDITY_MINUTE, client.getRefreshTokenValidity().toMinutes());
 
             return generateClientInfoResponse(client, metadata, false);
         } else {
@@ -179,29 +181,30 @@ public class DynamicRegistrationService {
         return new OIDCClientInformationResponse(clientInfo, newClient);
     }
 
-    private void validateTokenValidity(OIDCClientMetadata clientMetadata, Client client) {
+    public void validateTokenValidity(OIDCClientMetadata clientMetadata, Client client) {
 
         JSONObject customParameters = clientMetadata.getCustomFields();
         try {
-            long validity = JSONObjectUtils.getLong(customParameters, "access_token_validity_minute");
+            long validity = JSONObjectUtils.getLong(customParameters, ClientService.ACCESS_TOKEN_VALIDITY_MINUTE);
             client.setAccessTokenValidity(Duration.ofSeconds(validity));
         } catch (ParseException e) {
             int tokenValidity = identityProperties.getCodeProperty().getAccessTokenValidityMinute();
             client.setAccessTokenValidity(Duration.ofMinutes(tokenValidity));
-            clientMetadata.setCustomField("access_token_validity_minute", tokenValidity);
+            clientMetadata.setCustomField(ClientService.ACCESS_TOKEN_VALIDITY_MINUTE, tokenValidity);
         }
 
         try {
-            long validity = JSONObjectUtils.getLong(customParameters, "refresh_token_validity_minute");
+            long validity = JSONObjectUtils.getLong(customParameters, ClientService.REFRESH_TOKEN_VALIDITY_MINUTE);
             client.setRefreshTokenValidity(Duration.ofSeconds(validity));
         } catch (ParseException e) {
             int tokenValidity = identityProperties.getCodeProperty().getRefreshTokenValidity();
             client.setRefreshTokenValidity(Duration.ofMinutes(tokenValidity));
-            clientMetadata.setCustomField("refresh_token_validity_minute", tokenValidity);
+            clientMetadata.setCustomField(ClientService.REFRESH_TOKEN_VALIDITY_MINUTE, tokenValidity);
         }
     }
 
-    private ClientRegistrationResponse validateClientMetadata(OIDCClientMetadata clientMetadata) throws ParseException {
+    @SneakyThrows
+    public ClientRegistrationResponse validateClientMetadata(OIDCClientMetadata clientMetadata) {
         OIDCProviderMetadata serverMetadata = metadataService.findOIDCConfiguration();
 
         // Grant validation
@@ -285,10 +288,12 @@ public class DynamicRegistrationService {
         if (CollectionUtils.isEmpty(scope)) {
             clientMetadata.setScope(Scope.parse("openid"));
         } else {
-            if (scope.stream().anyMatch(s -> !serverMetadata.getScopes().contains(s.getValue()))) {
-                return new ClientRegistrationErrorResponse(
-                        RegistrationError.INVALID_CLIENT_METADATA.appendDescription(": Unsupported Scope"));
-            }
+            List<String> collect = scope.stream()
+                    .filter(s -> serverMetadata.getScopes().contains(s.getValue()))
+                    .map(Identifier::getValue)
+                    .collect(Collectors.toList());
+            scope = Scope.parse(collect);
+            clientMetadata.setScope(scope);
         }
 
         // Response type validation
