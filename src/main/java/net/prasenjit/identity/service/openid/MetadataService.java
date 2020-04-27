@@ -110,11 +110,15 @@ public class MetadataService {
             jwsAlgos.add(JWSAlgorithm.ES256);
             jwsAlgos.add(JWSAlgorithm.ES384);
             jwsAlgos.add(JWSAlgorithm.ES512);
+            List<JWSAlgorithm> authAlgos = new ArrayList<>(jwsAlgos);
+            authAlgos.add(JWSAlgorithm.HS256);
+            authAlgos.add(JWSAlgorithm.HS384);
+            authAlgos.add(JWSAlgorithm.HS512);
 
             builder1 = builder.cloneBuilder();
             metadata.setTokenEndpointURI(builder1.pathSegment("oauth", "token").build().toUri());
             metadata.setTokenEndpointAuthMethods(epAuthMethods);
-            metadata.setTokenEndpointJWSAlgs(jwsAlgos);
+            metadata.setTokenEndpointJWSAlgs(authAlgos);
 
             builder1 = builder.cloneBuilder();
             metadata.setUserInfoEndpointURI(builder1.pathSegment("oauth", "userinfo").build().toUri());
@@ -125,12 +129,12 @@ public class MetadataService {
             builder1 = builder.cloneBuilder();
             metadata.setIntrospectionEndpointURI(builder1.pathSegment("oauth", "introspection").build().toUri());
             metadata.setIntrospectionEndpointAuthMethods(epAuthMethods);
-            metadata.setIntrospectionEndpointJWSAlgs(jwsAlgos);
+            metadata.setIntrospectionEndpointJWSAlgs(authAlgos);
 
             builder1 = builder.cloneBuilder();
             metadata.setRevocationEndpointURI(builder1.pathSegment("oauth", "revocation").build().toUri());
             metadata.setRevocationEndpointAuthMethods(epAuthMethods);
-            metadata.setRevocationEndpointJWSAlgs(jwsAlgos);
+            metadata.setRevocationEndpointJWSAlgs(authAlgos);
 
             scopeRepository.findAll().stream()
                     .map(ScopeEntity::getScopeId)

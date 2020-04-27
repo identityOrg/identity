@@ -13,9 +13,12 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
 import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
+import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.prasenjit.crypto.TextEncryptor;
@@ -38,14 +41,14 @@ import java.util.Set;
 
 @Slf4j
 @RequiredArgsConstructor
-public class JWTClientAuthenticationProvider implements AuthenticationProvider {
+public class ClientAuthenticationProvider implements AuthenticationProvider {
     private final ClientRepository clientRepository;
     private final MetadataService metadataService;
     private final RemoteResourceRetriever resourceRetriever;
     private final TextEncryptor textEncryptor;
 
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        Assert.isInstanceOf(JWTClientAuthenticationToken.class, authentication,
+        Assert.isInstanceOf(ClientAuthenticationToken.class, authentication,
                 "Only BasicAuthenticationToken is supported");
 
         // Determine username
@@ -53,18 +56,18 @@ public class JWTClientAuthenticationProvider implements AuthenticationProvider {
         Client client = clientRepository.findById(clientId).orElseThrow(() -> new BadCredentialsException("Bad credentials"));
 
         this.preAuthenticationCheck(client);
-        additionalAuthenticationChecks(client, (JWTClientAuthenticationToken) authentication);
+        additionalAuthenticationChecks(client, (ClientAuthenticationToken) authentication);
 
         return createSuccessAuthentication(client.getClientId(), authentication, Profile.create(client));
     }
 
     public boolean supports(Class<?> authentication) {
-        return (JWTClientAuthenticationToken.class.isAssignableFrom(authentication));
+        return (ClientAuthenticationToken.class.isAssignableFrom(authentication));
     }
 
     private Authentication createSuccessAuthentication(Object principal, Authentication authentication,
                                                        UserDetails user) {
-        JWTClientAuthenticationToken result = new JWTClientAuthenticationToken(principal,
+        ClientAuthenticationToken result = new ClientAuthenticationToken(principal,
                 authentication.getCredentials(), user.getAuthorities());
 
         result.setDetails(authentication.getDetails());
@@ -78,55 +81,102 @@ public class JWTClientAuthenticationProvider implements AuthenticationProvider {
         }
     }
 
-    private void additionalAuthenticationChecks(Client client, JWTClientAuthenticationToken authentication)
+    private void additionalAuthenticationChecks(Client client, ClientAuthenticationToken authentication)
             throws AuthenticationException {
         if (authentication.getCredentials() == null) {
             log.debug("Authentication failed: no credentials provided");
             throw new BadCredentialsException("Bad credentials");
         }
 
-        JWTAuthentication credentials = (JWTAuthentication) authentication.getCredentials();
+        ClientAuthentication credentials = (ClientAuthentication) authentication.getCredentials();
         ClientID clientID = (ClientID) authentication.getPrincipal();
 
-        validateClientJWT(client, clientID, credentials);
+        validateClientAuthentication(client, clientID, credentials);
     }
 
-    private void validateClientJWT(Client client, ClientID clientID, JWTAuthentication clientSecretJWT) {
-        if (!clientSecretJWT.getClientID().equals(clientID)) {
+    private void validateClientAuthentication(Client client, ClientID clientID, ClientAuthentication clientAuthentication) {
+        if (!clientAuthentication.getClientID().equals(clientID)) {
             log.debug("Authentication failed: client is mismatch");
             throw new BadCredentialsException("Bad credentials");
         }
+        ClientAuthenticationMethod receivedAuthMethod = clientAuthentication.getMethod();
+        if (client.getClientSecret() == null) {
+            if (ClientAuthenticationMethod.NONE.equals(receivedAuthMethod)) {
+                return; // insecure client is authenticated when method is none
+            } else {
+                log.debug("Insecure client can not be authenticated with {}", receivedAuthMethod.getValue());
+                throw new BadCredentialsException("Bad credentials");
+            }
+        }
+        ClientAuthenticationMethod registeredAuthMethod = client.getMetadata().getTokenEndpointAuthMethod();
+        if (receivedAuthMethod.equals(registeredAuthMethod)
+                || (registeredAuthMethod == null && clientAuthentication instanceof PlainClientSecret)) {
+            // allow to authenticate even if no method registered but requested plain authentication
+            if (clientAuthentication instanceof PlainClientSecret) {
+                PlainClientSecret plainClientSecret = (PlainClientSecret) clientAuthentication;
+                performSimpleAuthentication(client, plainClientSecret);
+            } else if (clientAuthentication instanceof JWTAuthentication) {
+                JWTAuthentication jwtAuthentication = (JWTAuthentication) clientAuthentication;
+                performJwtAuthentication(client, jwtAuthentication);
+            } else {
+                log.debug("Authentication method {} not supported.", clientAuthentication.getMethod().getValue());
+                throw new BadCredentialsException("Bad credentials");
+            }
+        } else {
+            log.debug("Authentication method doesnt match with registered method.");
+            throw new BadCredentialsException("Bad credentials");
+        }
+    }
+
+    private void performSimpleAuthentication(Client client, PlainClientSecret plainClientSecret) {
+        String savedSecret = client.getClientSecret();
+        String providedSecret = plainClientSecret.getClientSecret().getValue();
+        if (!textEncryptor.decrypt(savedSecret).contentEquals(providedSecret)) {
+            log.debug("Authentication failed: password does not match stored value");
+            throw new BadCredentialsException("Bad credentials");
+        }
+    }
+
+    private void performJwtAuthentication(Client client, JWTAuthentication jwtAuthentication) {
         JWSAlgorithm expectedSigningAlgorithm = client.getMetadata().getTokenEndpointAuthJWSAlg();
         if (expectedSigningAlgorithm == null) {
             log.debug("Authentication failed: signing algorithm not registered");
             throw new BadCredentialsException("Bad credentials");
         }
-        if (client.getClientSecret() == null && clientSecretJWT.getMethod().equals(ClientAuthenticationMethod.CLIENT_SECRET_JWT)) {
-            log.debug("Authentication failed: insecure client can not use method {}", ClientAuthenticationMethod.CLIENT_SECRET_JWT);
-        }
-        String tokenEP = metadataService.findOIDCConfiguration().getTokenEndpointURI().toString();
+        Set<String> acceptableAudience = findAudiences();
 
         ConfigurableJWTProcessor<SimpleSecurityContext> processor = new DefaultJWTProcessor<>();
-        JWKSource<SimpleSecurityContext> keySource = findKeySource(client, clientSecretJWT);
+        JWKSource<SimpleSecurityContext> keySource = findKeySource(client, jwtAuthentication);
         JWSVerificationKeySelector<SimpleSecurityContext> jwsKeySelector =
                 new JWSVerificationKeySelector<>(expectedSigningAlgorithm, keySource);
         processor.setJWSKeySelector(jwsKeySelector);
         JWTClaimsSet claimMatcher = new JWTClaimsSet.Builder()
-                .subject(clientID.getValue())
-                .issuer(clientID.getValue())
+                .subject(jwtAuthentication.getClientID().getValue())
+                .issuer(jwtAuthentication.getClientID().getValue())
                 .build();
         Set<String> requiredClaims = new HashSet<>();
         requiredClaims.add("exp");
         requiredClaims.add("jti");
-        DefaultJWTClaimsVerifier<SimpleSecurityContext> claimsVerifier = new DefaultJWTClaimsVerifier<>(tokenEP, claimMatcher, requiredClaims);
+        DefaultJWTClaimsVerifier<SimpleSecurityContext> claimsVerifier = new DefaultJWTClaimsVerifier<>(
+                acceptableAudience, claimMatcher, requiredClaims, null);
         processor.setJWTClaimsSetVerifier(claimsVerifier);
 
         try {
-            processor.process(clientSecretJWT.getClientAssertion(), new SimpleSecurityContext());
+            processor.process(jwtAuthentication.getClientAssertion(), new SimpleSecurityContext());
         } catch (BadJOSEException | JOSEException e) {
             log.debug("Authentication failed: credential verification failed", e);
             throw new BadCredentialsException("Bad credentials", e);
         }
+    }
+
+    private Set<String> findAudiences() {
+        HashSet<String> audiences = new HashSet<>();
+        OIDCProviderMetadata oidcConfiguration = metadataService.findOIDCConfiguration();
+        audiences.add(oidcConfiguration.getTokenEndpointURI().toString());
+        audiences.add(oidcConfiguration.getIntrospectionEndpointURI().toString());
+        audiences.add(oidcConfiguration.getRevocationEndpointURI().toString());
+//        audiences.add(oidcConfiguration.getEndSessionEndpointURI().toString());
+        return audiences;
     }
 
     private JWKSource<SimpleSecurityContext> findKeySource(Client client, JWTAuthentication authentication) {

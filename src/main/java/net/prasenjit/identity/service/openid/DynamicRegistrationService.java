@@ -69,10 +69,9 @@ public class DynamicRegistrationService {
     private TextEncryptor textEncryptor;
 
     @Transactional
-    public ClientRegistrationResponse registerClient(OIDCClientRegistrationRequest request) throws ParseException {
-        OIDCClientMetadata metadata = new OIDCClientMetadata();
+    public ClientRegistrationResponse registerClient(OIDCClientRegistrationRequest request) {
+        OIDCClientMetadata metadata = request.getOIDCClientMetadata();
         metadata.applyDefaults();
-        metadata.setCustomFields(request.getOIDCClientMetadata().toJSONObject());
 
         ClientRegistrationResponse errorResponse = validateClientMetadata(metadata);
         if (errorResponse != null) {
@@ -104,7 +103,7 @@ public class DynamicRegistrationService {
     }
 
     @Transactional
-    public ClientRegistrationResponse updateClient(String id, OIDCClientUpdateRequest request) throws ParseException {
+    public ClientRegistrationResponse updateClient(String id, OIDCClientUpdateRequest request) {
         ClientID clientID = request.getClientID();
         Base64URL clientIdb64 = new Base64URL(id);
         if (!clientID.getValue().equals(clientIdb64.decodeToString())) {
@@ -307,7 +306,7 @@ public class DynamicRegistrationService {
             }
         }
 
-        // Client authentication type validation
+        // Client authentication for Token EP type validation
         ClientAuthenticationMethod tokenEndpointAuthMethod = clientMetadata.getTokenEndpointAuthMethod();
         if (tokenEndpointAuthMethod == null) {
             clientMetadata.setTokenEndpointAuthMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
@@ -315,6 +314,13 @@ public class DynamicRegistrationService {
             return new ClientRegistrationErrorResponse(
                     RegistrationError.INVALID_CLIENT_METADATA
                             .appendDescription(": Unsupported Client authentication method"));
+        }
+        JWSAlgorithm tokenEndpointAuthJWSAlg = clientMetadata.getTokenEndpointAuthJWSAlg();
+        if (tokenEndpointAuthJWSAlg != null
+                && !(serverMetadata.getTokenEndpointJWSAlgs().contains(tokenEndpointAuthJWSAlg))) {
+            return new ClientRegistrationErrorResponse(
+                    RegistrationError.INVALID_CLIENT_METADATA
+                            .appendDescription(": Unsupported Client authentication signing algorithm"));
         }
 
         // Subject type validation

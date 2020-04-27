@@ -23,7 +23,7 @@ import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.security.basic.BasicAuthenticationProvider;
 import net.prasenjit.identity.security.bearer.BearerAuthenticationProvider;
-import net.prasenjit.identity.security.jwt.JWTClientAuthenticationProvider;
+import net.prasenjit.identity.security.jwt.ClientAuthenticationProvider;
 import net.prasenjit.identity.security.user.UserAuthenticationProvider;
 import net.prasenjit.identity.service.ClientService;
 import net.prasenjit.identity.service.RemoteResourceRetriever;
@@ -82,7 +82,7 @@ public class AuthManagerConfig {
     }
 
     private AuthenticationProvider clientJWTProvider() {
-        return new JWTClientAuthenticationProvider(clientRepository, metadataService, resourceRetriever, textEncryptor);
+        return new ClientAuthenticationProvider(clientRepository, metadataService, resourceRetriever, textEncryptor);
     }
 
     private AuthenticationProvider clientAuthProvider() {
@@ -98,7 +98,7 @@ public class AuthManagerConfig {
 
             @Override
             public boolean matches(CharSequence rawPassword, String encodedPassword) {
-                return textEncryptor.decrypt(encodedPassword).equals(rawPassword);
+                return textEncryptor.decrypt(encodedPassword).contentEquals(rawPassword);
             }
 
             @Override

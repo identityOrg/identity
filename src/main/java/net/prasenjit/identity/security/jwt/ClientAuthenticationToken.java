@@ -5,21 +5,21 @@ import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Collection;
 
-public class JWTClientAuthenticationToken extends AbstractAuthenticationToken {
+public class ClientAuthenticationToken extends AbstractAuthenticationToken {
     private static final long serialVersionUID = 2771963205868634647L;
 
     private final Object principal;
     private Object credentials;
 
-    public JWTClientAuthenticationToken(Object principal, Object credentials) {
+    public ClientAuthenticationToken(Object principal, Object credentials) {
         super(null);
         this.principal = principal;
         this.credentials = credentials;
         setAuthenticated(false);
     }
 
-    public JWTClientAuthenticationToken(Object principal, Object credentials,
-                                        Collection<? extends GrantedAuthority> authorities) {
+    public ClientAuthenticationToken(Object principal, Object credentials,
+                                     Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
         this.principal = principal;
         this.credentials = credentials;

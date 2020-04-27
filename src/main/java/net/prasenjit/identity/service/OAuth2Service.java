@@ -19,9 +19,6 @@ package net.prasenjit.identity.service;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
-import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
-import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
-import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.Subject;
@@ -43,11 +40,9 @@ import net.prasenjit.identity.model.ConsentModel;
 import net.prasenjit.identity.model.IdentityViewResponse;
 import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.repository.*;
-import net.prasenjit.identity.security.basic.BasicAuthenticationToken;
-import net.prasenjit.identity.security.jwt.JWTClientAuthenticationToken;
+import net.prasenjit.identity.security.jwt.ClientAuthenticationToken;
 import net.prasenjit.identity.security.user.UserAuthenticationToken;
 import net.prasenjit.identity.service.openid.MetadataService;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -205,14 +200,11 @@ public class OAuth2Service {
         if (clientID == null) {
             return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT);
         }
-        Client client = clientRepository.findById(clientID.getValue()).orElse(null);
-        if (client == null || !client.isAccountNonExpired()) {
-            return new TokenErrorResponse(OAuth2Error.INVALID_CLIENT);
-        }
-        ErrorObject errorObject = authenticateClient(clientAuthentication, clientID, client);
+        ErrorObject errorObject = authenticateClient(clientAuthentication, clientID);
         if (errorObject != null) {
             return new TokenErrorResponse(errorObject);
         }
+        Client client = clientRepository.findById(clientID.getValue()).orElseThrow();
         if (tokenRequest.getAuthorizationGrant().getType().equals(GrantType.AUTHORIZATION_CODE)) {
             return handleGrantInternal(client,
                     ((AuthorizationCodeGrant) tokenRequest.getAuthorizationGrant()));
@@ -229,33 +221,12 @@ public class OAuth2Service {
         }
     }
 
-    private ErrorObject authenticateClient(ClientAuthentication clientAuthentication, ClientID clientID, Client client) {
-        if (clientAuthentication == null) {
-            if (StringUtils.hasText(client.getClientSecret())) {
-                return OAuth2Error.ACCESS_DENIED;
-            }
-        } else {
-            AbstractAuthenticationToken authToken;
-            ClientAuthenticationMethod registeredAuthMethod = client.getMetadata().getTokenEndpointAuthMethod();
-            ClientAuthenticationMethod usedAuthMethod = clientAuthentication.getMethod();
-            if (metadataService.findOIDCConfiguration().getTokenEndpointAuthMethods().contains(usedAuthMethod) &&
-                    (registeredAuthMethod == null || registeredAuthMethod.equals(usedAuthMethod))) {
-                if (clientAuthentication instanceof PlainClientSecret) {
-                    authToken = new BasicAuthenticationToken(clientID, ((PlainClientSecret) clientAuthentication).getClientSecret());
-                } else if (clientAuthentication instanceof JWTAuthentication) {
-                    authToken = new JWTClientAuthenticationToken(clientAuthentication.getClientID(), clientAuthentication);
-                } else {
-                    return OAuth2Error.ACCESS_DENIED.setDescription("Client authentication not supported");
-                }
-            } else {
-                return OAuth2Error.ACCESS_DENIED.setDescription("Client authentication not supported");
-            }
-
-            try {
-                authenticationManager.authenticate(authToken);
-            } catch (AuthenticationException e) {
-                return OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed");
-            }
+    private ErrorObject authenticateClient(ClientAuthentication clientAuthentication, ClientID clientID) {
+        ClientAuthenticationToken authToken = new ClientAuthenticationToken(clientID, clientAuthentication);
+        try {
+            authenticationManager.authenticate(authToken);
+        } catch (AuthenticationException e) {
+            return OAuth2Error.ACCESS_DENIED.setDescription("Client authentication failed");
         }
         return null;
     }
@@ -267,11 +238,7 @@ public class OAuth2Service {
             return new TokenIntrospectionErrorResponse(OAuth2Error.INVALID_CLIENT);
         }
         ClientID clientID = clientAuthentication.getClientID();
-        Client client = clientRepository.findById(clientID.getValue()).orElse(null);
-        if (client == null || !client.isAccountNonExpired()) {
-            return new TokenIntrospectionErrorResponse(OAuth2Error.INVALID_CLIENT);
-        }
-        ErrorObject errorObject = authenticateClient(clientAuthentication, clientID, client);
+        ErrorObject errorObject = authenticateClient(clientAuthentication, clientID);
         if (errorObject != null) {
             return new TokenIntrospectionErrorResponse(errorObject);
         }
@@ -328,11 +295,7 @@ public class OAuth2Service {
             return OAuth2Error.INVALID_CLIENT;
         }
         ClientID clientID = clientAuthentication.getClientID();
-        Client client = clientRepository.findById(clientID.getValue()).orElse(null);
-        if (client == null || !client.isAccountNonExpired()) {
-            return OAuth2Error.INVALID_CLIENT;
-        }
-        ErrorObject errorObject = authenticateClient(clientAuthentication, clientID, client);
+        ErrorObject errorObject = authenticateClient(clientAuthentication, clientID);
         if (errorObject != null) {
             return errorObject;
         }
