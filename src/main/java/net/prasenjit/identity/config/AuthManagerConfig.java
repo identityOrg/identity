@@ -23,7 +23,7 @@ import net.prasenjit.identity.repository.AccessTokenRepository;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.security.basic.BasicAuthenticationProvider;
 import net.prasenjit.identity.security.bearer.BearerAuthenticationProvider;
-import net.prasenjit.identity.security.jwt.ClientAuthenticationProvider;
+import net.prasenjit.identity.security.client.ClientAuthenticationProvider;
 import net.prasenjit.identity.security.user.UserAuthenticationProvider;
 import net.prasenjit.identity.service.ClientService;
 import net.prasenjit.identity.service.RemoteResourceRetriever;

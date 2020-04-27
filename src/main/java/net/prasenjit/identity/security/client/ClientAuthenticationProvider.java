@@ -1,4 +1,4 @@
-package net.prasenjit.identity.security.jwt;
+package net.prasenjit.identity.security.client;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
