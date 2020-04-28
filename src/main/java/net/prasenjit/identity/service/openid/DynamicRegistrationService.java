@@ -32,6 +32,7 @@ import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.rp.*;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
 import net.prasenjit.crypto.TextEncryptor;
 import net.prasenjit.identity.entity.ResourceType;
@@ -57,6 +58,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DynamicRegistrationService {
@@ -183,23 +185,35 @@ public class DynamicRegistrationService {
     public void validateTokenValidity(OIDCClientMetadata clientMetadata, Client client) {
 
         JSONObject customParameters = clientMetadata.getCustomFields();
+        Duration duration = null;
         try {
             long validity = JSONObjectUtils.getLong(customParameters, ClientService.ACCESS_TOKEN_VALIDITY_MINUTE);
-            client.setAccessTokenValidity(Duration.ofSeconds(validity));
-        } catch (ParseException e) {
-            int tokenValidity = identityProperties.getCodeProperty().getAccessTokenValidityMinute();
-            client.setAccessTokenValidity(Duration.ofMinutes(tokenValidity));
-            clientMetadata.setCustomField(ClientService.ACCESS_TOKEN_VALIDITY_MINUTE, tokenValidity);
+            if (validity > 0) {
+                duration = Duration.ofMinutes(validity);
+            }
+        } catch (ParseException ignored) {
+            log.debug("Value of {} is not recognized, using default", ClientService.ACCESS_TOKEN_VALIDITY_MINUTE);
         }
+        if (duration == null) {
+            duration = Duration.ofMinutes(identityProperties.getCodeProperty().getAccessTokenValidityMinute());
+            clientMetadata.setCustomField(ClientService.ACCESS_TOKEN_VALIDITY_MINUTE, duration.toMinutes());
+        }
+        client.setAccessTokenValidity(duration);
 
+        duration = null;
         try {
             long validity = JSONObjectUtils.getLong(customParameters, ClientService.REFRESH_TOKEN_VALIDITY_MINUTE);
-            client.setRefreshTokenValidity(Duration.ofSeconds(validity));
+            if (validity > 0) {
+                duration = Duration.ofMinutes(validity);
+            }
         } catch (ParseException e) {
-            int tokenValidity = identityProperties.getCodeProperty().getRefreshTokenValidity();
-            client.setRefreshTokenValidity(Duration.ofMinutes(tokenValidity));
-            clientMetadata.setCustomField(ClientService.REFRESH_TOKEN_VALIDITY_MINUTE, tokenValidity);
+            log.debug("Value of {} is not recognized, using default", ClientService.REFRESH_TOKEN_VALIDITY_MINUTE);
         }
+        if (duration == null) {
+            duration = Duration.ofMinutes(identityProperties.getCodeProperty().getRefreshTokenValidity());
+            clientMetadata.setCustomField(ClientService.REFRESH_TOKEN_VALIDITY_MINUTE, duration.toMinutes());
+        }
+        client.setRefreshTokenValidity(duration);
     }
 
     @SneakyThrows
