@@ -36,6 +36,7 @@ import net.prasenjit.identity.model.Profile;
 import net.prasenjit.identity.model.api.client.ClientSecretResponse;
 import net.prasenjit.identity.model.api.client.CreateClientRequest;
 import net.prasenjit.identity.model.api.client.UpdateClientRequest;
+import net.prasenjit.identity.properties.IdentityProperties;
 import net.prasenjit.identity.repository.ClientRepository;
 import net.prasenjit.identity.service.openid.DynamicRegistrationService;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -50,7 +51,6 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +58,9 @@ public class ClientService implements UserDetailsService {
 
     public static final String REFRESH_TOKEN_VALIDITY_MINUTE = "refresh_token_validity_minute";
     public static final String ACCESS_TOKEN_VALIDITY_MINUTE = "access_token_validity_minute";
+    public static final String EXPIRY_DATE = "expiry_date";
+    public static final String STATUS = "status";
+    private final IdentityProperties identityProperties;
     private final ClientRepository clientRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final DynamicRegistrationService dynamicRegistrationService;
@@ -83,17 +86,13 @@ public class ClientService implements UserDetailsService {
                 throw new ConflictException("Client already exist.");
             }
         } else {
-            Optional<Client> optional;
-            do {
-                request.setClientId(UUID.randomUUID().toString());
-                optional = clientRepository.findById(request.getClientId());
-            } while (optional.isPresent());
+            request.setClientId(dynamicRegistrationService.generateUniqueClientId());
         }
         Client client = new Client();
         client.setStatus(Status.LOCKED);
         LocalDateTime now = LocalDateTime.now();
         client.setCreationDate(now);
-        client.setClientSecret(RandomStringUtils.randomAlphanumeric(20)); // unknown password to create disabled client
+        client.setClientSecret(RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength())); // unknown password to create disabled client
         client.setClientName(request.getClientName());
         client.setExpiryDate(request.getExpiryDate());
         client.setClientId(request.getClientId());
@@ -107,7 +106,7 @@ public class ClientService implements UserDetailsService {
         if (errorResponse != null) {
             throw new InvalidRequestException(errorResponse.toErrorResponse().getErrorObject().getDescription());
         }
-        dynamicRegistrationService.validateTokenValidity(metadata, client);
+        dynamicRegistrationService.retrieveCustomClientAttributes(metadata, client);
 
         CreateEvent csEvent = new CreateEvent(this, ResourceType.CLIENT, request.getClientId());
         eventPublisher.publishEvent(csEvent);
@@ -124,7 +123,7 @@ public class ClientService implements UserDetailsService {
         Client savedClient = optionalClient.get();
         savedClient.setExpiryDate(request.getExpiryDate());
         OIDCClientMetadata clientMetadata = OIDCClientMetadata.parse(request.getClientMetadata());
-        dynamicRegistrationService.validateTokenValidity(clientMetadata, savedClient);
+        dynamicRegistrationService.retrieveCustomClientAttributes(clientMetadata, savedClient);
         ClientRegistrationResponse error = dynamicRegistrationService.validateClientMetadata(clientMetadata);
         if (error != null) {
             throw new InvalidRequestException(error.toErrorResponse().getErrorObject().getDescription());
@@ -161,8 +160,9 @@ public class ClientService implements UserDetailsService {
         if (optionalClient.isEmpty()) {
             throw new ItemNotFoundException("Client not found.");
         } else {
-            String encryptedClientId = textEncryptor.encrypt(RandomStringUtils.randomAlphanumeric(20));
-            optionalClient.get().setClientSecret(encryptedClientId);
+            String encryptedClientSecret = textEncryptor.encrypt(
+                    RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength()));
+            optionalClient.get().setClientSecret(encryptedClientSecret);
 
             ChangePasswordEvent cpEvent = new ChangePasswordEvent(this,
                     ResourceType.CLIENT, clientId);

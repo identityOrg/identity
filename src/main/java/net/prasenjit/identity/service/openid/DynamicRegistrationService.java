@@ -84,15 +84,11 @@ public class DynamicRegistrationService {
         client.setClientName(metadata.getName());
         client.setMetadata(metadata);
         client.setStatus(Status.ACTIVE);
-        validateTokenValidity(metadata, client);
+        retrieveCustomClientAttributes(metadata, client);
 
         client.setCreationDate(LocalDateTime.now());
 
-        Optional<Client> optional;
-        do {
-            client.setClientId(RandomStringUtils.randomAlphanumeric(10));
-            optional = clientRepository.findById(client.getClientId());
-        } while (optional.isPresent());
+        client.setClientId(generateUniqueClientId());
 
         String clientSecret = RandomStringUtils.randomAlphanumeric(identityProperties.getClientSecretLength());
         client.setClientSecret(textEncryptor.encrypt(clientSecret));
@@ -132,7 +128,7 @@ public class DynamicRegistrationService {
                 }
             }
 
-            validateTokenValidity(clientMetadata, client);
+            retrieveCustomClientAttributes(clientMetadata, client);
 
             client.setMetadata(clientMetadata);
 
@@ -150,9 +146,6 @@ public class DynamicRegistrationService {
         if (clientOptional.isPresent()) {
             Client client = clientOptional.get();
             OIDCClientMetadata metadata = client.getMetadata();
-            metadata.setCustomField(ClientService.ACCESS_TOKEN_VALIDITY_MINUTE, client.getAccessTokenValidity().toMinutes());
-            metadata.setCustomField(ClientService.REFRESH_TOKEN_VALIDITY_MINUTE, client.getRefreshTokenValidity().toMinutes());
-
             return generateClientInfoResponse(client, metadata, false);
         } else {
             ErrorObject error = new ErrorObject("invalid_uri", "Registration uri is invalid", 404);
@@ -173,6 +166,7 @@ public class DynamicRegistrationService {
     }
 
     private ClientRegistrationResponse generateClientInfoResponse(Client client, OIDCClientMetadata clientMetadata, boolean newClient) {
+        populateCustomClientAttributes(client, clientMetadata);
         ClientID clientId = new ClientID(client.getClientId());
         Date issueDate = ValidationUtils.convertToDate(client.getCreationDate());
         Secret secret = new Secret(textEncryptor.decrypt(client.getClientSecret()));
@@ -182,7 +176,7 @@ public class DynamicRegistrationService {
         return new OIDCClientInformationResponse(clientInfo, newClient);
     }
 
-    public void validateTokenValidity(OIDCClientMetadata clientMetadata, Client client) {
+    public void retrieveCustomClientAttributes(OIDCClientMetadata clientMetadata, Client client) {
 
         JSONObject customParameters = clientMetadata.getCustomFields();
         Duration duration = null;
@@ -214,6 +208,26 @@ public class DynamicRegistrationService {
             clientMetadata.setCustomField(ClientService.REFRESH_TOKEN_VALIDITY_MINUTE, duration.toMinutes());
         }
         client.setRefreshTokenValidity(duration);
+    }
+
+    public void populateCustomClientAttributes(Client client, OIDCClientMetadata clientMetadata) {
+        Duration tokenValidity = client.getAccessTokenValidity();
+        clientMetadata.setCustomField(ClientService.ACCESS_TOKEN_VALIDITY_MINUTE, tokenValidity.toMinutes());
+        tokenValidity = client.getRefreshTokenValidity();
+        clientMetadata.setCustomField(ClientService.REFRESH_TOKEN_VALIDITY_MINUTE, tokenValidity.toMinutes());
+        LocalDateTime expiryDate = client.getExpiryDate();
+        clientMetadata.setCustomField(ClientService.EXPIRY_DATE, expiryDate);
+        clientMetadata.setCustomField(ClientService.STATUS, client.getStatus());
+    }
+
+    public String generateUniqueClientId() {
+        Optional<Client> optional;
+        String clientId;
+        do {
+            clientId = RandomStringUtils.randomAlphanumeric(identityProperties.getClientIdLength());
+            optional = clientRepository.findById(clientId);
+        } while (optional.isPresent());
+        return clientId;
     }
 
     @SneakyThrows

@@ -36,5 +36,6 @@ public class IdentityProperties {
     private int lockUserOn7DayErrorCount = 10;
     private int rememberLoginDays = 30;
     private int clientSecretLength = 32;
+    private int clientIdLength = 10;
     private boolean detectPasswordChangeForRememberMe = true;
 }
