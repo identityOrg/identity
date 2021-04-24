@@ -1,0 +1,11 @@
+---
+application:
+  name: "identity"
+  project: "proj1"
+  organization: "QoveryCommunity"
+routers:
+- name: "main-identity"
+  routes:
+  - application_name: "identity"
+    paths:
+    - "/*"
